@@ -1,0 +1,6 @@
+__pycache__/
+dev-data/
+*.sqlite3
+*.log
+desktop-session-*.json
+backups/
