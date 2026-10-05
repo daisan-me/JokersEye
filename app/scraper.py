@@ -129,7 +129,7 @@ def bonus_targets(html, report_url, rows):
         candidate=urljoin(report_url,href); link=urlsplit(candidate)
         query=parse_qs(link.query)
         if link.scheme!='https' or link.hostname!='min-repo.com' or link.path!=report.path or link.fragment:continue
-        if set(query)=={'kishu'} and text in models and query['kishu']==[text]:
+        if set(query)=={'kishu'} and text in models and len(query['kishu'])==1 and re.sub(r'\s+',' ',query['kishu'][0]).strip()==text:
             targets[(text,'','model')]=dict(model=text,seat='',kind='model',url=candidate)
         if set(query)=={'num'} and len(query['num'])==1 and query['num'][0] in seats:
             seat=query['num'][0]; model=seats[seat]['model']
@@ -184,11 +184,11 @@ def parse_bonuses(html, day, model, rows, seat=None):
         if not table or not {'台番','G数','BB','RB'}.issubset(table[0]):continue
         for cells in table[1:]:
             if len(cells)!=len(table[0]):continue
-            values=dict(zip(table[0],cells)); seat=values.get('台番','')
-            if not seat.isdigit():continue
-            seat=str(int(seat))
-            if seat not in wanted or seat in result:raise ValueError('機種別ページの台番号が一致しないか重複しています。')
-            result[seat]=read(values,seat)
+            values=dict(zip(table[0],cells)); number_text=values.get('台番','')
+            if not number_text.isdigit():continue
+            number_text=str(int(number_text))
+            if number_text not in wanted or number_text in result:raise ValueError('機種別ページの台番号が一致しないか重複しています。')
+            result[number_text]=read(values,number_text)
     if not result and seat is not None:
         main=next((t for t in doc.tables if t and {'機種','G数'}.issubset(t[0]) and '台番' not in t[0]),None)
         bonus=next((t for t in doc.tables if t and t[0][:2]==['BB','RB']),None)
@@ -214,12 +214,15 @@ class Collector:
             if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'])
 
     def fetch(self,url,pace=1.0):
-        for attempt in range(3):
+        # Detail pages are retried by collect_bonuses through the actual report
+        # link. Do not repeatedly navigate a transiently empty model URL here.
+        attempts=1 if self.page_expectations.get(url,{}).get('kind','').startswith('bonus-') else 3
+        for attempt in range(attempts):
             try:
                 return self._fetch_once(url, pace)
             except RuntimeError as ex:
                 message=str(ex)
-                if attempt >= 2 or '公開ページを表示できませんでした' not in message:
+                if attempt >= attempts-1 or '公開ページを表示できませんでした' not in message:
                     raise
                 with self.lock:
                     self.progress['message']='公開ページが空だったため通常再試行しています。'+str(attempt + 2)+'/3'
@@ -255,7 +258,7 @@ class Collector:
         return {'ok':True}
 
     def status(self):
-        with self.lock: result=dict(self.progress)
+        with self.lock: result=dict(self.progress,active=self.active,runFailures=list(self.progress.get('failures',[])))
         with self.store.connect() as db:
             result['summary']=dict(db.execute('SELECT COUNT(*) records,COUNT(DISTINCT day) days,MIN(day) first,MAX(day) last,SUM(bb IS NULL OR rb IS NULL) missingBonuses,SUM(net IS NULL) missingNet FROM scraped_observations').fetchone())
             result['coverage']=[dict(r) for r in db.execute('SELECT status,COUNT(*) days FROM scrape_days GROUP BY status')]
@@ -263,9 +266,10 @@ class Collector:
             result['bonusFailures']=[dict(r) for r in db.execute("SELECT day,status,message,rows FROM scrape_bonus_days WHERE status!='complete' ORDER BY day DESC LIMIT 40")]
         return result
 
-    def start(self,end=None,start=None,include_bonus=True,only_dates=None,bonus_only=False):
+    def start(self,end=None,start=None,include_bonus=True,only_dates=None,bonus_only=False,sheet_mode=None):
         if not isinstance(include_bonus,bool):raise ValueError('BB/RB取得の指定が不正です。')
         if not isinstance(bonus_only,bool) or (bonus_only and not include_bonus):raise ValueError('BB/RB補完の指定が不正です。')
+        if sheet_mode not in (None,'create','update','bonuses'):raise ValueError('CSV同期の指定が不正です。')
         end=end or today(); date.fromisoformat(end)
         if not START<=end<=today(): raise ValueError('取得終了日が対象範囲外です。')
         if start and (date.fromisoformat(start).isoformat()!=start or not START<=start<=end): raise ValueError('取得開始日が対象範囲外です。')
@@ -278,7 +282,7 @@ class Collector:
         with self.lock:
             if self.active: return dict(self.progress)
             self.active=True; self.cancelled.clear()
-            self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
+            self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[],'sheetMode':sheet_mode}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
         return self.status()
 
@@ -311,9 +315,19 @@ class Collector:
                 days=[]; d=date.fromisoformat(start)
                 while d<=date.fromisoformat(end): days.append(d.isoformat()); d+=timedelta(days=1)
                 days=list(dict.fromkeys(days+retry))
+            # Bonus repair targets only already saved records. A stale coverage
+            # marker is not evidence of actual BB/RB completeness.
+            if bonus_only:
+                with self.store.connect() as db:
+                    missing_days={r[0] for r in db.execute('SELECT DISTINCT day FROM scraped_observations WHERE bb IS NULL OR rb IS NULL')}
+                days=[day for day in days if day in missing_days]
             reports={r['day']:r['url'] for r in self.seed}
             with self.store.connect() as db:
                 reports.update({r['day']:r['url'] for r in db.execute('SELECT day,url FROM scrape_report_index')})
+                for r in db.execute("SELECT day,url FROM scrape_days WHERE url!=''"):
+                    parsed=urlsplit(r['url'])
+                    if parsed.scheme=='https' and parsed.hostname=='min-repo.com' and re.fullmatch(r'/\d+/',parsed.path):
+                        reports.setdefault(r['day'],parsed._replace(query='',fragment='').geturl())
             # Follow actual next-page links until the requested older dates are
             # covered. New report links survive app/package updates in SQLite.
             page=TAG; visited=set(); oldest_needed=min(days) if days else end
@@ -360,7 +374,13 @@ class Collector:
                         self.day_status(day,url,'complete' if complete else 'partial',len(rows),'' if complete else '台番号の全台網羅を確認できません。')
                         with self.lock:self.progress['added']+=len(rows)
                     all_saved=True
-                    if include_bonus:self.collect_bonuses(all_html,day,url,rows)
+                    if include_bonus:
+                        try:self.collect_bonuses(all_html,day,url,rows)
+                        except (ValueError,RuntimeError) as ex:
+                            with self.store.connect() as db:
+                                covered=db.execute('SELECT COUNT(*) FROM scraped_observations WHERE day=? AND bb IS NOT NULL AND rb IS NOT NULL',(day,)).fetchone()[0]
+                            self.bonus_status(day,'partial',covered,str(ex))
+                            raise
                     with self.lock:self.progress['completed']+=1
                 except (ValueError,RuntimeError) as ex:
                     with self.store.connect() as db:
@@ -384,17 +404,20 @@ class Collector:
                     continue
                 if self.progress['completed']%10==0: self.export(self.store.folder/'exports',START,end)
             self.export(self.store.folder/'exports',START,end)
-            with self.lock: self.progress.update(state='complete',message='取得処理が終了しました。BB/RBの実値不足・未掲載は取得状況を確認してください。')
+            with self.store.connect() as db:
+                missing=sum(db.execute('SELECT COUNT(*) FROM scraped_observations WHERE day=? AND (bb IS NULL OR rb IS NULL)',(day,)).fetchone()[0] for day in days)
+            with self.lock: self.progress.update(state='complete',missingBonusRows=missing,message='取得処理が終了しました。対象日のBB/RB不足: '+str(missing)+'台。未掲載・失敗は取得状況を確認してください。')
         except Exception as ex:
             with self.lock: self.progress.update(state='stopped' if self.cancelled.is_set() else 'failed',message=str(ex))
             self.export(self.store.folder/'exports',START,end)
         finally:
             # Persist completed bonus enrichment into the existing 11-column
             # CSV even if the user leaves the data tab or stops midway.
-            if self.store.base_sheet_path().exists():
-                try:self.store.build_base_sheet('bonuses' if bonus_only else 'update')
-                except Exception as ex:
-                    with self.lock:self.progress['message']+=' CSV同期失敗: '+str(ex)
+            try:
+                if self.store.base_sheet_path().exists() or self.progress.get('sheetMode')=='create':
+                    self.store.build_base_sheet('bonuses' if bonus_only else ('update' if self.store.base_sheet_path().exists() else 'create'))
+            except Exception as ex:
+                with self.lock:self.progress.update(state='failed',message=self.progress.get('message','')+' CSV同期失敗: '+str(ex))
             with self.store.connect() as db:
                 db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=? WHERE id=?',(self.progress['state'],now(),self.progress['message'],run_id))
             with self.lock: self.active=False; self.pending=None
@@ -444,12 +467,21 @@ class Collector:
                 try:
                     if link:
                         if attempt:self.fetch(url,pace=3.0)
-                        obtain(link,model)
+                        try:obtain(link,model)
+                        except (ValueError,RuntimeError) as ex:
+                            if self.cancelled.is_set() or '公開サイトが取得を制限しました' in str(ex):raise
+                            failures.append(model+': '+str(ex))
+                    # Defer a transient model miss once before individual-seat
+                    # fallback. A second model error must not skip fallback.
                     if not link or attempt:
                         for row in groups[model]:
                             if complete(row):continue
                             target=next((t['url'] for t in targets if t['model']==model and t['seat']==row['seat'] and t['kind']=='seat'),None)
-                            if target:obtain(target,model,row['seat'])
+                            if target:
+                                try:obtain(target,model,row['seat'])
+                                except (ValueError,RuntimeError) as ex:
+                                    if self.cancelled.is_set() or '公開サイトが取得を制限しました' in str(ex):raise
+                                    failures.append(model+' '+row['seat']+': '+str(ex))
                 except (ValueError,RuntimeError) as ex:
                     if self.cancelled.is_set() or '公開サイトが取得を制限しました' in str(ex):raise
                     failures.append(model+': '+str(ex))
@@ -472,6 +504,9 @@ class Collector:
 
     def save_bonus_values(self,day,row,values,url):
         with self.store.connect() as db:
+            previous=db.execute('SELECT bb,rb FROM scraped_observations WHERE day=? AND seat=?',(day,row['seat'])).fetchone()
+            if previous and any(old is not None and new is not None and old!=new for old,new in zip(previous,values[:2])):
+                raise ValueError('保存済みBB/RBと詳細ページの実値が一致しません。既存値を保持します。')
             cursor=db.execute('''UPDATE scraped_observations SET bb=COALESCE(bb,?),rb=COALESCE(rb,?),combined=COALESCE(combined,?),bonus_source_url=?,fetched_at=?
                 WHERE day=? AND seat=? AND model=? AND games IS ?''',(*values,url,now(),day,row['seat'],row['model'],row['games']))
             if cursor.rowcount!=1:raise ValueError('BB/RB保存時に対象台の基礎値が変わりました。')
@@ -517,5 +552,5 @@ class Collector:
     def write_csv(path,columns,rows):
         tmp=path.with_suffix('.csv.tmp')
         with tmp.open('w',encoding='utf-8-sig',newline='') as file:
-            writer=csv.DictWriter(file,fieldnames=columns,extrasaction='ignore'); writer.writeheader();writer.writerows(rows)
+            writer=csv.DictWriter(file,fieldnames=columns,extrasaction='ignore',lineterminator='\n'); writer.writeheader();writer.writerows(rows)
         tmp.replace(path)

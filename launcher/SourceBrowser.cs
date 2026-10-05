@@ -24,6 +24,7 @@ class SourceBrowser : IDisposable {
     string navigationStatus="not-started";
     int statusCode;
     bool accessBlocked;
+    readonly string readinessScript = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"web","source-readiness.js"),Encoding.UTF8);
     void Log(string message) {
         try { File.AppendAllText(Path.Combine(folder,"source-browser.log"),DateTime.UtcNow.ToString("o")+" "+message+Environment.NewLine); } catch(IOException) { }
     }
@@ -94,16 +95,18 @@ class SourceBrowser : IDisposable {
                 await Task.Delay(500);
                 if(accessBlocked)throw new Exception("公開サイトが取得を制限しました（HTTP "+statusCode+"）。再試行せず停止します。");
                 if(browser.Source==null||Uri.Compare(browser.Source,target,UriComponents.HttpRequestUrl,UriFormat.UriEscaped,StringComparison.OrdinalIgnoreCase)!=0)continue;
-                string ready=await browser.ExecuteScriptAsync("!!document.querySelector('h1') && !!document.querySelector('table') && document.readyState !== 'loading'");
+                string ready=await browser.ExecuteScriptAsync("(()=>{"+readinessScript+"\nreturn sourceAccessRestricted(document)?'restricted':sourceDocumentReady(document,"+json.Serialize(task)+");})()");
+                if(ready=="\"restricted\"")throw new Exception("公開サイトが取得を制限しました（認証・確認画面）。操作・再試行せず停止します。");
                 if(ready=="true") {
                     html=json.Deserialize<string>(await browser.ExecuteScriptAsync("document.documentElement.outerHTML"));break;
                 }
                 // A successful but genuinely empty document is a transient
                 // response, not usable data. Retry once by ordinary Reload.
                 // Never retry an HTTP access/rate restriction or confirmation UI.
-                if(i==12&&statusCode==200) {
+                if((i==12||i>=25)&&statusCode==200) {
                     string empty=await browser.ExecuteScriptAsync("document.readyState === 'complete' && document.scripts.length === 0 && !!document.body && document.body.innerHTML.trim() === ''");
                     if(empty=="true") {
+                        if(i>=25)break;
                         Log("empty-document ordinary-reload-once "+url);
                         await Task.Delay(3000);
                         browser.CoreWebView2.Reload();

@@ -29,7 +29,8 @@
     app.innerHTML = `
       <div class="card-header"><div><div class="kicker">MIN-REPO / BASE DATA SHEET</div><h2>基礎データシート</h2></div><span class="tag" id="base-sheet-tag">未作成</span></div>
       <p>みんレポ ゴッサムシティの台別記録を、日付・台番号単位で保存して閲覧します。空欄は公開ページで取得できなかった値です。</p>
-      <div class="base-sheet-actions"><button class="primary" id="base-sheet-create">CSVファイルを作成</button><button class="secondary" id="base-sheet-update">不足分だけ更新</button><a class="secondary" id="base-sheet-download" href="/api/base-sheet/download" download="jokers-eye-base-data.csv">CSVをダウンロード</a></div>
+      <div class="base-sheet-actions"><button class="primary" id="base-sheet-create">CSVファイルを作成</button><button class="secondary" id="base-sheet-update">不足分だけ更新</button><button class="secondary" id="base-sheet-bonuses">BB・RBの不足だけ補完</button><button class="secondary" id="base-sheet-stop" disabled>補完・取得を停止</button><a class="secondary" id="base-sheet-download" href="/api/base-sheet/download" download="jokers-eye-base-data.csv">CSVをダウンロード</a></div>
+      <details><summary>BB・RB補完の対象期間（空欄なら保存済みの全期間）</summary><div class="toolbar"><label>開始日<input id="bonus-from" type="date" min="2024-03-01"></label><label>終了日<input id="bonus-to" type="date" min="2024-03-01"></label></div><p class="hint">保存済みの日付・台のうちBBまたはRBが空欄のものだけ対象にします。取得済み機種は再巡回しません。全台表の数値は再取得せず、機種別・個別台の当日表で補完します。多日数の補完には時間がかかります。</p></details>
       <p class="hint" id="base-sheet-status">状態を確認中…</p>
       <div class="base-sheet-filters">
         <div><label class="label" for="base-from">日付（開始）</label><input id="base-from" type="date"></div>
@@ -49,11 +50,14 @@
       <div class="base-sheet-pagination"><button class="secondary" id="base-sheet-prev">← 前へ</button><span id="base-sheet-page">1</span><button class="secondary" id="base-sheet-next">次へ →</button></div>`;
     app.querySelector('#base-sheet-create').addEventListener('click', () => runAction('create'));
     app.querySelector('#base-sheet-update').addEventListener('click', () => runAction('update'));
+    app.querySelector('#base-sheet-bonuses').addEventListener('click', () => runAction('bonuses'));
+    app.querySelector('#base-sheet-stop').addEventListener('click', async () => { try { await api('scrape/stop', {}); } catch (error) { showError(error); } });
     app.querySelector('#base-sheet-apply').addEventListener('click', () => { offset = 0; loadRows().catch(showError); });
     app.querySelector('#base-sheet-reset').addEventListener('click', () => { app.querySelectorAll('.base-sheet-filters input').forEach(input => { input.value = ''; }); app.querySelector('#base-juggler').value = 'all'; app.querySelector('#base-weekday').value = ''; offset = 0; loadRows().catch(showError); });
     app.querySelector('#base-sheet-prev').addEventListener('click', () => { offset = Math.max(0, offset - limit); loadRows().catch(showError); });
     app.querySelector('#base-sheet-next').addEventListener('click', () => { offset += limit; loadRows().catch(showError); });
     loadStatus().then(loadRows).catch(showError);
+    if (activeMode) setBusy(true);
   }
 
   function params() {
@@ -66,6 +70,8 @@
 
   function setBusy(busy) {
     document.querySelectorAll('#base-sheet-app button').forEach(button => { button.disabled = busy; });
+    const stop = document.querySelector('#base-sheet-stop');
+    if (stop) stop.disabled = !busy;
   }
 
   async function loadStatus() {
@@ -75,6 +81,7 @@
     if (!tag || !status) return result;
     tag.textContent = result.exists ? `${Number(result.rowCount).toLocaleString('ja-JP')}行` : '未作成';
     status.textContent = result.exists ? `保存先: ${result.path} / ${result.dayCount}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 取得対象の不足日: ${(result.actionableMissingDates || result.missingDates).length}日 / 未掲載: ${(result.unpublishedDates || []).length}日` : 'まだCSVは作成されていません。作成ボタンで、2024/03/01～2026/09/30を対象にします。';
+    if (result.exists) status.textContent += ` / BB・RB不足: ${Number(result.missingBonusRows).toLocaleString('ja-JP')}行（ジャグラー ${Number(result.missingJugglerBonusRows).toLocaleString('ja-JP')}行）`;
     document.querySelector('#base-sheet-download').hidden = !result.exists;
     return result;
   }
@@ -96,11 +103,14 @@
     if (activeMode) return;
     setBusy(true); activeMode = mode;
     const status = document.querySelector('#base-sheet-status');
-    if (status) status.textContent = mode === 'create' ? '全台表を日ごとに取得しています。BB/RBの追加取得失敗で後続日を止めません…' : '不足日だけを対象に、既存日を再取得せず更新しています…';
+    if (status) status.textContent = mode === 'bonuses' ? 'BB・RBの実値が不足する日・台だけを補完しています…' : mode === 'create' ? '全台表とBB・RBを日ごとに取得しています…' : '不足日だけを対象に、BB・RBを含めて更新しています…';
     try {
-      const result = await api('base-sheet/' + mode, {});
+      const payload = mode === 'bonuses' ? {start: document.querySelector('#bonus-from').value || null, end: document.querySelector('#bonus-to').value || null} : {};
+      const result = await api('base-sheet/' + mode, payload);
       if (result.status === 'up-to-date' || result.status === 'exists') {
-        activeMode = ''; setBusy(false); await loadStatus(); await loadRows(); return;
+        activeMode = ''; setBusy(false); await loadStatus(); await loadRows();
+        if (result.plan?.unavailableRows) showError(Error(`補完できないCSV行が${result.plan.unavailableRows}行あります。元の保存記録との機種・G数・BB/RBの一致を確認してください。`));
+        return;
       }
       await pollUntilFinished(mode);
     } catch (error) {
@@ -110,19 +120,21 @@
 
   async function pollUntilFinished(mode) {
     if (pollTimer) clearTimeout(pollTimer);
-    const status = document.querySelector('#base-sheet-status');
     const tick = async () => {
+      const status = document.querySelector('#base-sheet-status');
       try {
         const progress = await api('scrape/status');
-        if (progress.state === 'running') {
-          if (status) status.textContent = `${mode === 'create' ? '初回作成' : '不足分更新'}: ${progress.completed || 0}/${progress.total || 0}日 / ${progress.message || '取得中…'}`;
+        if (progress.active || progress.state === 'running') {
+          if (status) status.textContent = `${mode === 'bonuses' ? 'BB・RB補完' : mode === 'create' ? '初回作成' : '不足分更新'}: ${progress.completed || 0}/${progress.total || 0}日 / ${progress.bonusRows || 0}/${progress.bonusTotal || 0}台 / ${progress.message || '取得中…'}`;
           pollTimer = setTimeout(tick, 1800);
           return;
         }
-        if (progress.state !== 'complete') throw Error(progress.message || 'スクレイピングに失敗しました。');
-        if (status) status.textContent = '取得が完了しました。CSVを再構成しています…';
-        await api('base-sheet/build', {mode});
+        // The collector syncs even interrupted runs before active becomes false.
+        if (progress.state !== 'complete') throw Error(progress.message || 'スクレイピングに失敗しました。途中までの取得分は保存済みです。');
         activeMode = ''; setBusy(false); await loadStatus(); await loadRows();
+        if (progress.missingBonusRows || progress.runFailures?.length) {
+          if (status) status.textContent += ' / 一部未完了です。取得状況を確認し、不足だけを再実行してください。';
+        }
       } catch (error) {
         activeMode = ''; setBusy(false); showError(error);
       }

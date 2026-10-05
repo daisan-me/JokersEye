@@ -118,7 +118,7 @@ class ScraperTests(unittest.TestCase):
         collector.fetch=fetch
         collector.progress={'id':'test-success','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-01','2026-09-01')
-        self.assertEqual(calls[1:],[url,url+'?kishu=all'])
+        self.assertEqual(calls,[url,url+'?kishu=all'])
         self.assertEqual(collector.progress['state'],'complete')
         self.assertEqual(collector.progress['added'],2)
         self.assertEqual(collector.status()['coverage'],[{'status':'complete','days':1}])

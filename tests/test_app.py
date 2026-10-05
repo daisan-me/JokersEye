@@ -7,6 +7,7 @@ import threading
 import unittest
 import urllib.request
 import urllib.error
+from unittest.mock import Mock
 from contextlib import closing
 
 spec=importlib.util.spec_from_file_location('server',Path(__file__).resolve().parents[1]/'app/server.py')
@@ -105,6 +106,38 @@ class ApiTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ex:
             urllib.request.urlopen(self.base+'/../app/server.py')
         self.assertEqual(ex.exception.code,404)
+
+    def post(self, path, payload):
+        req=urllib.request.Request(self.base+'/api/'+path,data=json.dumps(payload).encode(),headers={'X-Joker-Token':self.host.token,'Content-Type':'application/json'})
+        with urllib.request.urlopen(req) as response:return json.load(response)
+
+    def test_new_scraping_defaults_to_bonus_capture(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.post('scrape/start',{'start':'2026-10-03','end':'2026-10-03'})
+        start.assert_called_once_with('2026-10-03','2026-10-03',True,None,False)
+
+    def test_base_create_and_delta_enable_bonus_capture(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.post('base-sheet/create',{})
+        start.assert_called_once_with(server.BASE_SHEET_END,server.BASE_SHEET_START,True,sheet_mode='create')
+        self.host.store.build_base_sheet('create')
+        self.host.store.base_sheet_update_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03']})
+        start.reset_mock()
+        self.post('base-sheet/update',{})
+        start.assert_called_once_with('2026-10-03','2026-10-03',True,['2026-10-03'])
+
+    def test_bonus_action_targets_only_plan_dates(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.host.store.base_sheet_bonus_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03'],'missingRows':3})
+        self.post('base-sheet/bonuses',{'start':'2026-10-03','end':'2026-10-03'})
+        start.assert_called_once_with('2026-10-03','2026-10-03',True,['2026-10-03'],True)
+        self.host.store.base_sheet_bonus_plan.return_value={'missingDates':[],'missingRows':0}
+        start.reset_mock()
+        self.assertEqual(self.post('base-sheet/bonuses',{})['status'],'up-to-date')
+        start.assert_not_called()
 
     def test_fixed_floor_assets_and_registration(self):
         with urllib.request.urlopen(self.base+'/fixed-floor.json') as response:

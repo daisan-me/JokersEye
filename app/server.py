@@ -26,7 +26,7 @@ from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scraper import Collector
+from scraper import Collector, today as source_today
 
 APP = "jokers-eye"
 ROOT = Path(__file__).resolve().parent.parent
@@ -87,6 +87,7 @@ class Store:
             if columns and "combined" not in columns:
                 db.execute("ALTER TABLE scraped_observations ADD COLUMN combined TEXT")
         self._base_cache_lock = threading.RLock()
+        self._base_write_lock = threading.RLock()
         self._base_cache_key = None
         self._base_cache_rows = []
 
@@ -171,9 +172,9 @@ class Store:
             current += timedelta(days=1)
         return result
 
-    def _base_rows_from_db(self, days=None):
+    def _base_rows_from_db(self, days=None, end=BASE_SHEET_END):
         with self.connect() as db:
-            params = [BASE_SHEET_START, BASE_SHEET_END]
+            params = [BASE_SHEET_START, end]
             where = "day BETWEEN ? AND ?"
             if days is not None:
                 if not days:
@@ -208,7 +209,7 @@ class Store:
         path.parent.mkdir(parents=True, exist_ok=True)
         temp = path.with_name(path.name + ".tmp")
         with temp.open("w", encoding="utf-8-sig", newline="") as file:
-            writer = csv.DictWriter(file, fieldnames=BASE_SHEET_COLUMNS, extrasaction="ignore")
+            writer = csv.DictWriter(file, fieldnames=BASE_SHEET_COLUMNS, extrasaction="ignore", lineterminator="\n")
             writer.writeheader()
             writer.writerows(rows)
         temp.replace(path)
@@ -234,36 +235,62 @@ class Store:
             "lastDate": dates[-1] if dates else None, "startDate": BASE_SHEET_START, "endDate": BASE_SHEET_END,
             "missingDates": calendar_missing, "actionableMissingDates": actionable_missing,
             "unpublishedDates": sorted(day for day in calendar_missing if day in unpublished),
+            "missingBonusRows": sum(row['BB数']=='' or row['RB数']=='' for row in rows),
+            "missingJugglerBonusRows": sum((row['BB数']=='' or row['RB数']=='') and self._is_juggler(row['機種']) for row in rows),
         }
 
     def build_base_sheet(self, mode="create"):
-        if mode not in ("create", "update"):
+        with self._base_write_lock:
+            return self._build_base_sheet(mode)
+
+    def _build_base_sheet(self, mode):
+        if mode not in ("create", "update", "bonuses"):
             raise ValueError("基礎データシートの処理が不正です。")
         existing = self._read_base_sheet()
         if mode == "create" and existing:
             return {"status": "exists", "addedRows": 0, "addedDates": [], "sheet": self.base_sheet_status()}
-        if mode == "update" and not self.base_sheet_path().exists():
+        if mode != "create" and not self.base_sheet_path().exists():
             raise ValueError("先に基礎データシートを作成してください。")
         existing_dates = {row["日付"] for row in existing}
         if mode == "create":
             new_rows = self._base_rows_from_db()
             rows = new_rows
-        else:
-            target_end = min(date.today().isoformat(), BASE_SHEET_END)
+        elif mode == "update":
+            target_end = source_today()
             target_days = self._calendar_days(BASE_SHEET_START, target_end)
             missing = [day for day in target_days if day not in existing_dates]
-            new_rows = self._base_rows_from_db(missing)
-            rows = existing + new_rows
+            new_rows = self._base_rows_from_db(missing, target_end)
+            rows = [dict(row) for row in existing] + new_rows
+        else:
+            new_rows = []
+            rows = [dict(row) for row in existing]
+        updated_rows = 0
+        if mode != "create":
+            source = {(row['日付'], row['台番号']): row for row in self._base_rows_from_db(end=source_today())}
+            for row in rows:
+                saved = source.get((row['日付'], row['台番号']))
+                # Enrichment changes only empty bonus fields of the same record.
+                # Preserve games/net/payout/model and any populated CSV counts.
+                if not saved or (row['機種'], row['ゲーム数']) != (saved['機種'], saved['ゲーム数']):
+                    continue
+                if any(row[key] and saved[key] and row[key] != saved[key] for key in ('BB数','RB数')):
+                    continue
+                changed = False
+                for key in ('BB数', 'RB数', '合成'):
+                    if row[key] == '' and saved[key] != '':
+                        row[key] = saved[key]
+                        changed = True
+                updated_rows += changed
         rows.sort(key=lambda row: (row["日付"], int(row["台番号"]) if str(row["台番号"]).isdigit() else str(row["台番号"])))
         self._write_base_sheet(rows)
-        return {"status": "created" if mode == "create" else "updated", "addedRows": len(new_rows),
+        return {"status": "created" if mode == "create" else "updated", "addedRows": len(new_rows), "updatedRows": updated_rows,
                 "addedDates": sorted({row["日付"] for row in new_rows}), "sheet": self.base_sheet_status()}
 
     def base_sheet_update_plan(self):
         status = self.base_sheet_status()
         if not status["exists"]:
             raise ValueError("先に基礎データシートを作成してください。")
-        today_end = min(date.today().isoformat(), BASE_SHEET_END)
+        today_end = source_today()
         present = {row["日付"] for row in self._read_base_sheet()}
         missing = [day for day in self._calendar_days(BASE_SHEET_START, today_end) if day not in present]
         unpublished = set(status.get("unpublishedDates", []))
@@ -271,6 +298,25 @@ class Store:
         return {"targetEnd": today_end, "missingDates": actionable, "missingDateCount": len(actionable),
                 "unpublishedDates": sorted(day for day in missing if day in unpublished),
                 "totalMissingDateCount": len(missing), "sheet": status}
+
+    def base_sheet_bonus_plan(self, start=None, end=None):
+        if not self.base_sheet_path().exists():
+            raise ValueError("先に基礎データシートを作成してください。")
+        start, end = start or BASE_SHEET_START, end or source_today()
+        if date.fromisoformat(start).isoformat()!=start or date.fromisoformat(end).isoformat()!=end or not BASE_SHEET_START<=start<=end<=source_today():
+            raise ValueError("BB/RB補完の日付範囲が不正です。")
+        # Local synchronization precedes planning; no source request is needed
+        # when counts have already been captured into SQLite.
+        self.build_base_sheet('bonuses')
+        wanted={(r['日付'],r['台番号']):r for r in self._read_base_sheet() if start<=r['日付']<=end and (r['BB数']=='' or r['RB数']=='')}
+        with self.connect() as db:
+            missing=[]
+            for r in db.execute('SELECT day,seat,model,games FROM scraped_observations WHERE day BETWEEN ? AND ? AND (bb IS NULL OR rb IS NULL) ORDER BY day,CAST(seat AS INTEGER)',(start,end)):
+                record=wanted.get((r['day'],r['seat']))
+                if record and (record['機種'],record['ゲーム数'])==(r['model'],self._base_number(r['games'])):
+                    missing.append(dict(r))
+        dates=sorted({r['day'] for r in missing})
+        return {'start':start,'targetEnd':end,'missingDates':dates,'missingDateCount':len(dates),'missingRows':len(missing),'unavailableRows':len(wanted)-len(missing)}
 
     @staticmethod
     def _parse_filter_number(value, label):
@@ -651,17 +697,14 @@ class Handler(BaseHTTPRequestHandler):
             elif path=="/api/map/position":
                 result=self.server.store.save_position(payload)
             elif path=="/api/scrape/start":
-                result=self.server.store.collector.start(payload.get('end'),payload.get('start'),payload.get('include_bonus',False),payload.get('only_dates'))
+                result=self.server.store.collector.start(payload.get('end'),payload.get('start'),payload.get('include_bonus',True),payload.get('only_dates'),payload.get('bonus_only',False))
             elif path=="/api/base-sheet/create":
                 if self.server.store.collector.active:
                     raise ValueError("現在スクレイピング中です。完了後に基礎データシートを作成してください。")
                 if self.server.store.base_sheet_path().exists():
                     result={"status":"exists","sheetMode":"create","sheetBuildPending":False,"sheet":self.server.store.base_sheet_status()}
                 else:
-                    # First pass is the resilient full-machine-table scrape.
-                    # BB/RB/combined enrichment is optional and must never be
-                    # allowed to interrupt coverage of later dates.
-                    result=self.server.store.collector.start(BASE_SHEET_END,BASE_SHEET_START,False)
+                    result=self.server.store.collector.start(BASE_SHEET_END,BASE_SHEET_START,True,sheet_mode='create')
                     result.update({"sheetMode":"create","sheetBuildPending":True})
             elif path=="/api/base-sheet/update":
                 if self.server.store.collector.active:
@@ -672,8 +715,17 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     # Delta mode sends only dates absent from the existing CSV;
                     # existing dates are never re-requested by this action.
-                    result=self.server.store.collector.start(plan["targetEnd"],min(plan["missingDates"]),False,plan["missingDates"])
+                    result=self.server.store.collector.start(plan["targetEnd"],min(plan["missingDates"]),True,plan["missingDates"])
                     result.update({"sheetMode":"update","sheetBuildPending":True,"plan":plan})
+            elif path=="/api/base-sheet/bonuses":
+                if self.server.store.collector.active:
+                    raise ValueError("現在スクレイピング中です。完了後にBB/RBを補完してください。")
+                plan=self.server.store.base_sheet_bonus_plan(payload.get('start'),payload.get('end'))
+                if not plan['missingDates']:
+                    result={'status':'up-to-date','sheetMode':'bonuses','sheetBuildPending':False,'plan':plan}
+                else:
+                    result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'],True)
+                    result.update({'sheetMode':'bonuses','sheetBuildPending':True,'plan':plan})
             elif path=="/api/base-sheet/build":
                 result=self.server.store.build_base_sheet(payload.get("mode","create"))
             elif path=="/api/scrape/stop":

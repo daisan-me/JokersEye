@@ -2,7 +2,7 @@
 (() => {
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const number=v=>Number(v||0).toLocaleString('ja-JP');
-  let timer=null, busy=false, includeBonus=false;
+  let timer=null, busy=false, includeBonus=true;
   function mount(){
     const content=document.querySelector('#content');
     if(!content.querySelector('#import-form')||content.querySelector('#scrape-widget'))return;
@@ -26,7 +26,7 @@
   async function poll(){
     const panel=document.querySelector('#scrape-widget');if(!panel)return;
     try{
-      const status=await api('scrape/status'),running=status.state==='running';
+      const status=await api('scrape/status'),running=status.active || status.state==='running';
       busy=running;
       panel.querySelectorAll('#scrape-today,#scrape-range-start').forEach(b=>b.disabled=running);
       panel.querySelector('#scrape-stop').disabled=!running;
