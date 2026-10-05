@@ -1,0 +1,55 @@
+@charset "UTF-8";
+nav button[data-page="juggler"]{font-size:11px;letter-spacing:-.25px;padding-right:6px}
+nav button[data-page="juggler"] span{width:24px}
+.juggler-selector .card-header{gap:16px;align-items:flex-start}
+.juggler-selector .kicker{margin-bottom:9px}
+.juggler-model-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;align-items:end}
+.juggler-model-toolbar .label{margin:4px 0 9px}
+.juggler-model-toolbar select{width:100%;max-width:640px}
+.juggler-reference-meta{display:grid;gap:5px;text-align:right;font-size:11px;color:var(--muted)}
+.juggler-reference-meta strong{color:var(--text);font-size:18px;font-weight:550}
+.juggler-reference-meta small{font-size:10px}
+.juggler-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px;border-top:1px solid var(--line);padding-top:18px}
+.juggler-tabs button{padding:11px 18px;border:1px solid var(--line);border-radius:7px;color:var(--muted);background:var(--bg);font-size:12px}
+.juggler-tabs button:hover{background:var(--hover);color:var(--text)}
+.juggler-tabs button[aria-selected="true"]{color:var(--green);background:var(--hover);border-color:var(--green)}
+.juggler-reference-card .kicker,.juggler-work-grid .kicker{margin-bottom:9px}
+.juggler-spec-table caption{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.juggler-spec-table table{font-variant-numeric:tabular-nums;font-size:13px}
+.juggler-spec-table td,.juggler-spec-table th{padding:17px 16px}
+.juggler-spec-table tbody th{position:static;background:transparent;color:var(--text);font-weight:550}
+.juggler-spec-table .juggler-rb{color:var(--green)}
+.juggler-spec-table small{font-size:10px;margin-left:3px;color:var(--muted)}
+.juggler-sources{display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;font-size:10px;border-top:1px solid var(--line);padding-top:15px;margin-top:20px;line-height:1.8}
+.juggler-sources span{margin-left:auto;color:var(--muted)}
+.juggler-all-specs summary,.juggler-assumptions summary{cursor:pointer;color:var(--text);font-size:13px;font-weight:550}
+.juggler-all-specs summary span{font-size:10px;color:var(--muted);margin-left:12px}
+.juggler-reference-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.juggler-reference-grid>section{min-width:0;border:1px solid var(--line);border-radius:8px;padding:17px}
+.juggler-reference-grid .card-header{align-items:flex-start;gap:10px}
+.juggler-reference-grid h3{line-height:1.6;margin:0;overflow-wrap:anywhere}
+.juggler-reference-grid .tag{flex-shrink:0}
+.juggler-reference-grid th,.juggler-reference-grid td{padding:10px 7px;font-size:11px}
+.juggler-work-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
+.juggler-work-grid>.card{min-width:0}
+.juggler-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 16px}
+.juggler-input-grid>div{min-width:0}
+.juggler-input-grid input{width:100%;font-variant-numeric:tabular-nums}
+.juggler-input-grid small{display:block;font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6}
+.juggler-assumptions{border-top:1px solid var(--line);margin-top:24px;padding-top:18px}
+.juggler-pending-action{border-top:1px solid var(--line);margin-top:24px;padding-top:19px;display:grid;gap:12px;justify-items:start}
+.juggler-pending-action span{font-size:11px;line-height:1.7;color:var(--muted)}
+.juggler-pending-action button:disabled{opacity:.65}
+.juggler-grape-result{display:grid;justify-items:center;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:36px 15px;margin:24px 0;font-size:11px;color:var(--muted)}
+.juggler-grape-result strong{font-size:39px;font-weight:500;color:var(--green);font-variant-numeric:tabular-nums}
+.juggler-grape-result small{font-size:10px}
+.juggler-method{margin-top:26px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:17px}
+.juggler-method p:last-child{margin-bottom:0}
+.juggler-probabilities{display:grid;gap:20px;padding:14px 0 10px}
+.juggler-probability-row{display:grid;grid-template-columns:50px minmax(30px,1fr) 50px;align-items:center;gap:15px;font-size:12px}
+.juggler-probability-row strong{font-size:21px;text-align:right;font-weight:500;color:var(--green);font-variant-numeric:tabular-nums}
+.juggler-probability-row small{font-size:11px;margin-left:4px;color:var(--muted)}
+.juggler-probability-track{height:8px;background:var(--bg);border:1px solid var(--line);border-radius:4px}
+@media(max-width:1150px){.juggler-work-grid,.juggler-reference-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.juggler-model-toolbar{grid-template-columns:1fr}.juggler-reference-meta{display:none}}
+@media(max-width:750px){nav button[data-page="juggler"]{font-size:0;padding:13px 4px}nav button[data-page="juggler"] span{font-size:23px;width:auto}.juggler-tabs{gap:5px}.juggler-tabs button{padding:10px;font-size:11px}.juggler-input-grid{grid-template-columns:1fr}.juggler-sources span{margin-left:0}.juggler-reference-card .card-header{align-items:flex-start;gap:12px}.juggler-reference-card h2{line-height:1.6}.juggler-spec-table td,.juggler-spec-table th{padding:13px 10px}.juggler-all-specs summary span{display:block;margin:8px 0 0}}

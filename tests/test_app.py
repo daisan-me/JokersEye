@@ -52,6 +52,21 @@ class StoreTests(unittest.TestCase):
         with closing(sqlite3.connect(path)) as db:
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM observations').fetchone()[0],1)
+    def test_base_sheet_columns_filters_and_delta_update(self):
+        row = {'date':'2024-03-01','seat':'1','model':'マイジャグラーV','games':7000,'bb':30,'rb':25,'combined':'1/127','net':1500,'rate':'unknown','payout_percent':108.2,'source_url':'https://min-repo.com/1/','published_at':'2024-03-02','fetched_at':'2026-10-03T00:00:00Z'}
+        self.store.collector.save_rows([row])
+        created = self.store.build_base_sheet('create')
+        self.assertEqual(created['status'],'created')
+        self.assertEqual(created['sheet']['columns'],server.BASE_SHEET_COLUMNS)
+        filtered = self.store.base_sheet_rows({'juggler':'juggler','games_min':'6000','combined_n_min':'120','payout_min':'108','offset':'0','limit':'100'})
+        self.assertEqual(filtered['total'],1)
+        self.assertEqual(filtered['rows'][0]['曜日'],'金曜日')
+        self.store.collector.save_rows([dict(row,date='2024-03-02',seat='2',model='SLOT TEST',combined=None,bb=None,rb=None,net=None,payout_percent=None)])
+        updated = self.store.build_base_sheet('update')
+        self.assertEqual(updated['addedRows'],1)
+        self.assertEqual(self.store.base_sheet_status()['rowCount'],2)
+        self.assertEqual(self.store.base_sheet_status()['firstDate'],'2024-03-01')
+        self.assertEqual([row['日付'] for row in self.store._read_base_sheet()], ['2024-03-01', '2024-03-02'])
     def test_untrusted_fields_remain_text(self):
         text=GOOD.replace('テスト機種','<script>alert(1)</script>')
         self.store.import_csv(text,'a.csv','test')
@@ -90,6 +105,22 @@ class ApiTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ex:
             urllib.request.urlopen(self.base+'/../app/server.py')
         self.assertEqual(ex.exception.code,404)
+
+    def test_fixed_floor_assets_and_registration(self):
+        with urllib.request.urlopen(self.base+'/fixed-floor.json') as response:
+            floor = json.load(response)
+        self.assertEqual(floor['name'], 'Numbered map 1.4 ex.Is-ID')
+        self.assertEqual(len(floor['faces']), 32)
+        self.assertEqual(sorted(tile['seatNumber'] for face in floor['faces'] for tile in face['tiles']), list(range(1, 311)))
+        self.assertFalse(floor['islandLabelsDisplayed'])
+        self.assertTrue(self.host.store.state()['mapRegistered'])
+        with urllib.request.urlopen(self.base+'/fixed-floor.js') as response:
+            self.assertIn(b'const FixedFloor', response.read())
+        with urllib.request.urlopen(self.base+'/fixed-floor-display.json') as response:
+            display = json.load(response)
+        self.assertEqual(display['source'], floor['name'])
+        self.assertEqual(display['baseTileSize'] * display['tileScale'], 10.75)
+        self.assertEqual(len(display['radialOutward']), 5)
 
 if __name__=='__main__':
     unittest.main()

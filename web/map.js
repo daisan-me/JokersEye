@@ -1,7 +1,6 @@
 'use strict';
 
-// The seat-number view deliberately keeps each number in the same cell.
-// Geographic coordinates are shown only when independently established.
+// Period assignments are joined by seat number to the immutable Numbered map 1.4 ex.Is-ID.
 const JokersMap = (() => {
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const day = value => value ? value.split('-').map(Number).join('/') : '未確認';
@@ -12,6 +11,7 @@ const JokersMap = (() => {
     for (const c of normalize(model)) hash = (Math.imul(hash, 31) + c.codePointAt(0)) >>> 0;
     return hash % 12;
   };
+  const palette = model => `model-color-${color(model)} ${normalize(model).includes('ジャグラー') ? 'juggler-model' : 'muted-model'}`;
   let root, request, data, periodId = '', selectedSeat = '', query = '', changedOnly = false, generation = 0;
   let mapView = 'machine', numberQuery = '';
   const histories = new Map();
@@ -19,6 +19,7 @@ const JokersMap = (() => {
   async function mount(element, api) {
     root = element;
     request = api;
+    await FixedFloor.load();
     await load(periodId ? {period: periodId} : {});
   }
 
@@ -67,7 +68,7 @@ const JokersMap = (() => {
       <div class="period-tabs" role="tablist" aria-label="配置が変わった日で区切った期間">${data.periods.map(v => `<button type="button" class="period-tab ${v.id === p?.id ? 'active' : ''}" role="tab" aria-selected="${v.id === p?.id}" tabindex="${v.id === p?.id ? '0' : '-1'}" data-period="${esc(v.id)}"><span>${label(v)}</span><small>${v.boundaryStatus === 'daily-confirmed' ? `${v.changeCount} 台の配置変更` : v.boundaryStatus === 'first-observation' ? '基準配置' : '変更日未確定・初確認日'}</small></button>`).join('')}</div>
       <p class="period-caption">終了日は含みません。配置変更の前後のログと告知から期間を設定しています。期間内でも記録のない日を選ぶと、当日のマップは「未確認」に切り替わります。</p>
       ${p ? activeMap(p) : `<div class="empty"><div class="symbol">◷</div><h2>${day(data.requestedDate)} の配置は未確認です</h2><p>この日付の台番―機種の対応を確認できるログがありません。上の期間から確認済みのマップを選択できます。</p></div>`}
-      <details class="original-floor"><summary>公開フロア図を開く · ${day(data.metadata.mapImageDate)} ごろ（推定）</summary><figure class="floor-figure">${sourceLink(data.metadata.mapPageUrl, 'DMMぱちタウンの掲載ページ')}<img src="/floor-map.webp" alt="ゴッサムシティの公開フロア図。過去各期間の配置図ではありません。"><figcaption>${esc(data.metadata.mapImageDateBasis)}</figcaption></figure><p>この図は選択した過去期間の配置を証明するものではありません。台番号の物理位置との照合は未完了です。</p></details>
+      <details class="original-floor"><summary>公開フロア図を開く · ${day(data.metadata.mapImageDate)} ごろ（推定）</summary><figure class="floor-figure">${sourceLink(data.metadata.mapPageUrl, 'DMMぱちタウンの掲載ページ')}<img src="/floor-map.webp" alt="ゴッサムシティの公開フロア図。過去各期間の配置図ではありません。"><figcaption>${esc(data.metadata.mapImageDateBasis)}</figcaption></figure><p>この公開図は選択した過去期間の配置を証明するものではありません。上のマップには現地確認済みの固定台番号図を使用しています。</p></details>
       ${coverage.gaps.length || coverage.missingReports ? `<details class="coverage-details"><summary>記録がない期間・未取得ログについて</summary><p>全台表を取得できていない公開ログ：${coverage.missingReports} 日。公開一覧自体に記録がない日も含め、欠落区間を跨ぐ配置継続は確定していません。</p><div class="coverage-gaps">${coverage.gaps.map(g => `<span>${day(g.from)}–${day(g.toExclusive)}（終了日を除く）</span>`).join('')}</div></details>` : ''}`;
 
     root.querySelectorAll('[data-map-view]').forEach(button => {
@@ -110,8 +111,8 @@ const JokersMap = (() => {
     root.querySelectorAll('[data-seat]').forEach(button => button.addEventListener('click', () => selectSeat(button.dataset.seat)));
     if (mapView === 'numbers') {
       root.querySelector('.period-summary .kicker').textContent = 'SEAT NUMBER MAP';
-      root.querySelector('.map-view-note strong').textContent = '台番号マップ（台番号順）';
-      root.querySelector('.machine-seat-grid').setAttribute('aria-label', '台番号マップ');
+      root.querySelector('.map-view-note strong').textContent = '台番号マップ（固定配置）';
+      root.querySelector('.physical-floor-svg').setAttribute('aria-label', '固定配置の台番号マップ。全310台。');
       root.querySelector('.machine-map-panel > .hint').textContent = '番号をクリックして選択できます。機種マップへ切り替えても、選択した番号と期間はそのままです。';
       root.querySelectorAll('.machine-seat').forEach(button => {
         const name = button.dataset.seat + '番台';
@@ -124,6 +125,7 @@ const JokersMap = (() => {
       root.querySelector('#map-search').value = query;
       applyFilter();
     }));
+    FixedFloor.bind(root);
     applyFilter();
     if (selectedSeat) selectSeat(selectedSeat);
   }
@@ -136,8 +138,8 @@ const JokersMap = (() => {
       <div class="map-evidence">${p.previousReportUrl ? sourceLink(p.previousReportUrl + '?kishu=all', `変更前 ${day(p.previousObservedDate)}`) : ''}${sourceLink(p.reportUrl + '?kishu=all', `期間開始 ${day(p.validFrom)}`)}${p.observedThrough !== p.validFrom ? sourceLink(p.lastReportUrl + '?kishu=all', `最終確認 ${day(p.observedThrough)}`) : ''}${p.announcements.map(a => sourceLink(a.url, `${a.matchKind === 'same-day' || !a.matchKind ? '同日の告知' : '変更候補区間の告知'}：${a.title}`)).join('')}</div>
       ${p.labelNotes?.length ? `<details class="coverage-details"><summary>掲載名の表記差・推定を含む台があります（${new Set(p.labelNotes.map(n => n.seat)).size} 台）</summary><p>下の機種名は比較用に統合した表示です。表記の揺れだけで台移動の期間を増やしていません。「推定」は機種同定の確定ではありません。</p>${p.labelNotes.map(n => `<p>${esc(n.seat)}番：${esc(n.rawModel)} → ${esc(n.model)} · ${n.status === 'inferred-name-variant' ? '推定' : '表記差'}（${n.days.length}日）<br><small>${esc(n.basis)}</small> ${sourceLink(n.reportUrl + '?num=' + n.seat, '元の掲載名')} ${sourceLink(n.evidenceUrl, '機種資料')}</p>`).join('')}</details>` : ''}
       <div class="map-toolbar toolbar"><label for="map-search">台番号・機種</label><input id="map-search" type="search" value="${esc(query)}" placeholder="例：152 / 北斗"><label class="changed-toggle"><input id="map-changed-only" type="checkbox" ${changedOnly ? 'checked' : ''}>変わった台だけ強調</label><span id="map-filter-count" class="hint"></span></div>
-      <div class="map-layout"><div class="machine-map-panel"><div class="map-view-note"><strong>台番号順の機種マップ</strong><span>物理位置は未確定 · 同じ番号は全期間で同じ表示位置</span></div><div class="machine-map-scroll"><div class="machine-seat-grid" aria-label="台番号ごとの機種配置">${data.seats.map(s => `<button type="button" class="machine-seat model-color-${color(s.model)} ${changed.has(s.seat) ? 'seat-changed' : ''}" data-seat="${esc(s.seat)}" title="${esc(s.seat)}番台 · ${esc(s.model)}${changed.has(s.seat) ? ' · この期間の開始時に配置変更' : ''}" aria-label="${esc(s.seat)}番台 ${esc(s.model)}"><span class="seat-number">${esc(s.seat)}</span><span class="seat-model">${esc((s.model || '未掲載').replace(/^(スマスロ\s*|パチスロ\s*|Lパチスロ\s*|Lスマスロ\s*)/,''))}</span></button>`).join('')}</div></div><p class="hint">枠のマークは前回の記録から機種が変わった台です。番号をクリックすると設置履歴を表示します。</p></div><section id="map-seat-detail" class="seat-detail" aria-label="選択台の設置履歴" aria-live="polite"><div class="seat-detail-empty"><div>◈</div><h3>台番号を選択</h3><p>当時の機種と、この台番号に入った機種の変遷がここに表示されます。</p></div></section></div>
-      <details class="machine-legend"><summary>この期間の機種一覧 · ${models.size} 機種</summary><div class="machine-model-list">${[...models].sort((a,b)=>b[1]-a[1]).map(([model,count]) => `<button type="button" class="model-color-${color(model)}" data-model="${esc(model)}"><span>${esc(model)}</span><strong>${count}台</strong></button>`).join('')}</div></details>
+      <div class="map-layout"><div class="machine-map-panel"><div class="map-view-note"><strong>固定配置の機種マップ</strong><span>Numbered map 1.4 ex.Is-ID · 全310台</span></div>${FixedFloor.render(data, mapView, palette)}<p class="hint">枠のマークは前回の記録から機種が変わった台です。番号をクリックすると設置履歴を表示します。</p></div><section id="map-seat-detail" class="seat-detail" aria-label="選択台の設置履歴" aria-live="polite"><div class="seat-detail-empty"><div>◈</div><h3>台番号を選択</h3><p>当時の機種と、この台番号に入った機種の変遷がここに表示されます。</p></div></section></div>
+      <details class="machine-legend"><summary>この期間の機種一覧 · ${models.size} 機種</summary><div class="machine-model-list">${[...models].sort((a,b)=>b[1]-a[1]).map(([model,count]) => `<button type="button" class="${palette(model)}" data-model="${esc(model)}"><span>${esc(model)}</span><strong>${count}台</strong></button>`).join('')}</div></details>
       ${p.changes.length ? `<details class="map-changes"><summary>${p.boundaryStatus === 'daily-confirmed' ? day(p.validFrom) + ' の' : '前回確認からの'}配置変更 · ${p.changes.length} 台</summary><div class="change-counts">${p.modelCountChanges.map(c => `<span>${esc(c.model)} <strong>${c.before} → ${c.after}台</strong></span>`).join('') || '<p>機種別の台数は同じで、台番号への割当が変わっています。</p>'}</div><div class="table-scroll"><table><thead><tr><th>台番号</th><th>以前の機種</th><th>この期間の機種</th></tr></thead><tbody>${p.changes.map(c => `<tr><td><button class="change-seat" data-seat="${esc(c.seat)}">${esc(c.seat)}</button></td><td>${esc(c.before || '未掲載')}</td><td>${esc(c.after || '未掲載')}</td></tr>`).join('')}</tbody></table></div><p class="hint">同じ機種の個体識別は公開表にありません。台番号への機種割当の変更を表示しています。</p></details>` : ''}`;
   }
 
@@ -147,7 +149,7 @@ const JokersMap = (() => {
     let count = 0;
     const seats = new Map(data.seats.map(s => [s.seat, s]));
     root.querySelectorAll('.machine-seat').forEach(button => {
-      const seat = seats.get(button.dataset.seat);
+      const seat = seats.get(button.dataset.seat) || {seat: button.dataset.seat, model: ''};
       const match = (!q || (number ? seat.seat === number : mapView === 'machine' && normalize(seat.model).toLocaleLowerCase().includes(q))) && (mapView === 'numbers' || !changedOnly || changed.has(seat.seat));
       button.classList.toggle('dimmed', !match);
       if (match) count++;
@@ -177,6 +179,7 @@ const JokersMap = (() => {
 
   async function selectSeat(number) {
     selectedSeat = number;
+    FixedFloor.select(number, root);
     root.querySelectorAll('.machine-seat').forEach(b => {
       b.classList.toggle('selected', b.dataset.seat === number);
       b.setAttribute('aria-pressed', String(b.dataset.seat === number));
@@ -184,17 +187,17 @@ const JokersMap = (() => {
     const target = root.querySelector('#map-seat-detail');
     const s = data.seats.find(s => s.seat === number), current = data.period;
     if (mapView === 'numbers') {
-      target.innerHTML = `<div class="kicker">SEAT NUMBER</div><h3>${esc(number)}番台</h3><p>${label(current)}</p><p class="hint">物理位置は未確定です。台番号順の同じセルを両マップで共有しています。</p><button type="button" class="secondary" id="view-seat-model">この台の機種・設置履歴を見る →</button>`;
+      target.innerHTML = `<div class="kicker">SEAT NUMBER</div><h3>${esc(number)}番台</h3><p>${label(current)}</p><p class="hint">現地確認済みの固定位置です。台番号マップと機種マップで同じ位置を共有しています。</p><button type="button" class="secondary" id="view-seat-model">この台の機種・設置履歴を見る →</button>`;
       target.querySelector('#view-seat-model').addEventListener('click', () => switchView('machine'));
       return;
     }
     const stamp = generation;
-    target.innerHTML = `<div class="kicker">SEAT HISTORY</div><h3>${esc(number)}番台</h3><div class="seat-current model-color-${color(s?.model)}"><strong>${esc(s?.model || 'この期間は未掲載')}</strong><span>${label(current)}</span></div><p>設置履歴を読み込み中…</p>`;
+    target.innerHTML = `<div class="kicker">SEAT HISTORY</div><h3>${esc(number)}番台</h3><div class="seat-current ${palette(s?.model)}"><strong>${esc(s?.model || 'この期間は未掲載')}</strong><span>${label(current)}</span></div><p>設置履歴を読み込み中…</p>`;
     try {
       if (!histories.has(number)) histories.set(number, request('map/seat-history?seat=' + encodeURIComponent(number)).catch(error => { histories.delete(number); throw error; }));
       const result = await histories.get(number);
       if (stamp !== generation || selectedSeat !== number || !target.isConnected) return;
-      target.innerHTML = `<div class="kicker">SEAT HISTORY</div><h3>${esc(number)}番台</h3><div class="seat-current model-color-${color(s?.model)}"><strong>${esc(s?.model || 'この期間は未掲載')}</strong><span>${label(current)}</span></div>${s ? sourceLink(s.source, 'この期間の台番表') : ''}${s?.labelNotes?.length ? `<p class="hint">掲載名の統合を含みます：${s.labelNotes.map(n => `${esc(n.rawModel)}（${n.status === 'inferred-name-variant' ? '同定は推定' : '表記差'}）`).join('、')}</p>` : ''}<h4>この台番号の機種の変遷</h4><div class="seat-timeline">${[...result.entries].reverse().map(e => `<article class="seat-history-entry ${e.validFrom <= current.validFrom && current.validFrom < e.validToExclusive ? 'current' : ''}"><button type="button" data-jump="${esc(e.periodId)}">${label(e)}</button><strong>${esc(e.model || '未掲載')}</strong><small>${e.reportCount}日確認${e.boundaryStatus === 'after-gap' ? ' · 前にログ欠落あり' : ''}${e.gaps?.length ? ' · 期間内に未確認日あり' : ''}${e.labelNotes?.some(n => n.status === 'inferred-name-variant') ? ' · 掲載名の同定に推定あり' : ''}</small>${sourceLink(e.reportUrl, '根拠')}</article>`).join('')}</div>`;
+      target.innerHTML = `<div class="kicker">SEAT HISTORY</div><h3>${esc(number)}番台</h3><div class="seat-current ${palette(s?.model)}"><strong>${esc(s?.model || 'この期間は未掲載')}</strong><span>${label(current)}</span></div>${s ? sourceLink(s.source, 'この期間の台番表') : ''}${s?.labelNotes?.length ? `<p class="hint">掲載名の統合を含みます：${s.labelNotes.map(n => `${esc(n.rawModel)}（${n.status === 'inferred-name-variant' ? '同定は推定' : '表記差'}）`).join('、')}</p>` : ''}<h4>この台番号の機種の変遷</h4><div class="seat-timeline">${[...result.entries].reverse().map(e => `<article class="seat-history-entry ${e.validFrom <= current.validFrom && current.validFrom < e.validToExclusive ? 'current' : ''}"><button type="button" data-jump="${esc(e.periodId)}">${label(e)}</button><strong>${esc(e.model || '未掲載')}</strong><small>${e.reportCount}日確認${e.boundaryStatus === 'after-gap' ? ' · 前にログ欠落あり' : ''}${e.gaps?.length ? ' · 期間内に未確認日あり' : ''}${e.labelNotes?.some(n => n.status === 'inferred-name-variant') ? ' · 掲載名の同定に推定あり' : ''}</small>${sourceLink(e.reportUrl, '根拠')}</article>`).join('')}</div>`;
       target.querySelectorAll('[data-jump]').forEach(button => button.addEventListener('click', () => switchPeriod(button.dataset.jump)));
     } catch (error) {
       if (stamp === generation && selectedSeat === number && target.isConnected) {

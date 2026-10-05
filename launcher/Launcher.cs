@@ -14,7 +14,7 @@ using Microsoft.Web.WebView2.WinForms;
 [assembly: AssemblyTitle("Joker's eye")]
 [assembly: AssemblyProduct("Joker's eye")]
 [assembly: AssemblyDescription("Gotham City research workspace")]
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.3.1.0")]
 
 class Launcher {
     public const string AppId = "JokersEye.Desktop";
