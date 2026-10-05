@@ -192,7 +192,7 @@ class Collector:
             self.pending={'id':token,'url':url}; self.answer=None; self.event.clear()
         if not self.event.wait(75):
             with self.lock: self.pending=None
-            raise RuntimeError('公開ページを読む専用ブラウザーの応答待ちで停止しました。EXEから起動してください。')
+            raise RuntimeError('公開ページを読む専用ブラウザーの応答待ちで停止しました。Joker’s eyeのデスクトップウィンドウから起動してください。')
         with self.lock: result=self.answer; self.pending=None
         if self.cancelled.is_set(): raise RuntimeError('取得を停止しました。')
         if not result or result.get('error'): raise RuntimeError((result or {}).get('error','ブラウザー取得に失敗しました。'))

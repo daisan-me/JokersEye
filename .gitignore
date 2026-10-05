@@ -1,6 +1,15 @@
 __pycache__/
+*.pyc
+.venv/
 dev-data/
+data/
 *.sqlite3
 *.log
-desktop-session-*.json
+desktop-session*.json
+desktop.lock
 backups/
+.env
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

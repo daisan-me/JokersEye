@@ -28,4 +28,4 @@ document.querySelector('.brand').addEventListener('click',e=>{e.preventDefault()
 document.querySelector('#today').textContent=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
 document.querySelector('#shutdown').addEventListener('click',async()=>{try{await api('shutdown',{});stopped=true;document.querySelector('#connection').textContent='終了しました';notice('アプリを終了しました。このウィンドウを閉じてください。');document.querySelectorAll('button').forEach(b=>b.disabled=true);window.chrome?.webview?.postMessage('close');}catch(ex){showError(ex);}});
 setInterval(()=>{if(!stopped)api('heartbeat',{}).catch(()=>{document.querySelector('#connection').textContent='接続が切れました';});},20000);
-refresh().then(()=>{api('heartbeat',{}).catch(showError);navigate(page);}).catch(ex=>{document.querySelector('#connection').textContent='接続できません';notice(ex.message+' Joker’s eye.exeから開き直してください。');});
+refresh().then(()=>{api('heartbeat',{}).catch(showError);navigate(page);}).catch(ex=>{document.querySelector('#connection').textContent='接続できません';notice(ex.message+' Joker’s eyeを開き直してください。');});

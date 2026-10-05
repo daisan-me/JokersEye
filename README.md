@@ -1,20 +1,23 @@
-# Joker's eye 1.0
+# Joker's eye 1.1
 
-ゴッサムシティの観測データと店内配置を研究する、Windows向けローカルアプリです。
+ゴッサムシティの観測データと店内配置を研究する、Windows / macOS 共通のローカルアプリです。
 
-## 起動
+## セットアップと起動
 
-ZIPをすべて展開し、`Joker's eye.exe` をダブルクリックします。Pythonのインストールは不要です。WebView2を内蔵した専用のWindowsウィンドウで開きます。店舗資料などの外部リンクだけを標準ブラウザで開きます。
+必要なもの：Python 3.10 以上（推奨 3.12。`.python-version` 参照）と、OS 標準の WebView（Windows 10/11 は Microsoft Edge WebView2 Runtime、macOS は WKWebView で追加インストール不要）。Windows で WebView2 Runtime がない場合は[Microsoft公式配布ページ](https://developer.microsoft.com/microsoft-edge/webview2/)から Evergreen Runtime を入れてください。
 
-必要環境：Windows 10/11 x64、.NET Framework 4.6.2以降、Microsoft Edge WebView2 Runtime。Runtimeがない場合は[Microsoft公式配布ページ](https://developer.microsoft.com/microsoft-edge/webview2/)からEvergreen Runtimeをインストールしてください。WebView2 SDK 1.0.3856.49のライセンスとNOTICEを `licenses` に同梱しています。
+```bash
+git pull
+python launch.py
+```
 
-左下の「アプリを終了」またはウィンドウの×で専用サーバーも停止します。最小化中も接続を維持します。二重起動時は既存ウィンドウを手前に表示します。起動ごとに空きローカルポートと独立したセッションを使用します。
+Windows で Python が `python` で起動しない場合は `py launch.py` を使います。初回だけ `.venv` を作り `requirements.txt` の依存（pywebview）をインストールします。2回目以降はすぐに起動します。Windows ではコンソールなしで開く `launch.pyw` をダブルクリックしても起動できます（初回は一度 `python launch.py` で依存を入れてください）。
 
-## タスクバーへのピン留め
+アプリの本体は `app/server.py`（ローカルサービス）と `app/desktop.py`（専用ウィンドウ）です。ブラウザーで直接確認したい場合は `python app/server.py --open --port 0` でも起動できます。開発者向けの診断は `python app/desktop.py --diagnostics <出力ファイル>` です（接続表示・版数・台番号マップの描画を確認して終了します）。
 
-旧版で登録したChromeのピンは一度「タスクバーからピン留めを外す」を選びます。0.3.3のEXEを開き、専用アイコンを右クリックして「タスクバーにピン留めする」を選んでください。以後はそのアイコンからJoker's eyeが起動します。展開先を移動するとピンの参照先が変わるため、利用するフォルダーを決めてからピン留めしてください。
+左下の「アプリを終了」またはウィンドウの×で専用サーバーも停止します。最小化中も接続を維持します。二重起動時は既存ウィンドウを手前に表示します。起動ごとに空きローカルポートと独立したセッションを使用します。外部リンクだけを標準ブラウザで開きます。
 
-プロセスとウィンドウのAppUserModelIDを `JokersEye.Desktop` に設定し、再起動先とアイコンをEXEに登録しています。[Windowsのアプリ識別の仕様](https://learn.microsoft.com/windows/win32/shell/appids)に従い、ショートカットにも同じ識別子を設定します。
+1.0 から 1.1 への変更点は [CHANGELOG.md](CHANGELOG.md) を参照してください。1.0 の Windows 専用 EXE 版（C# ランチャーと同梱 Python）は git の履歴（タグ `v1.0.0-windows-exe`）に残しています。保存先が同じため、1.0 のデータはそのまま引き継がれます（Windows）。
 
 初回起動時の稼働・差枚の観測データは0件です。別途、公開フロア図と、みんレポの公開日別台番表から作った機種配置履歴を同梱しています。対象の公開一覧は2023-04-27〜2026-09-29です。取得できた日数・期間数・最終確認日・未取得日は「機種マップ」に表示します。全台表を読めない日を配置確定済みとして補完しません。
 
@@ -26,11 +29,11 @@ ZIPをすべて展開し、`Joker's eye.exe` をダブルクリックします�
 
 「データ管理」の「本日までのデータをスクレイプ」で取得します。初回は2023/4/27以降、次回は数値データの最終取得日から日本時間の本日までを追加し、過去の失敗・未掲載日も再確認します。「初回の取得範囲を指定」で開始日・終了日を指定できます。重複は日付・台番号の主キーで防止し、手動で取り込んだ観測は上書きしません。終了や通信失敗までの結果はSQLiteとCSVに残り、次回再開できます。
 
-アプリに組み込んだ通常のWebView2ブラウザーで公開ページを読みます。日別レポートを先に開き、その本文にある正規の全台データ一覧リンクをたどります。日付・店舗名・掲載年月日・台番号を検証してから保存します。取得ブラウザーは画面に表示され、閉じると取得を停止します。OpenAI API・Codex・AIモデルは呼び出さないため、通常の更新でAIトークンは消費しません。全台表は逐次取得で1秒以上、BB/RBの機種別ページは3秒以上の間隔を設けます。HTTP 200の空ページだけは3秒待って通常の再読み込みを一度行います。401/403/429、認証・CAPTCHA等に対して回避処理は行いません。データ提供サイトの変更や閲覧制限がある場合、取得できるとは保証しません。
+アプリに組み込んだ通常のWebView（Windows は WebView2、macOS は WKWebView）で公開ページを読みます。この取得ブラウザーはアプリ本体と同じプロセスで動き、データフォルダーの `WebView2` に Cookie を保存します（公開サイトの確認用スクリプトが通るために必要です）。日別レポートを先に開き、その本文にある正規の全台データ一覧リンクをたどります。日付・店舗名・掲載年月日・台番号を検証してから保存します。取得ブラウザーは画面に表示され、閉じると取得を停止します。OpenAI API・Codex・AIモデルは呼び出さないため、通常の更新でAIトークンは消費しません。全台表は逐次取得で1秒以上、BB/RBの機種別ページは3秒以上の間隔を設けます。HTTP 200の空ページだけは3秒待って通常の再読み込みを一度行います。401/403/429、認証・CAPTCHA等に対して回避処理は行いません。データ提供サイトの変更や閲覧制限がある場合、取得できるとは保証しません。
 
 通常の取得対象はみんレポの当日全台表に公開された機種・台番号・G数・差枚・出率です。「BB・RBも取得」を選択すると、全台表にある各機種へのリンクを追加巡回し、機種別の台番表からBB/RBをまとめて取得します。個別台を一台ずつ巡回する必要はありません。既に全台表を取得した日でも、BB/RB追加巡回が未完了なら対象に含めます。BB/RBの出典はCSVのbonus_source_urlに残します。機種数に応じて取得時間が増えるため、通常取得ではこのチェックは外れています。差枚の「−」も欠測です。0を補完せず空欄で保存し、欠測件数を表示します。貸区分は当日の根拠がないためunknownです。「complete」は番号の全台網羅を意味し、全数値項目の網羅ではありません。
 
-CSVは `%LOCALAPPDATA%\JokersEye\exports` に保存され、アプリからもダウンロードできます。`gotham-city-開始日_終了日.csv` が取得済み数値データ、`coverage-開始日_終了日.csv` が全暦日の取得状況です。公開一覧にない日を休業日や全台0とは断定しません。既存の機種名だけのキャッシュは数値データ取得済みとは扱いません。
+CSVはデータフォルダー（下記）の `exports` に保存され、アプリからもダウンロードできます。`gotham-city-開始日_終了日.csv` が取得済み数値データ、`coverage-開始日_終了日.csv` が全暦日の取得状況です。公開一覧にない日を休業日や全台0とは断定しません。既存の機種名だけのキャッシュは数値データ取得済みとは扱いません。
 
 ## マップ操作
 
@@ -53,7 +56,7 @@ DMMぱちタウンの新台・増台・入替告知も収録し、確認した�
 - UTF-8 CSVの検証・一括取込と日付別一覧。出典を取込履歴に保存。
 - ミッドナイト / ライトテーマと研究メモの保存。
 - SQLiteの整合したバックアップ作成。
-- 独自PNG / 多解像度ICO、起動EXE、Python 3.12.10同梱。
+- 独自PNG / 多解像度ICO。Windows / macOS 共通の専用ウィンドウ（pywebview）。
 
 機種別の設定推測、定時の無操作更新、島形状の編集、日次の機種ブロック計算、AI学習・予測は次の開発段階です。同梱の履歴を参照する通常の動作はオフラインです。
 
@@ -73,23 +76,33 @@ date,seat,model,games,bb,rb,net,rate
 
 ## 保存先・更新
 
-データは `%LOCALAPPDATA%\JokersEye\jokers-eye.sqlite3`、バックアップは同フォルダーの `backups`、起動・通信ログは `application.log` です。ログにCSV本文・認証トークンは記録しません。アプリを終了してから新しいZIPを別フォルダーへ展開すると、同じデータを使用します。アプリフォルダーの削除では観測データは削除されません。
+データはデータフォルダーの `jokers-eye.sqlite3`、バックアップは同フォルダーの `backups`、起動・通信ログは `application.log` です。ログにCSV本文・認証トークンは記録しません。
+
+| OS | データフォルダー |
+| --- | --- |
+| Windows | `%LOCALAPPDATA%\JokersEye`（1.0 と同じ） |
+| macOS | `~/Library/Application Support/JokersEye` |
+| Linux | `~/.local/share/JokersEye` |
+
+環境変数 `JOKERS_EYE_DATA` または `--data <フォルダー>` で変更できます。アプリを終了してから `git pull` で更新すると、同じデータを使用します。リポジトリフォルダーの削除では観測データは削除されません。Windows と macOS の間でデータを移す場合は、アプリを終了して `jokers-eye.sqlite3` をコピーしてください（WALファイルが残っている場合は混在させないでください）。
 
 バックアップから復元する場合は、アプリを終了して既存データフォルダー全体を別名で退避したうえで、新しいデータフォルダーにバックアップを `jokers-eye.sqlite3` として配置します。古いWALファイルと混在させないでください。
 
-`Create shortcut.ps1` は任意のデスクトップ・スタートメニューショートカット作成用です。既存のJoker's eye用ショートカットは現在のEXEへ更新し、アプリ識別子も登録します。実行する場合は展開先を移動しないでください。コード署名・自動更新は未対応です。
+コード署名・自動更新は未対応です。
 
 ## 構成と開発
 
-`app/server.py`: Python標準ライブラリによるHTTP / SQLite。`web/map.js`: 期間選択と機種マップ。`web/map-history.json`: 根拠URL・日付・台番範囲・差分・欠落を持つ配置履歴。`launcher/Launcher.cs`: Windows起動ランチャー。`build.ps1`: アイコン変換とランチャービルド。`tools/collect_map_history.py`: 公開資料の収集と期間生成。`assets/`: アイコン原画と生成記録。
+`app/server.py`: Python標準ライブラリによるHTTP / SQLite。`web/map.js`: 期間選択と機種マップ。`web/map-history.json`: 根拠URL・日付・台番範囲・差分・欠落を持つ配置履歴。`app/desktop.py`: 専用ウィンドウと公開データ取得ブラウザー（Windows / macOS 共通）。`app/platform_support.py`: OS ごとの差（データフォルダー、エラー表示、外部ブラウザー）。`launch.py`: 仮想環境の準備と起動。`tools/collect_map_history.py`: 公開資料の収集と期間生成。`assets/`: アイコン原画と生成記録。
 
-```powershell
-.\runtime\python.exe -m unittest discover -s tests -v
-.\runtime\python.exe app\server.py --data .\dev-data --port 18764 --open
-powershell -File .\build.ps1
+```bash
+python -m unittest discover -s tests -v
+node tests/test_floor_plan.cjs
+python app/desktop.py --data dev-data
+python app/server.py --data dev-data --port 18764 --open
 ```
 
-開発時にもPython追加パッケージは不要です。APIは127.0.0.1だけにバインドし、起動ごとのトークンを必須とします。通常の通信では外部サービスを使いません。`runtime/LICENSE.txt` は同梱Pythonのライセンスです。
+
+サーバー・スクレイパー・テストはPython標準ライブラリだけで動きます（追加パッケージは専用ウィンドウの pywebview のみ）。APIは127.0.0.1だけにバインドし、起動ごとのトークンを必須とします。通常の通信では外部サービスを使いません。
 
 ## 参考と設計方針
 

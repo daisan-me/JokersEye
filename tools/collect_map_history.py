@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -82,7 +83,7 @@ class Fetcher:
         self.lock = threading.Lock()
         self.next_request = 0
         self.stopped = threading.Event()
-        self.transport = "powershell" if transport == "auto" and os.name == "nt" else transport
+        self.transport = "powershell" if transport == "auto" and os.name == "nt" and shutil.which("powershell.exe") else ("urllib" if transport == "auto" else transport)
 
     def download(self, url):
         if self.transport == "powershell":

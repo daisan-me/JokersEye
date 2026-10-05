@@ -14,21 +14,20 @@ import shutil
 import socket
 import sys
 import sqlite3
-import subprocess
 import threading
 import time
 import unicodedata
 import urllib.request
-import webbrowser
 from contextlib import contextmanager, closing
 from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scraper import Collector
+from platform_support import default_data_dir, launch_browser, show_error
 
 APP = "jokers-eye"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "web"
 START = "2023-04-27"
@@ -293,14 +292,6 @@ class Store:
             source.backup(dest)
         return str(target)
 
-def launch_browser(url):
-    candidates=[Path(os.environ.get("PROGRAMFILES", "C:/Program Files"))/"Google/Chrome/Application/chrome.exe",Path(os.environ.get("PROGRAMFILES(X86)","C:/Program Files (x86)"))/"Microsoft/Edge/Application/msedge.exe"]
-    for browser in candidates:
-        if browser.exists():
-            subprocess.Popen([str(browser),"--app="+url,"--window-size=1380,920"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-            return
-    webbrowser.open(url)
-
 class Host(ThreadingHTTPServer):
     daemon_threads=True
     allow_reuse_address=False
@@ -315,6 +306,7 @@ class Host(ThreadingHTTPServer):
         self.store=store
         self.token=secrets.token_urlsafe(32)
         self.last_seen=time.monotonic()
+        self.focus_requested=threading.Event()
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
@@ -348,7 +340,7 @@ class Handler(BaseHTTPRequestHandler):
         path=urlsplit(self.path).path
         if path.startswith("/api/"):
             if not self.allowed():
-                return self.reply({"error":"アプリをEXEから開き直してください。"},403)
+                return self.reply({"error":"Joker's eyeを起動し直してください。"},403)
             if path=="/api/state":
                 return self.reply(self.server.store.state())
             if path=="/api/scrape/status":
@@ -419,6 +411,9 @@ class Handler(BaseHTTPRequestHandler):
                 result=self.server.store.collector.browser_result(payload)
             elif path=="/api/backup":
                 result={"path":self.server.store.backup()}
+            elif path=="/api/focus":
+                self.server.focus_requested.set()
+                result={"ok":True}
             elif path=="/api/heartbeat":
                 self.server.last_seen=time.monotonic()
                 result={"ok":True}
@@ -438,7 +433,7 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--port",type=int,default=18763)
-    parser.add_argument("--data",default=os.environ.get("JOKERS_EYE_DATA",str(Path(os.environ.get("LOCALAPPDATA",str(ROOT/"data")))/"JokersEye")))
+    parser.add_argument("--data",default=os.environ.get("JOKERS_EYE_DATA",str(default_data_dir(ROOT))))
     parser.add_argument("--open",action="store_true")
     parser.add_argument("--session",default="")
     args=parser.parse_args()
@@ -488,8 +483,5 @@ if __name__=="__main__":
         main()
     except Exception as ex:
         logging.exception("Startup failed")
-        if os.name=="nt":
-            import ctypes
-            ctypes.windll.user32.MessageBoxW(0,str(ex),"Joker's eye — 起動エラー",16)
-        else:
-            raise
+        show_error("Joker's eye — 起動エラー",str(ex))
+        raise SystemExit(1)
