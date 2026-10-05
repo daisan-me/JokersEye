@@ -13,6 +13,8 @@ python launch.py
 
 Windows で Python が `python` で起動しない場合は `py launch.py` を使います。初回だけ `.venv` を作り `requirements.txt` の依存（pywebview）をインストールします。2回目以降はすぐに起動します。Windows ではコンソールなしで開く `launch.pyw` をダブルクリックしても起動できます（初回は一度 `python launch.py` で依存を入れてください）。
 
+macOS ではデスクトップ用のアプリを作れます：`python3 tools/make_mac_app.py`（`Joker's eye.app` を作成。このリポジトリのフォルダーを動かしたら再実行してください）。
+
 アプリの本体は `app/server.py`（ローカルサービス）と `app/desktop.py`（専用ウィンドウ）です。ブラウザーで直接確認したい場合は `python app/server.py --open --port 0` でも起動できます。開発者向けの診断は `python app/desktop.py --diagnostics <出力ファイル>` です（接続表示・版数・台番号マップの描画を確認して終了します）。
 
 左下の「アプリを終了」またはウィンドウの×で専用サーバーも停止します。最小化中も接続を維持します。二重起動時は既存ウィンドウを手前に表示します。起動ごとに空きローカルポートと独立したセッションを使用します。外部リンクだけを標準ブラウザで開きます。
