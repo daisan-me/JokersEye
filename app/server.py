@@ -487,8 +487,13 @@ class Host(ThreadingHTTPServer):
         self.versions=VersionManager(store.folder,ROOT,VERSION,store.copy_into)
 
 class Handler(BaseHTTPRequestHandler):
+    QUIET_PATHS = {"/api/scrape/browser-task", "/api/scrape/browser-result", "/api/scrape/status", "/api/heartbeat"}
+
     def log_message(self, fmt, *args):
-        logging.info("%s %s",self.command,urlsplit(self.path).path)
+        # The six source-browser windows poll many times a second; record only other requests.
+        path = urlsplit(self.path).path
+        if path not in self.QUIET_PATHS:
+            logging.info("%s %s",self.command,path)
 
     def reply(self, data, status=200, mime="application/json; charset=utf-8", extra_headers=None):
         raw=json.dumps(data,ensure_ascii=False).encode() if isinstance(data,(dict,list)) else data
@@ -533,7 +538,11 @@ class Handler(BaseHTTPRequestHandler):
             if path=="/api/scrape/status":
                 return self.reply(self.server.store.collector.status())
             if path=="/api/scrape/browser-task":
-                return self.reply(self.server.store.collector.browser_task())
+                try:
+                    wait=float(parse_qs(urlsplit(self.path).query).get("wait",["0"])[0])
+                except ValueError:
+                    wait=0.0
+                return self.reply(self.server.store.collector.browser_task(wait))
             if path=="/api/gdb/status":
                 try:
                     return self.reply(self.server.store.gdb_status())

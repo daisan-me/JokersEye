@@ -11,6 +11,7 @@ import urllib.request
 spec = importlib.util.spec_from_file_location('server', Path(__file__).resolve().parents[1] / 'app/server.py')
 server = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(server)
+import scraper
 from scraper import parse_report, parse_bonuses, bonus_targets
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'min-repo-bonuses.json'
@@ -106,6 +107,21 @@ class BonusCompletionTests(unittest.TestCase):
         self.assertEqual(self.collector.progress['state'],'failed')
         self.assertEqual(self.collector.fetch.call_count,1)
         self.assertEqual(self.collector.status()['summary']['missingBonuses'],310)
+
+    def test_restriction_on_a_model_page_stops_the_other_windows(self):
+        self.collector.cache_bonus_targets(self.sources[REPORT+'?kishu=all'],DAY,REPORT,self.rows)
+        original=self.collector.fetch
+        def fetch(url, **kwargs):
+            if 'kishu=' in url:
+                self.calls.append(url)
+                raise RuntimeError('公開サイトが取得を制限しました（HTTP 429）。')
+            return original(url, **kwargs)
+        self.collector.fetch=fetch
+        self.run_repair()
+        self.assertEqual(self.collector.progress['state'],'failed')
+        model_pages=[url for url in self.calls if 'kishu=' in url]
+        self.assertTrue(1<=len(model_pages)<=scraper.BROWSER_WINDOWS,len(model_pages))  # only the pages already in flight
+        self.assertFalse([url for url in self.calls if 'num=' in url])  # no individual-seat fallback
 
     def test_conflicting_saved_count_is_not_mixed(self):
         row=self.rows[0]

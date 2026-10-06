@@ -29,6 +29,11 @@ APP_TITLE = "Joker's eye"
 APP_ID = "JokersEye.Desktop"
 SOURCE_TITLE = "Joker's eye · 公開データ取得ブラウザー"
 SOURCE_HOST = "min-repo.com"
+# User decision (2026-10-07): 6 windows, each starting at most one page every 1.5 seconds,
+# so at most 240 pages a minute (the collector also caps the overall rate).
+SOURCE_WINDOWS = 6
+PAGE_CYCLE = 1.5
+CHECK_INTERVAL = 0.1  # how often a window checks whether the requested table is ready
 ROOT = server.ROOT
 
 EXTERNAL_LINK_JS = """(()=>{if(window.__jokerExternal)return;window.__jokerExternal=true;
@@ -131,32 +136,36 @@ class Bridge:
         return open_external(url)
 
 
-class SourceBrowser:
-    """Visible ordinary browser window that renders public pages for the collector.
+class SourceWindow:
+    """One visible ordinary browser window that renders public pages for the collector.
 
     It never exports cookies/tokens, never works around access restrictions
     (HTTP 401/403/429, CAPTCHA, authentication) and only visits https://min-repo.com.
     """
+    LOG_LOCK = threading.Lock()
 
-    def __init__(self, webview, client, folder):
-        self.webview, self.client, self.folder = webview, client, Path(folder)
+    def __init__(self, webview, client, folder, index=0, stop_event=None):
+        self.webview, self.client, self.folder, self.index = webview, client, Path(folder), index
         self.window = None
         self.loaded = threading.Event()
-        self.busy = False
         self.disposed = False
         self.last_task = None
-        self.stop_event = threading.Event()
+        self.stop_event = stop_event or threading.Event()
 
     def log(self, message):
         try:
-            with open(self.folder / "source-browser.log", "a", encoding="utf-8") as file:
-                file.write(time.strftime("%Y-%m-%dT%H:%M:%S ") + message + "\n")
+            with self.LOG_LOCK, open(self.folder / "source-browser.log", "a", encoding="utf-8") as file:
+                file.write(time.strftime("%Y-%m-%dT%H:%M:%S ") + "[%d] " % (self.index + 1) + message + "\n")
         except OSError:
             pass
 
     def ensure_window(self):
         if self.window is None:
-            self.window = self.webview.create_window(SOURCE_TITLE, html="<!doctype html><title></title>", width=1000, height=750)
+            # Tile the windows 3 x 2 so that none hides another (a fully covered page may be throttled).
+            column, row = self.index % 3, self.index // 3
+            self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, SOURCE_WINDOWS),
+                                                     html="<!doctype html><title></title>", width=620, height=470,
+                                                     x=20 + column * 630, y=20 + row * 500)
             self.window.events.loaded += lambda: self.loaded.set()
             self.window.events.closing += self.on_closing
         else:
@@ -201,40 +210,46 @@ class SourceBrowser:
             self.log("close-window " + type(ex).__name__)
 
     def run(self):
-        while not self.stop_event.wait(0.75):
-            if self.busy or self.disposed:
-                continue
-            self.busy = True
+        while not self.stop_event.is_set() and not self.disposed:
             try:
-                self.poll()
+                started = self.poll()
             except Exception as ex:
                 self.log("poll-error " + type(ex).__name__ + ": " + str(ex))
-            finally:
-                self.busy = False
+                started = None
+            if started is None:
+                self.stop_event.wait(0.2)
+            else:  # at most one page every PAGE_CYCLE seconds per window
+                self.stop_event.wait(max(0.0, started + PAGE_CYCLE - time.monotonic()))
 
     def poll(self):
+        """Read one page if the collector has one. Returns when that page was started, or None."""
         try:
-            task = self.client.request("scrape/browser-task")
+            task = self.client.request("scrape/browser-task?wait=1")
         except (OSError, ValueError):
-            return
+            return None
         # The collector reports `active` until the run (including the CSV sync) ends.
         if task.get("active") is False and self.window is not None:
             self.close_window()
         if "id" not in task or task["id"] == self.last_task:
-            return
+            return None
         task_id, error = task["id"], None
         self.last_task = task_id
+        started = time.monotonic()
         try:
             html = self.fetch(task)
         except Exception as ex:
             html, error = None, str(ex)
         if self.disposed:
-            return
+            return None
         payload = {"id": task_id, "html": html} if error is None else {"id": task_id, "error": error}
         try:
             self.client.request("scrape/browser-result", payload, timeout=15)
         except (OSError, ValueError):
             pass
+        elapsed = time.monotonic() - started
+        if error is None and elapsed > PAGE_CYCLE:
+            self.log("slow-page %.1fs %s" % (elapsed, task.get("url", "")))
+        return started
 
     def fetch(self, task):
         url = task.get("url", "")
@@ -248,10 +263,12 @@ class SourceBrowser:
         followed = self.evaluate(FOLLOW_JS % json.dumps(url)) if self.current_url().startswith("https://") else False
         if not truthy(followed):
             self.window.load_url(url)
-        for i in range(110):
+        checks = int(55 / CHECK_INTERVAL)  # give up after 55 seconds, as before
+        reload_at, give_up_at = int(6 / CHECK_INTERVAL), int(12.5 / CHECK_INTERVAL)
+        for i in range(checks):
             if self.disposed or self.stop_event.is_set():
                 return None
-            time.sleep(0.5)
+            time.sleep(CHECK_INTERVAL)
             if not same_page(self.current_url(), url):
                 continue
             if self.loaded.is_set() and status == 0:
@@ -269,8 +286,8 @@ class SourceBrowser:
                     return html
             # A successful but genuinely empty document is transient: reload once, normally.
             # If it stays empty, give up on this page so the collector can revisit it later.
-            if (i == 12 or i >= 25) and status in (0, 200) and truthy(self.evaluate(EMPTY_JS)):
-                if i >= 25:
+            if (i == reload_at or i >= give_up_at) and status in (0, 200) and truthy(self.evaluate(EMPTY_JS)):
+                if i >= give_up_at:
                     break
                 self.log("empty-document ordinary-reload-once " + url)
                 time.sleep(3)
@@ -287,6 +304,26 @@ class SourceBrowser:
         self.disposed = True
         self.stop_event.set()
         self.close_window()
+
+
+class SourceBrowser:
+    """SOURCE_WINDOWS source windows reading the collector's pages side by side."""
+
+    def __init__(self, webview, client, folder, count=SOURCE_WINDOWS):
+        self.stop_event = threading.Event()
+        self.windows = [SourceWindow(webview, client, folder, index, self.stop_event) for index in range(count)]
+
+    def run(self):
+        threads = [threading.Thread(target=window.run, daemon=True) for window in self.windows]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+    def dispose(self):
+        self.stop_event.set()
+        for window in self.windows:
+            window.dispose()
 
 
 def set_app_identity(root):

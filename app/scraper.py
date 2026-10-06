@@ -3,6 +3,8 @@
 The desktop host supplies ordinary, rendered public pages through a broker.
 No authentication tokens/cookies are extracted from the source browser.
 """
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
 import json
@@ -14,6 +16,12 @@ import uuid
 from urllib.parse import quote, urljoin, urlsplit, parse_qs, unquote
 
 START = '2023-04-27'
+# User decision (2026-10-07): up to 240 public pages a minute, read by 6 source-browser
+# windows that each start at most one page every 1.5 seconds (the desktop enforces the
+# per-window cycle; the collector enforces the overall rate).
+BROWSER_WINDOWS = 6
+PAGES_PER_MINUTE = 240
+RESTRICTED = '公開サイトが取得を制限しました'
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
@@ -199,8 +207,11 @@ def parse_bonuses(html, day, model, rows, seat=None):
 
 class Collector:
     def __init__(self, store, index_path):
-        self.store=store; self.lock=threading.Lock(); self.event=threading.Event(); self.cancelled=threading.Event()
-        self.pending=None; self.answer=None; self.active=False; self.progress={'state':'idle'};self.page_expectations={}
+        self.store=store; self.lock=threading.Lock(); self.cancelled=threading.Event()
+        # Page requests waiting for a source-browser window, and those being read now.
+        self.ready=threading.Condition(self.lock); self.queue=deque(); self.tasks={}; self.next_dispatch=0.0
+        self.halted=None  # set to the restriction message when the source site restricts access
+        self.active=False; self.progress={'state':'idle'};self.page_expectations={}
         self.seed=json.loads(Path(index_path).read_text(encoding='utf-8'))['reports'] if Path(index_path).exists() else []
         with store.connect() as db:
             db.executescript(SCHEMA)
@@ -212,13 +223,13 @@ class Collector:
             previous=db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone()
             if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'])
 
-    def fetch(self,url,pace=1.0):
+    def fetch(self,url):
         # Detail pages are retried by collect_bonuses through the actual report
         # link. Do not repeatedly navigate a transiently empty model URL here.
         attempts=1 if self.page_expectations.get(url,{}).get('kind','').startswith('bonus-') else 3
         for attempt in range(attempts):
             try:
-                return self._fetch_once(url, pace)
+                return self._fetch_once(url)
             except RuntimeError as ex:
                 message=str(ex)
                 if attempt >= attempts-1 or '公開ページを表示できませんでした' not in message:
@@ -228,33 +239,48 @@ class Collector:
                 if self.cancelled.wait(2.0):
                     raise RuntimeError('取得を停止しました。')
 
-    def _fetch_once(self,url,pace=1.0):
+    def _fetch_once(self,url):
         parsed=urlsplit(url)
         if parsed.scheme!='https' or parsed.hostname!='min-repo.com': raise ValueError('取得元が許可された公開サイトではありません。')
         if self.cancelled.is_set(): raise RuntimeError('取得を停止しました。')
-        token=uuid.uuid4().hex
+        if self.halted: raise RuntimeError(self.halted)
+        task={'id':uuid.uuid4().hex,'url':url,**self.page_expectations.get(url,{}),'done':threading.Event(),'answer':None}
         with self.lock:
-            self.pending={'id':token,'url':url,**self.page_expectations.get(url,{})}; self.answer=None; self.event.clear()
-        if not self.event.wait(75):
-            with self.lock: self.pending=None
+            self.tasks[task['id']]=task; self.queue.append(task['id']); self.ready.notify_all()
+        if not task['done'].wait(75):
+            with self.lock:
+                self.tasks.pop(task['id'],None)
+                if task['id'] in self.queue: self.queue.remove(task['id'])
             raise RuntimeError('公開ページを読む専用ブラウザーの応答待ちで停止しました。Joker’s eyeのデスクトップウィンドウから起動してください。')
-        with self.lock: result=self.answer; self.pending=None
+        result=task['answer']
         if self.cancelled.is_set(): raise RuntimeError('取得を停止しました。')
-        if not result or result.get('error'): raise RuntimeError((result or {}).get('error','ブラウザー取得に失敗しました。'))
-        # Pace even cached responses. Never create parallel source-page requests.
-        if self.cancelled.wait(pace): raise RuntimeError('取得を停止しました。')
+        if not result or result.get('error'):
+            message=(result or {}).get('error','ブラウザー取得に失敗しました。')
+            if RESTRICTED in message: self.halted=message  # stop the other windows' pages too
+            raise RuntimeError(message)
         return result['html']
 
-    def browser_task(self):
-        # `active` lets the desktop close its source browser once the run has ended.
-        with self.lock: return dict(self.pending or {},active=self.active)
+    def browser_task(self,wait=0.0):
+        """Hand the next page to a source-browser window, at most PAGES_PER_MINUTE overall.
+        Waits up to `wait` seconds for one. `active` lets the desktop close its windows once the run has ended."""
+        deadline=time.monotonic()+max(0.0,min(float(wait),5.0))
+        with self.ready:
+            while True:
+                now_=time.monotonic()
+                if self.queue and now_>=self.next_dispatch:
+                    task=self.tasks[self.queue.popleft()]
+                    self.next_dispatch=max(now_,self.next_dispatch)+60.0/PAGES_PER_MINUTE
+                    return dict({k:v for k,v in task.items() if k not in ('done','answer')},active=self.active)
+                if now_>=deadline: return {'active':self.active}
+                self.ready.wait(min(deadline,self.next_dispatch if self.queue else deadline)-now_)
 
     def browser_result(self,payload):
         with self.lock:
-            if not self.pending or payload.get('id')!=self.pending['id']: raise ValueError('期限切れのページ取得です。')
+            task=self.tasks.pop(payload.get('id'),None)
+            if not task: raise ValueError('期限切れのページ取得です。')
             html=payload.get('html','')
             if not isinstance(html,str) or len(html)>8*1024*1024: raise ValueError('ページが大きすぎます。')
-            self.answer={'html':html,'error':str(payload.get('error',''))}; self.event.set()
+            task['answer']={'html':html,'error':str(payload.get('error',''))}; task['done'].set()
         return {'ok':True}
 
     def status(self):
@@ -280,13 +306,18 @@ class Collector:
                     raise ValueError('差分日付が取得範囲外です。')
         with self.lock:
             if self.active: return dict(self.progress)
-            self.active=True; self.cancelled.clear()
+            self.active=True; self.cancelled.clear(); self.halted=None
             self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
         return self.status()
 
     def stop(self):
-        self.cancelled.set(); self.event.set(); return {'ok':True}
+        self.cancelled.set()
+        with self.lock:
+            self.queue.clear()
+            for task in self.tasks.values(): task['done'].set()
+            self.tasks.clear(); self.ready.notify_all()
+        return {'ok':True}
 
     def run(self,end,start,include_bonus=False,only_dates=None,bonus_only=False):
         run_id=self.progress['id']
@@ -408,7 +439,7 @@ class Collector:
         finally:
             with self.store.connect() as db:
                 db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=? WHERE id=?',(self.progress['state'],now(),self.progress['message'],run_id))
-            with self.lock: self.active=False; self.pending=None
+            with self.lock: self.active=False; self.queue.clear(); self.tasks.clear(); self.ready.notify_all()
 
     def expected_count(self,day):
         p=next((p for p in self.store.periods if p['validFrom']<=day<p['validToExclusive']),None)
@@ -428,61 +459,71 @@ class Collector:
             # Enter through the day's public report, as an ordinary visitor does, before the
             # model pages. Opened directly in a fresh source-browser profile they come back
             # as empty documents, which left every BB/RB repair run without values.
-            self.cache_bonus_targets(self.fetch(url,pace=3.0),day,url,rows)
+            self.cache_bonus_targets(self.fetch(url),day,url,rows)
             targets=self.get_bonus_targets(day)
         with self.store.connect() as db:
             saved={r['seat']:dict(r) for r in db.execute('SELECT * FROM scraped_observations WHERE day=?',(day,))}
         complete=lambda r:saved.get(r['seat'],{}).get('bb') is not None and saved.get(r['seat'],{}).get('rb') is not None
         pending=[m for m in groups if not all(complete(r) for r in groups[m])]
         if any(not any(t['model']==m for t in targets) for m in pending):
-            report_html=self.fetch(url,pace=3.0)
+            report_html=self.fetch(url)
             self.cache_bonus_targets(report_html,day,url,rows)
             targets=self.get_bonus_targets(day)
             if any(not any(t['model']==m for t in targets) for m in pending):
                 all_url=all_data_link(report_html,day,url)
-                self.cache_bonus_targets(self.fetch(all_url,pace=3.0),day,url,rows)
+                self.cache_bonus_targets(self.fetch(all_url),day,url,rows)
                 targets=self.get_bonus_targets(day)
+        saving=threading.Lock()  # model pages are read by several windows at once
         def obtain(link,model,seat=None):
             expected=[r['seat'] for r in groups[model] if seat is None or r['seat']==seat]
             self.page_expectations[link]={'kind':'bonus-seat' if seat else 'bonus-model','seats':expected}
-            values=parse_bonuses(self.fetch(link,pace=3.0),day,model,groups[model],seat)
-            for number_text,value in values.items():
-                base=next(r for r in groups[model] if r['seat']==number_text)
-                if complete(base):continue
-                self.save_bonus_values(day,base,value,link)
-                old=saved.get(number_text,{})
-                saved[number_text]=dict(old,bb=value[0] if old.get('bb') is None else old['bb'],rb=value[1] if old.get('rb') is None else old['rb'])
-        # Large/Juggler groups first. Transient misses are deferred, then
-        # revisited through the public report before individual-seat fallback.
-        for attempt in range(2):
-            for model in sorted(pending,key=lambda m:(not ('ジャグラー' in m),-len(groups[m]),m)):
-                if all(complete(r) for r in groups[model]):continue
-                with self.lock:self.progress.update(currentDay=day,message=day+' のBB/RBを取得: '+model)
-                link=next((t['url'] for t in targets if t['model']==model and t['kind']=='model'),None)
-                try:
-                    if link:
-                        if attempt:self.fetch(url,pace=3.0)
-                        try:obtain(link,model)
-                        except (ValueError,RuntimeError) as ex:
-                            if self.cancelled.is_set() or '公開サイトが取得を制限しました' in str(ex):raise
-                            failures.append(model+': '+str(ex))
-                    # Defer a transient model miss once before individual-seat
-                    # fallback. A second model error must not skip fallback.
-                    if not link or attempt:
-                        for row in groups[model]:
-                            if complete(row):continue
-                            target=next((t['url'] for t in targets if t['model']==model and t['seat']==row['seat'] and t['kind']=='seat'),None)
-                            if target:
-                                try:obtain(target,model,row['seat'])
-                                except (ValueError,RuntimeError) as ex:
-                                    if self.cancelled.is_set() or '公開サイトが取得を制限しました' in str(ex):raise
-                                    failures.append(model+' '+row['seat']+': '+str(ex))
+            values=parse_bonuses(self.fetch(link),day,model,groups[model],seat)
+            with saving:
+                for number_text,value in values.items():
+                    base=next(r for r in groups[model] if r['seat']==number_text)
+                    if complete(base):continue
+                    self.save_bonus_values(day,base,value,link)
+                    old=saved.get(number_text,{})
+                    saved[number_text]=dict(old,bb=value[0] if old.get('bb') is None else old['bb'],rb=value[1] if old.get('rb') is None else old['rb'])
+        def stop_now(ex):
+            if RESTRICTED in str(ex):self.halted=str(ex)  # the other windows' jobs stop before reading
+            return self.cancelled.is_set() or RESTRICTED in str(ex)
+        def model_job(model,attempt):
+            if self.cancelled.is_set():raise RuntimeError('取得を停止しました。')
+            if self.halted:raise RuntimeError(self.halted)
+            link=next((t['url'] for t in targets if t['model']==model and t['kind']=='model'),None)
+            if link:
+                try:obtain(link,model)
                 except (ValueError,RuntimeError) as ex:
-                    if self.cancelled.is_set() or '公開サイトが取得を制限しました' in str(ex):raise
-                    failures.append(model+': '+str(ex))
-                covered=sum(complete(r) for r in rows)
-                self.bonus_status(day,'partial',covered,'BB/RB実値を補完中。揃っている台・機種は再取得しません。')
-                with self.lock:self.progress.update(bonusRows=covered,bonusTotal=len(rows))
+                    if stop_now(ex):raise
+                    with saving:failures.append(model+': '+str(ex))
+            # Defer a transient model miss once before individual-seat
+            # fallback. A second model error must not skip fallback.
+            if not link or attempt:
+                for row in groups[model]:
+                    if complete(row):continue
+                    target=next((t['url'] for t in targets if t['model']==model and t['seat']==row['seat'] and t['kind']=='seat'),None)
+                    if target:
+                        try:obtain(target,model,row['seat'])
+                        except (ValueError,RuntimeError) as ex:
+                            if stop_now(ex):raise
+                            with saving:failures.append(model+' '+row['seat']+': '+str(ex))
+            covered=sum(complete(r) for r in rows)
+            with self.lock:self.progress.update(currentDay=day,message=day+' のBB/RBを取得: '+model,bonusRows=covered,bonusTotal=len(rows))
+        # Large/Juggler groups first, read by up to BROWSER_WINDOWS windows at once. Transient
+        # misses are deferred, then revisited after the public report before individual-seat fallback.
+        for attempt in range(2):
+            todo=[m for m in sorted(pending,key=lambda m:(not ('ジャグラー' in m),-len(groups[m]),m)) if not all(complete(r) for r in groups[m])]
+            if not todo:break
+            if attempt:self.fetch(url)
+            with ThreadPoolExecutor(max_workers=BROWSER_WINDOWS) as pool:
+                futures=[pool.submit(model_job,model,attempt) for model in todo]
+                errors=[]
+                for future in futures:
+                    try:future.result()
+                    except (ValueError,RuntimeError) as ex:errors.append(ex)
+            self.bonus_status(day,'partial',sum(complete(r) for r in rows),'BB/RB実値を補完中。揃っている台・機種は再取得しません。')
+            if errors:raise next((ex for ex in errors if RESTRICTED in str(ex)),errors[0])
         covered={r['seat'] for r in rows if complete(r)}
         status='complete' if covered=={r['seat'] for r in rows} else 'partial'
         message='' if status=='complete' else '一部機種のBB/RB取得が未完了です。'+(' '+ ' / '.join(failures[:3]) if failures else '')

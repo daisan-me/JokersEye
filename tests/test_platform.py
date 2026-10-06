@@ -3,6 +3,7 @@ import io
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -99,9 +100,40 @@ class FakeClient:
 
 class SourceBrowserWindowTests(unittest.TestCase):
     def browser(self, task, window):
-        source = desktop.SourceBrowser(None, FakeClient(task), tempfile.gettempdir())
+        source = desktop.SourceWindow(None, FakeClient(task), tempfile.gettempdir())
         source.window = window
         return source
+
+    def test_six_windows_share_one_stop_switch_and_tile_the_screen(self):
+        source = desktop.SourceBrowser(None, FakeClient({}), tempfile.gettempdir())
+        self.assertEqual([window.index for window in source.windows], [0, 1, 2, 3, 4, 5])
+        self.assertTrue(all(window.stop_event is source.stop_event for window in source.windows))
+        self.assertEqual((desktop.SOURCE_WINDOWS, desktop.PAGE_CYCLE), (6, 1.5))  # 6 / 1.5 s = 240 pages a minute
+        created = []
+        class FakeWebview:
+            def create_window(self, title, **options):
+                created.append((title, options['x'], options['y']))
+                window = FakeWindow()
+                window.events = mock.MagicMock()
+                return window
+        for window in source.windows:
+            window.webview = FakeWebview()
+            window.ensure_window()
+        self.assertEqual(len({(x, y) for _, x, y in created}), 6)
+        self.assertEqual(created[5][0], desktop.SOURCE_TITLE + ' 6/6')
+
+    def test_a_window_starts_at_most_one_page_every_cycle(self):
+        source = self.browser({}, FakeWindow())
+        starts = []
+        def poll():
+            starts.append(time.monotonic())
+            if len(starts) == 3:
+                source.stop_event.set()
+            return starts[-1]
+        source.poll = poll
+        source.run()
+        self.assertEqual(len(starts), 3)
+        self.assertGreaterEqual(starts[2] - starts[0], 2 * desktop.PAGE_CYCLE - 0.05)
 
     def test_current_url_prefers_the_encoded_location(self):
         source = self.browser({}, FakeWindow('https://min-repo.com/1/?kishu=L%E6%9D%B1'))
