@@ -13,8 +13,7 @@ from contextlib import closing
 spec=importlib.util.spec_from_file_location('server',Path(__file__).resolve().parents[1]/'app/server.py')
 server=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(server)
-HEADER='date,seat,model,games,bb,rb,net,rate\n'
-GOOD=HEADER+'2023-04-27,001,テスト機種,7000,25,20,1200,main\n'
+ROW={'date':'2024-03-01','seat':'1','model':'マイジャグラーV','games':7000,'bb':30,'rb':25,'combined':'1/127','net':1500,'rate':'unknown','payout_percent':108.2,'source_url':'https://min-repo.com/1/','published_at':'2024-03-02','fetched_at':'2026-10-03T00:00:00Z'}
 
 class StoreTests(unittest.TestCase):
     def setUp(self):
@@ -24,60 +23,58 @@ class StoreTests(unittest.TestCase):
         self.tmp.cleanup()
     def test_empty_and_persistence(self):
         self.assertEqual(self.store.state()['summary']['records'],0)
-        self.store.import_csv(GOOD,'test.csv','手動検証')
+        self.store.collector.save_rows([ROW])
         self.store.settings({'notes':'検証メモ','theme':'light'})
         reopened=server.Store(self.tmp.name)
-        self.assertEqual(reopened.state()['summary']['main'],1)
+        self.assertEqual(reopened.state()['summary']['records'],1)
         self.assertEqual(reopened.state()['settings']['notes'],'検証メモ')
-        self.assertEqual(reopened.observations('')['rows'][0]['seat'],'001')
-    def test_invalid_batch_atomic(self):
-        with self.assertRaises(ValueError):
-            self.store.import_csv(GOOD+'2023-04-28,002,機種,-1,0,0,,main\n','bad.csv','test')
-        self.assertEqual(self.store.state()['summary']['records'],0)
-        self.assertEqual(len(self.store.state()['imports']),0)
-    def test_duplicate_does_not_overwrite_or_partially_import(self):
-        self.store.import_csv(GOOD,'one.csv','test')
-        with self.assertRaises(ValueError):
-            self.store.import_csv(HEADER+'2023-04-28,003,機種,100,0,0,,main\n'+GOOD.split('\n')[1]+'\n','two.csv','test')
-        self.assertEqual(self.store.state()['summary']['records'],1)
-    def test_missing_dates_not_filled_and_legacy_separate(self):
-        text=HEADER+'2023-04-26,1,A,100,0,0,,main\n2023-04-29,1,A,100,0,0,,low\n2023-05-01,1,A,100,0,0,,unknown\n'
-        self.store.import_csv(text,'mixed.csv','test')
-        s=self.store.state()['summary']
-        self.assertEqual((s['days'],s['legacy'],s['main']),(3,1,0))
-        self.assertEqual(self.store.observations('2023-04-27')['rows'],[])
-        self.assertIsNone(self.store.observations('2023-04-29')['rows'][0]['net'])
+        self.assertEqual(reopened.state()['databaseFile'],'GothamDataBase.sqlite')
+        self.assertEqual(reopened.observations('')['rows'][0]['seat'],'1')
+    def test_database_is_one_gotham_database_file(self):
+        self.assertEqual(self.store.path,Path(self.tmp.name)/'GothamDataBase.sqlite')
+        self.assertTrue(self.store.path.exists())
+        self.assertFalse((Path(self.tmp.name)/'jokers-eye.sqlite3').exists())
+    def test_legacy_database_is_renamed_with_its_data(self):
+        with tempfile.TemporaryDirectory() as folder:
+            legacy=Path(folder)/'jokers-eye.sqlite3'
+            with closing(sqlite3.connect(legacy)) as db:
+                db.execute("CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)")
+                db.execute("INSERT INTO settings VALUES('notes','旧ファイルのメモ')");db.commit()
+            (Path(folder)/'jokers-eye.sqlite3-wal').write_bytes(b'')
+            store=server.Store(folder)
+            self.assertFalse(legacy.exists())
+            self.assertFalse((Path(folder)/'jokers-eye.sqlite3-wal').exists())
+            self.assertEqual(store.state()['settings']['notes'],'旧ファイルのメモ')
     def test_backup_is_readable(self):
-        self.store.import_csv(GOOD,'test.csv','test')
-        path=self.store.backup()
+        self.store.collector.save_rows([ROW])
+        path=Path(self.store.backup())
+        self.assertTrue(path.name.startswith('GothamDataBase-'))
+        self.assertEqual(path.suffix,'.sqlite')
         with closing(sqlite3.connect(path)) as db:
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM observations').fetchone()[0],1)
-    def test_base_sheet_columns_filters_and_delta_update(self):
-        row = {'date':'2024-03-01','seat':'1','model':'マイジャグラーV','games':7000,'bb':30,'rb':25,'combined':'1/127','net':1500,'rate':'unknown','payout_percent':108.2,'source_url':'https://min-repo.com/1/','published_at':'2024-03-02','fetched_at':'2026-10-03T00:00:00Z'}
-        self.store.collector.save_rows([row])
-        created = self.store.build_base_sheet('create')
-        self.assertEqual(created['status'],'created')
-        self.assertEqual(created['sheet']['columns'],server.BASE_SHEET_COLUMNS)
-        filtered = self.store.base_sheet_rows({'juggler':'juggler','games_min':'6000','combined_n_min':'120','payout_min':'108','offset':'0','limit':'100'})
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM scraped_observations').fetchone()[0],1)
+    def test_gdb_columns_filters_and_plans_come_from_the_database(self):
+        self.store.collector.save_rows([ROW,dict(ROW,date='2023-05-01',seat='9'),
+            dict(ROW,date='2024-03-02',seat='2',model='SLOT TEST',combined=None,bb=None,rb=None,net=None,payout_percent=None)])
+        status=self.store.gdb_status()
+        self.assertEqual(status['columns'],server.GDB_COLUMNS)
+        self.assertEqual((status['rowCount'],status['firstDate'],status['lastDate']),(2,'2024-03-01','2024-03-02'))  # before 2024-03-01 is not GDB
+        self.assertEqual((status['missingBonusRows'],status['missingJugglerBonusRows']),(1,0))
+        filtered=self.store.gdb_rows({'juggler':'juggler','games_min':'6000','combined_n_min':'120','payout_min':'108','offset':'0','limit':'100'})
         self.assertEqual(filtered['total'],1)
-        self.assertEqual(filtered['rows'][0]['曜日'],'金曜日')
-        self.store.collector.save_rows([dict(row,date='2024-03-02',seat='2',model='SLOT TEST',combined=None,bb=None,rb=None,net=None,payout_percent=None)])
-        updated = self.store.build_base_sheet('update')
-        self.assertEqual(updated['addedRows'],1)
-        self.assertEqual(self.store.base_sheet_status()['rowCount'],2)
-        self.assertEqual(self.store.base_sheet_status()['firstDate'],'2024-03-01')
-        self.assertEqual([row['日付'] for row in self.store._read_base_sheet()], ['2024-03-01', '2024-03-02'])
+        self.assertEqual((filtered['rows'][0]['曜日'],filtered['rows'][0]['出率']),('金曜日','108.2%'))
+        self.assertEqual([row['日付'] for row in self.store.gdb_rows({})['rows']],['2024-03-01','2024-03-02'])
+        plan=self.store.gdb_update_plan()
+        self.assertNotIn('2024-03-01',plan['missingDates']);self.assertNotIn('2024-03-02',plan['missingDates'])
+        self.assertEqual(plan['missingDates'][0],'2024-03-03')
+        self.assertEqual(self.store.gdb_bonus_plan(),{'start':'2024-03-01','targetEnd':plan['targetEnd'],'missingDates':['2024-03-02'],'missingDateCount':1,'missingRows':1})
+        with self.store.connect() as db:  # a filled BB/RB changes fetched_at and refreshes the cached view
+            db.execute("UPDATE scraped_observations SET bb=3,rb=4,fetched_at='2026-10-07T00:00:00Z' WHERE day='2024-03-02'")
+        self.assertEqual(self.store.gdb_status()['missingBonusRows'],0)
+        self.assertEqual(self.store.gdb_bonus_plan()['missingDates'],[])
     def test_untrusted_fields_remain_text(self):
-        text=GOOD.replace('テスト機種','<script>alert(1)</script>')
-        self.store.import_csv(text,'a.csv','test')
+        self.store.collector.save_rows([dict(ROW,model='<script>alert(1)</script>')])
         self.assertEqual(self.store.observations('')['rows'][0]['model'],'<script>alert(1)</script>')
-    def test_invalid_values(self):
-        for text in [GOOD.replace(',main',',20'),GOOD.replace('2023-04-27','2023-02-30'),GOOD.replace('7000','1'),HEADER,GOOD+GOOD.split('\n')[1]+'\n']:
-            with self.assertRaises(ValueError):
-                self.store.import_csv(text,'bad.csv','test')
-        with self.assertRaises(ValueError):
-            self.store.import_csv(GOOD,'no-source.csv','')
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
@@ -88,17 +85,17 @@ class ApiTests(unittest.TestCase):
         self.base='http://127.0.0.1:%s'%self.host.server_port
     def tearDown(self):
         self.host.shutdown();self.host.server_close();self.thread.join();self.tmp.cleanup()
+    def get(self, path):
+        req=urllib.request.Request(self.base+'/api/'+path,headers={'X-Joker-Token':self.host.token})
+        with urllib.request.urlopen(req) as response:return json.load(response)
     def test_api_auth_and_roundtrip(self):
         with self.assertRaises(urllib.error.HTTPError) as ex:
             urllib.request.urlopen(self.base+'/api/state')
         self.assertEqual(ex.exception.code,403)
-        payload=json.dumps({'text':GOOD,'filename':'test.csv','source':'API test'}).encode()
-        req=urllib.request.Request(self.base+'/api/import',data=payload,headers={'X-Joker-Token':self.host.token,'Content-Type':'application/json'})
-        with urllib.request.urlopen(req) as r:
-            self.assertEqual(json.load(r)['rows'],1)
-        req=urllib.request.Request(self.base+'/api/state',headers={'X-Joker-Token':self.host.token})
-        with urllib.request.urlopen(req) as r:
-            self.assertEqual(json.load(r)['summary']['records'],1)
+        self.host.store.collector.save_rows([ROW])
+        self.assertEqual(self.get('state')['summary']['records'],1)
+        self.assertEqual(self.get('gdb/rows')['rows'][0]['機種'],'マイジャグラーV')
+        self.assertEqual(self.get('gdb/status')['rowCount'],1)
     def test_static_and_traversal(self):
         with urllib.request.urlopen(self.base+'/') as r:
             self.assertIn(b"Joker's eye",r.read())
@@ -106,6 +103,21 @@ class ApiTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ex:
             urllib.request.urlopen(self.base+'/../app/server.py')
         self.assertEqual(ex.exception.code,404)
+    def test_csv_features_are_gone(self):
+        with urllib.request.urlopen(self.base+'/gdb.js') as r:
+            self.assertEqual(r.status,200)
+        for path in ('/template.csv','/base-sheet.js'):
+            with self.assertRaises(urllib.error.HTTPError) as ex:
+                urllib.request.urlopen(self.base+path)
+            self.assertEqual(ex.exception.code,404,path)
+        for path in ('scrape/csv','base-sheet/status','base-sheet/download'):
+            with self.assertRaises(urllib.error.HTTPError) as ex:
+                self.get(path)
+            self.assertEqual(ex.exception.code,404,path)
+        for path in ('import','base-sheet/create','base-sheet/update','base-sheet/build'):
+            with self.assertRaises(urllib.error.HTTPError) as ex:
+                self.post(path,{})
+            self.assertEqual(ex.exception.code,404,path)
 
     def post(self, path, payload):
         req=urllib.request.Request(self.base+'/api/'+path,data=json.dumps(payload).encode(),headers={'X-Joker-Token':self.host.token,'Content-Type':'application/json'})
@@ -117,26 +129,26 @@ class ApiTests(unittest.TestCase):
         self.post('scrape/start',{'start':'2026-10-03','end':'2026-10-03'})
         start.assert_called_once_with('2026-10-03','2026-10-03',True,None,False)
 
-    def test_base_create_and_delta_enable_bonus_capture(self):
+    def test_gdb_update_requests_only_dates_without_records(self):
         start=Mock(return_value={'state':'running'})
         self.host.store.collector.start=start
-        self.post('base-sheet/create',{})
-        start.assert_called_once_with(server.BASE_SHEET_END,server.BASE_SHEET_START,True,sheet_mode='create')
-        self.host.store.build_base_sheet('create')
-        self.host.store.base_sheet_update_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03']})
+        self.host.store.gdb_update_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-01','2026-10-03']})
+        self.post('gdb/update',{})
+        start.assert_called_once_with('2026-10-03','2026-10-01',True,['2026-10-01','2026-10-03'])
+        self.host.store.gdb_update_plan.return_value={'targetEnd':'2026-10-03','missingDates':[]}
         start.reset_mock()
-        self.post('base-sheet/update',{})
-        start.assert_called_once_with('2026-10-03','2026-10-03',True,['2026-10-03'])
+        self.assertEqual(self.post('gdb/update',{})['status'],'up-to-date')
+        start.assert_not_called()
 
     def test_bonus_action_targets_only_plan_dates(self):
         start=Mock(return_value={'state':'running'})
         self.host.store.collector.start=start
-        self.host.store.base_sheet_bonus_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03'],'missingRows':3})
-        self.post('base-sheet/bonuses',{'start':'2026-10-03','end':'2026-10-03'})
+        self.host.store.gdb_bonus_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03'],'missingRows':3})
+        self.post('gdb/bonuses',{'start':'2026-10-03','end':'2026-10-03'})
         start.assert_called_once_with('2026-10-03','2026-10-03',True,['2026-10-03'],True)
-        self.host.store.base_sheet_bonus_plan.return_value={'missingDates':[],'missingRows':0}
+        self.host.store.gdb_bonus_plan.return_value={'missingDates':[],'missingRows':0}
         start.reset_mock()
-        self.assertEqual(self.post('base-sheet/bonuses',{})['status'],'up-to-date')
+        self.assertEqual(self.post('gdb/bonuses',{})['status'],'up-to-date')
         start.assert_not_called()
 
     def test_fixed_floor_assets_and_registration(self):

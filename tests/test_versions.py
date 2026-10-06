@@ -120,7 +120,8 @@ class ManagerTests(unittest.TestCase):
                 self.manager.remove(bad)
 
     def test_install_downloads_copies_data_and_launches_with_its_own_folder(self):
-        self.store.import_csv('date,seat,model,games,bb,rb,net,rate\n2026-01-01,1,A,10,1,0,5,main\n', 'a.csv', 'test')
+        self.store.collector.save_rows([{'date': '2026-01-01', 'seat': '1', 'model': 'A', 'games': 10, 'bb': 1, 'rb': 0, 'net': 5, 'rate': 'unknown',
+                                         'payout_percent': None, 'source_url': 'https://min-repo.com/1/', 'published_at': None, 'fetched_at': '2026-01-02T00:00:00Z'}])
         report = Path(self.tmp.name) / 'launched.json'
         package = Path(self.tmp.name) / 'package.zip'
         with zipfile.ZipFile(package, 'w') as zf:
@@ -157,6 +158,7 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual(json.loads(launched['trial'])['branch'], 'feature/x')
         copied = server.Store(data)
         self.assertEqual(copied.state()['summary']['records'], 1)
+        self.assertTrue((data / 'GothamDataBase.sqlite').exists())
         self.assertEqual(self.manager.installed()[0]['version'], '1.4.0')
         self.manager.processes[ident].wait(timeout=10)
         self.manager.remove(ident)

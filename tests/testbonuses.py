@@ -1,5 +1,4 @@
-"""Public-table bonus enrichment and missing-only CSV regression tests."""
-import csv
+"""Public-table bonus enrichment and GDB view regression tests."""
 import importlib.util
 from html import escape
 import json
@@ -115,48 +114,29 @@ class BonusCompletionTests(unittest.TestCase):
         with self.store.connect() as db:
             self.assertEqual(tuple(db.execute('SELECT bb,rb FROM scraped_observations WHERE seat=?',(row['seat'],)).fetchone()),(999,None))
 
-    def test_csv_missing_only_sync_order_and_next_dates(self):
+    def test_gdb_view_shows_filled_counts_and_keeps_other_columns(self):
         day='2026-09-30'
         initial=[dict(row,date=day) for row in self.rows[:2]]
         self.collector.save_rows(initial)
-        self.store.build_base_sheet('create')
-        before=self.store._read_base_sheet()
+        before=[row for row in self.store.gdb_rows_all() if row['日付']==day]
         self.collector.save_bonus_values(day,initial[0],(0,0,None),REPORT)
         self.collector.save_bonus_values(day,initial[1],(10,5,'1/100'),REPORT)
-        update=self.store.build_base_sheet('bonuses')
-        self.assertEqual(update['updatedRows'],2)
-        self.assertEqual(update['addedRows'],0)
-        after=self.store._read_base_sheet()
-        self.assertEqual(after[0]['BB数'],'0')
+        after=[row for row in self.store.gdb_rows_all() if row['日付']==day]
+        self.assertEqual((after[0]['BB数'],after[0]['RB数']),('0','0'))  # a real 0, not missing
+        self.assertEqual((after[1]['BB数'],after[1]['RB数'],after[1]['合成']),('10','5','1/100'))
         for a,b in zip(before,after):
             self.assertEqual({k:v for k,v in a.items() if k not in ('BB数','RB数','合成')},{k:v for k,v in b.items() if k not in ('BB数','RB数','合成')})
-        self.assertEqual(self.store.build_base_sheet('bonuses')['updatedRows'],0)
-        # New dates are added locally; existing dates are enriched, not duplicated.
-        self.store.build_base_sheet('update')
-        rows=self.store._read_base_sheet()
+        rows=self.store.gdb_rows_all()
         self.assertEqual(len(rows),312)
         self.assertEqual([(r['日付'],int(r['台番号'])) for r in rows],sorted((r['日付'],int(r['台番号'])) for r in rows))
-        with self.store.base_sheet_path().open(encoding='utf-8-sig',newline='') as file:
-            self.assertEqual(csv.DictReader(file).fieldnames,server.BASE_SHEET_COLUMNS)
+        self.assertEqual(list(rows[0]),server.GDB_COLUMNS)
 
     def test_bonus_plan_uses_nulls_not_coverage_status(self):
-        self.store.build_base_sheet('create')
-        self.store.build_base_sheet('update')
         self.collector.save_rows([dict(row,bb=0,rb=0) for row in self.rows if row['seat']!='283'])
         self.collector.bonus_status(DAY,'complete',310,'STALE')
-        plan=self.store.base_sheet_bonus_plan(DAY,DAY)
+        plan=self.store.gdb_bonus_plan(DAY,DAY)
         self.assertEqual((plan['missingDates'],plan['missingRows']),([DAY],1))
         self.assertEqual(self.calls,[])
-
-    def test_csv_record_identity_conflict_is_not_refetched_or_overwritten(self):
-        self.store.build_base_sheet('create')
-        self.store.build_base_sheet('update')
-        before=self.store._read_base_sheet()
-        self.collector.save_rows([dict(row,model='TEST CHANGED',games=999) for row in self.rows])
-        plan=self.store.base_sheet_bonus_plan(DAY,DAY)
-        self.assertEqual(plan['missingRows'],0)
-        self.assertEqual(plan['unavailableRows'],310)
-        self.assertEqual(before,self.store._read_base_sheet())
 
     def test_partial_source_preserves_missing_and_is_not_complete(self):
         row=self.rows[0]
