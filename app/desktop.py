@@ -315,7 +315,11 @@ def bring_existing_to_front(folder):
 
 def run_diagnostics(window, client, path):
     """Same checks as the old `--diagnostics` mode (page/connection text, map grid)."""
-    time.sleep(1.5)
+    # Wait for the first /api/state round trip instead of a fixed delay (slow CI machines).
+    for _ in range(40):
+        time.sleep(0.5)
+        if run_script(window, "document.querySelector('#connection').textContent") not in (None, "接続中"):
+            break
     page = run_script(window, "JSON.stringify({connection:document.querySelector('#connection').textContent,version:document.querySelector('.rail-bottom small').textContent,title:document.title})")
     Path(path).write_text('{"page":%s}' % page, encoding="utf-8")
     run_script(window, "document.querySelector('[data-page=map]').click()")
