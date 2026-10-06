@@ -29,11 +29,27 @@ APP_TITLE = "Joker's eye"
 APP_ID = "JokersEye.Desktop"
 SOURCE_TITLE = "Joker's eye · 公開データ取得ブラウザー"
 SOURCE_HOST = "min-repo.com"
-# User decision (2026-10-07): 6 windows, each starting at most one page every 1.5 seconds,
-# so at most 240 pages a minute (the collector also caps the overall rate).
-SOURCE_WINDOWS = 6
+# User decision (2026-10-07): at most 240 pages a minute (the collector caps the overall rate),
+# read by 12 windows that each start at most one page every 1.5 seconds.
+SOURCE_WINDOWS = 12
+SOURCE_COLUMNS = 4
 PAGE_CYCLE = 1.5
-CHECK_INTERVAL = 0.1  # how often a window checks whether the requested table is ready
+# Every run_js of every window goes through pywebview's one UI thread, so a window asks its page
+# rarely: once a second while loading, then right after the page reports it has loaded.
+LOADING_CHECK = 1.0
+LOADED_CHECK = 0.25
+# The app's WebViews may reach only the public data site and this app itself. Ads, trackers and
+# other third-party loads fail at name resolution, so a page is ready sooner (user decision, 2026-10-07).
+ALLOWED_HOSTS = (SOURCE_HOST, "*." + SOURCE_HOST, "127.0.0.1", "localhost")
+WEBVIEW2_ARGUMENTS = '--disable-features=ElasticOverscroll --host-resolver-rules="MAP * ~NOTFOUND, %s"' % \
+    ", ".join("EXCLUDE " + host for host in ALLOWED_HOSTS)
+
+
+def limit_webview_hosts(environ=None):
+    """WebView2 reads extra browser arguments from this variable when its environment is created;
+    pywebview sets them for every window alike, so this is the one place to add them."""
+    environ = os.environ if environ is None else environ
+    environ["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = WEBVIEW2_ARGUMENTS
 ROOT = server.ROOT
 
 EXTERNAL_LINK_JS = """(()=>{if(window.__jokerExternal)return;window.__jokerExternal=true;
@@ -41,10 +57,15 @@ const send=u=>{try{const x=new URL(u,location.href);if(x.origin!==location.origi
 document.addEventListener('click',e=>{const a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(a&&send(a.href)){e.preventDefault();e.stopPropagation();}},true);
 window.open=u=>{send(String(u));return null;};})()"""
 READINESS_JS = (ROOT / "web" / "source-readiness.js").read_text(encoding="utf-8")
-READY_JS = "(()=>{%s\nreturn sourceAccessRestricted(document)?'restricted':sourceDocumentReady(document,%s);})()"
 EMPTY_JS = "document.readyState === 'complete' && document.scripts.length === 0 && !!document.body && document.body.innerHTML.trim() === ''"
-STATUS_JS = "(()=>{const n=performance.getEntriesByType('navigation')[0];return n&&n.responseStatus?n.responseStatus:0;})()"
-FOLLOW_JS = ("(()=>{const target=new URL(%s,location.href).href;const link=Array.from(document.querySelectorAll('a[href]'))"
+# One script call per check: every run_js of every window goes through the one UI thread, so
+# separate calls for the URL, status, readiness and HTML queued up behind each other with 12 windows.
+PROBE_JS = ("(()=>{%s\nconst n=performance.getEntriesByType('navigation')[0];"
+            "const restricted=sourceAccessRestricted(document);const ready=!restricted&&!!sourceDocumentReady(document,%s);"
+            "return JSON.stringify({href:location.href,status:n&&n.responseStatus?n.responseStatus:0,restricted:restricted,"
+            "ready:ready,empty:" + EMPTY_JS + ",html:ready?document.documentElement.outerHTML:null,"
+            "timing:n?[n.requestStart,n.responseStart,n.responseEnd,n.domInteractive].map(Math.round):null});})()")
+FOLLOW_JS = ("(()=>{if(location.protocol!=='https:')return false;const target=new URL(%s,location.href).href;const link=Array.from(document.querySelectorAll('a[href]'))"
              ".find(a=>a.href===target&&!a.target);if(!link)return false;link.click();return true;})()")
 
 
@@ -150,6 +171,7 @@ class SourceWindow:
         self.loaded = threading.Event()
         self.disposed = False
         self.last_task = None
+        self.last_timing = None  # navigation timing of the last page read (for the slow-page log)
         self.stop_event = stop_event or threading.Event()
 
     def log(self, message):
@@ -161,11 +183,11 @@ class SourceWindow:
 
     def ensure_window(self):
         if self.window is None:
-            # Tile the windows 3 x 2 so that none hides another (a fully covered page may be throttled).
-            column, row = self.index % 3, self.index // 3
+            # Tile the windows 4 x 3 so that none hides another (a fully covered page may be throttled).
+            column, row = self.index % SOURCE_COLUMNS, self.index // SOURCE_COLUMNS
             self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, SOURCE_WINDOWS),
-                                                     html="<!doctype html><title></title>", width=620, height=470,
-                                                     x=20 + column * 630, y=20 + row * 500)
+                                                     html="<!doctype html><title></title>", width=470, height=340,
+                                                     x=10 + column * 475, y=10 + row * 350)
             self.window.events.loaded += lambda: self.loaded.set()
             self.window.events.closing += self.on_closing
         else:
@@ -186,6 +208,14 @@ class SourceWindow:
             return run_script(self.window, script)
         except Exception as ex:  # page is navigating
             self.log("evaluate-js " + type(ex).__name__)
+            return None
+
+    def probe(self, task):
+        """URL, HTTP status, restriction, readiness and (when ready) the HTML, in one call."""
+        result = self.evaluate(PROBE_JS % (READINESS_JS, json.dumps(task, ensure_ascii=False)))
+        try:
+            return json.loads(result) if isinstance(result, str) else None
+        except ValueError:
             return None
 
     def current_url(self):
@@ -233,7 +263,7 @@ class SourceWindow:
         if "id" not in task or task["id"] == self.last_task:
             return None
         task_id, error = task["id"], None
-        self.last_task = task_id
+        self.last_task, self.last_timing = task_id, None
         started = time.monotonic()
         try:
             html = self.fetch(task)
@@ -248,7 +278,9 @@ class SourceWindow:
             pass
         elapsed = time.monotonic() - started
         if error is None and elapsed > PAGE_CYCLE:
-            self.log("slow-page %.1fs %s" % (elapsed, task.get("url", "")))
+            timing = self.last_timing or [0, 0, 0, 0]  # requestStart, responseStart, responseEnd, domInteractive (ms)
+            self.log("slow-page %.1fs server-wait %dms html %dms parse %dms %s" % (
+                elapsed, timing[1] - timing[0], timing[2] - timing[1], timing[3] - timing[2], task.get("url", "")))
         return started
 
     def fetch(self, task):
@@ -260,39 +292,41 @@ class SourceWindow:
         status, status_text = 0, "loading"
         # Follow a genuine link of the currently rendered page when available; this keeps
         # ordinary navigation/referrers. No headers, cookies or checks are manufactured.
-        followed = self.evaluate(FOLLOW_JS % json.dumps(url)) if self.current_url().startswith("https://") else False
+        followed = self.evaluate(FOLLOW_JS % json.dumps(url))
         if not truthy(followed):
             self.window.load_url(url)
-        checks = int(55 / CHECK_INTERVAL)  # give up after 55 seconds, as before
-        reload_at, give_up_at = int(6 / CHECK_INTERVAL), int(12.5 / CHECK_INTERVAL)
-        for i in range(checks):
+        started = time.monotonic()
+        give_up, reloaded = started + 55, False  # stop waiting after 55 seconds, as before
+        while time.monotonic() < give_up:
             if self.disposed or self.stop_event.is_set():
                 return None
-            time.sleep(CHECK_INTERVAL)
-            if not same_page(self.current_url(), url):
+            self.loaded.wait(LOADED_CHECK if self.loaded.is_set() else LOADING_CHECK)
+            elapsed = time.monotonic() - started
+            # Wait for the requested current-day table, not unrelated rankings (web/source-readiness.js).
+            probe = self.probe(task)
+            if probe is None or not same_page(probe.get("href") or "", url):
                 continue
-            if self.loaded.is_set() and status == 0:
-                status = int(self.evaluate(STATUS_JS) or 0)
-                status_text = "HTTP %s" % status if status else "HTTP 不明"
+            if probe.get("status") and status == 0:
+                status = int(probe["status"])
+                status_text = "HTTP %s" % status
             if status in (401, 403, 429):
                 raise RuntimeError("公開サイトが取得を制限しました（HTTP %s）。再試行せず停止します。" % status)
-            # Wait for the requested current-day table, not unrelated rankings (web/source-readiness.js).
-            ready = self.evaluate(READY_JS % (READINESS_JS, json.dumps(task, ensure_ascii=False)))
-            if ready == "restricted":
+            if probe.get("restricted"):
                 raise RuntimeError("公開サイトが取得を制限しました（認証・確認画面）。操作・再試行せず停止します。")
-            if truthy(ready):
-                html = self.evaluate("document.documentElement.outerHTML")
-                if isinstance(html, str):
-                    return html
+            if probe.get("ready") and isinstance(probe.get("html"), str):
+                self.last_timing = probe.get("timing")
+                return probe["html"]
             # A successful but genuinely empty document is transient: reload once, normally.
             # If it stays empty, give up on this page so the collector can revisit it later.
-            if (i == reload_at or i >= give_up_at) and status in (0, 200) and truthy(self.evaluate(EMPTY_JS)):
-                if i >= give_up_at:
+            if elapsed >= 6 and status in (0, 200) and probe.get("empty"):
+                if reloaded and elapsed >= 12.5:
                     break
-                self.log("empty-document ordinary-reload-once " + url)
-                time.sleep(3)
-                self.loaded.clear()
-                self.evaluate("location.reload()")
+                if not reloaded:
+                    self.log("empty-document ordinary-reload-once " + url)
+                    time.sleep(3)
+                    self.loaded.clear()
+                    self.evaluate("location.reload()")
+                    reloaded = True
         if self.disposed:
             return None
         shape = self.evaluate("JSON.stringify({title:document.title,length:document.documentElement.outerHTML.length,"
@@ -397,6 +431,7 @@ def main(argv=None):
     if not instance.acquire():
         bring_existing_to_front(folder)
         return 0
+    limit_webview_hosts()
     try:
         import webview
     except ImportError:

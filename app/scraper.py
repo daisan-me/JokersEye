@@ -16,10 +16,10 @@ import uuid
 from urllib.parse import quote, urljoin, urlsplit, parse_qs, unquote
 
 START = '2023-04-27'
-# User decision (2026-10-07): up to 240 public pages a minute, read by 6 source-browser
+# User decision (2026-10-07): up to 240 public pages a minute, read by 12 source-browser
 # windows that each start at most one page every 1.5 seconds (the desktop enforces the
 # per-window cycle; the collector enforces the overall rate).
-BROWSER_WINDOWS = 6
+BROWSER_WINDOWS = 12
 PAGES_PER_MINUTE = 240
 RESTRICTED = '公開サイトが取得を制限しました'
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'

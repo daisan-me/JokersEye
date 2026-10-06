@@ -104,11 +104,11 @@ class SourceBrowserWindowTests(unittest.TestCase):
         source.window = window
         return source
 
-    def test_six_windows_share_one_stop_switch_and_tile_the_screen(self):
+    def test_twelve_windows_share_one_stop_switch_and_tile_the_screen(self):
         source = desktop.SourceBrowser(None, FakeClient({}), tempfile.gettempdir())
-        self.assertEqual([window.index for window in source.windows], [0, 1, 2, 3, 4, 5])
+        self.assertEqual([window.index for window in source.windows], list(range(12)))
         self.assertTrue(all(window.stop_event is source.stop_event for window in source.windows))
-        self.assertEqual((desktop.SOURCE_WINDOWS, desktop.PAGE_CYCLE), (6, 1.5))  # 6 / 1.5 s = 240 pages a minute
+        self.assertEqual((desktop.SOURCE_WINDOWS, desktop.PAGE_CYCLE), (12, 1.5))  # the collector caps the total at 240 a minute
         created = []
         class FakeWebview:
             def create_window(self, title, **options):
@@ -119,8 +119,19 @@ class SourceBrowserWindowTests(unittest.TestCase):
         for window in source.windows:
             window.webview = FakeWebview()
             window.ensure_window()
-        self.assertEqual(len({(x, y) for _, x, y in created}), 6)
-        self.assertEqual(created[5][0], desktop.SOURCE_TITLE + ' 6/6')
+        self.assertEqual(len({(x, y) for _, x, y in created}), 12)
+        self.assertEqual(created[11][0], desktop.SOURCE_TITLE + ' 12/12')
+        self.assertLessEqual(max(x for _, x, _ in created) + 470, 1920)  # fits a full-HD screen
+        self.assertLessEqual(max(y for _, _, y in created) + 340, 1080)
+
+    def test_webviews_reach_only_the_public_site_and_this_app(self):
+        environ = {}
+        desktop.limit_webview_hosts(environ)
+        arguments = environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS']
+        self.assertIn('--disable-features=ElasticOverscroll', arguments)  # pywebview's own argument is kept
+        self.assertIn('MAP * ~NOTFOUND', arguments)
+        for host in ('min-repo.com', '*.min-repo.com', '127.0.0.1', 'localhost'):
+            self.assertIn('EXCLUDE ' + host, arguments)
 
     def test_a_window_starts_at_most_one_page_every_cycle(self):
         source = self.browser({}, FakeWindow())
