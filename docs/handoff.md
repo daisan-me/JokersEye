@@ -1,5 +1,13 @@
 # 引き継ぎメモ
 
+## データフォルダーの振り替え問題と置き場所の固定（2026-10-07）
+
+- 発見：Claudeデスクトップアプリ内のシェル（エージェントのBash/PowerShell）と、そこから起動したプロセスは、`%LOCALAPPDATA%` への書き込みが `C:\Users\daisa\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Local` に振り替えられる。エクスプローラー（Claudeの外）で見ると、本物の `C:\Users\daisa\AppData\Local\JokersEye` は存在しなかった。`AppData\Roaming`（スタートメニュー・タスクバーのショートカット）とドキュメント・ダウンロードは振り替えられなかった。
+- 影響：2026-10-06〜07にエージェントが「本番データフォルダー」で行った操作（台データの削除、CSVの移動、GDBのCSVの作成・削除、DBの改名、バックアップ）は、すべてClaude専用の振り替え先で起きていた。2026-10-07 01:36にその振り替え先が作り直され、Claude内で起動されたmainの版が台データ318,368行のDBを置いていた。これを「ユーザーが作り直した」と判断したのは誤り。
+- ユーザー判断：データはAppDataの外に固定する。台データは持っていかず空から始める。
+- 実施：`C:\Users\daisa\Documents\jokers-eye-data` を作成。振り替え先のDB（318,368行）を `backups\GothamDataBase-claude-cache-20261007-020132-163633.sqlite` として保存（整合性確認済み）。mainの版（`00407f9`）を `Downloads\JokersEye-main-00407f9-windows` に置き、スタートメニュー・デスクトップ・タスクバーのショートカットを `--data "C:\Users\daisa\Documents\jokers-eye-data"` 付きでこの版に向けた。タスクバーのアイコンをクリック（Claudeの外での通常起動）して起動し、新しい置き場所に空のGDB（貸区分の列なし、店内マップ28,210件）ができたことを確認した。
+- 残り：振り替え先 `Packages\Claude_…\LocalCache\Local\JokersEye` と、古い版の `Downloads\JokersEye-1.3.1-windows` は残している。
+
 ## 登録した観測の11列表示と貸区分の廃止（2026-10-07、ブランチ `feature/observation-columns`）
 
 - ユーザー指示：「登録した観測」にもGDBと同じ11列（記入例：3/12 金 114 ～ 非ジャグラー 3000 12 13 1/120 970 107.3%）を表示する。貸区分は今後まったく扱わず、表示もDBからもなくす。
