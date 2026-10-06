@@ -50,11 +50,13 @@ def run(executable, folder):
     if failure.exists():
         time.sleep(1)
         process.kill()  # the error dialog would wait for a click
+        process.wait(timeout=30)  # Windows keeps the app's DLLs locked until it has exited
     else:
         try:
             process.wait(timeout=30)
         except subprocess.TimeoutExpired:
             process.kill()
+            process.wait(timeout=30)
     for log in sorted(data.glob("*.log")):
         print("----- %s\n%s" % (log.name, log.read_text(encoding="utf-8", errors="replace")[-4000:]))
     return report, map_report, failure, process
@@ -64,7 +66,7 @@ def reproduce_without_config():
     if not sys.platform.startswith("win"):
         print("Windows専用の確認です。")
         return
-    with tempfile.TemporaryDirectory() as folder:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
         executable = downloaded_copy(folder)
         dotnet_config_path(executable.parent).unlink()
         _, map_report, failure, _ = run(executable, folder)
@@ -83,7 +85,7 @@ def main():
     if parser.parse_args().without_dotnet_config:
         return reproduce_without_config()
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    with tempfile.TemporaryDirectory() as folder:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
         report, map_report, failure, process = run(downloaded_copy(folder), folder)
         if failure.exists() or not map_report.exists():
             raise SystemExit("アプリの画面を確認できませんでした（%d秒以内に診断結果なし、終了コード %s）。" % (TIMEOUT, process.returncode))

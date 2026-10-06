@@ -25,6 +25,7 @@ jobs:
       - run: python tools/build_package.py
       - name: ダウンロードした状態で.NETの設定がない場合の起動失敗を記録（失敗してもジョブは止めない）
         if: runner.os == 'Windows'
+        continue-on-error: true
         run: python tools/smoke_test_package.py --without-dotnet-config
         timeout-minutes: 5
       - run: python tools/smoke_test_package.py
