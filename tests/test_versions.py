@@ -3,10 +3,12 @@ import json
 import os
 from pathlib import Path
 import stat
+import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 import urllib.request
 import zipfile
 
@@ -122,21 +124,17 @@ class ManagerTests(unittest.TestCase):
         report = Path(self.tmp.name) / 'launched.json'
         package = Path(self.tmp.name) / 'package.zip'
         with zipfile.ZipFile(package, 'w') as zf:
-            info = zipfile.ZipInfo("Joker's eye/Joker's eye.exe")
-            info.external_attr = 0o755 << 16
-            zf.writestr(info, '#!%s\nimport json, os, sys\nopen(%r, "w").write(json.dumps({"argv": sys.argv[1:], "trial": os.environ.get(%r)}))\n'
-                        % (sys.executable, str(report), versions.TRIAL_ENV))
+            zf.writestr("Joker's eye/Joker's eye.exe", 'import json, os, sys\nopen(%r, "w").write(json.dumps({"argv": sys.argv[1:], "trial": os.environ.get(%r)}))\n'
+                        % (str(report), versions.TRIAL_ENV))
         meta = {'id': 77, 'name': 'JokersEye-1.4.0-windows', 'expired': False, 'size_in_bytes': package.stat().st_size,
                 'created_at': '2026-10-06T00:00:00Z', 'workflow_run': {'id': 9, 'head_branch': 'feature/x', 'head_sha': 'c' * 40}}
         self.manager.request = lambda path, token=None, opener=None: meta
         self.manager.download_address = lambda artifact_id, opener=None: package.resolve().as_uri()
-        find = self.manager.executable
-
-        def executable(ident):  # zip has no Unix exec bit; Windows does not need one
-            path = find(ident)
-            path.chmod(0o755)
-            return path
-        self.manager.executable = executable
+        # The fake app is a Python script: run it with this Python on every OS.
+        real_popen = subprocess.Popen
+        popen = mock.patch.object(versions.subprocess, 'Popen', side_effect=lambda args, **kw: real_popen([sys.executable] + list(args), **kw))
+        popen.start()
+        self.addCleanup(popen.stop)
         original_open = urllib.request.urlopen
         urllib.request.urlopen = lambda req, timeout=None: original_open(req.full_url)
         try:
