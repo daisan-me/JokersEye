@@ -7,10 +7,13 @@ Run in CI (.github/workflows/package.yml):
 
 Output: build/dist/ (the app) and build/package/ (what users download).
 """
+import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -33,6 +36,19 @@ def executable_path():
     return app_path() / (NAME + ".exe")
 
 
+def build_info():
+    """Shown on the app's バージョン page; lets the app tell which branch/commit it is."""
+    def git(*args):
+        try:
+            return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True, check=True).stdout.strip() or None
+        except (OSError, subprocess.CalledProcessError):
+            return None
+    branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME") or git("rev-parse", "--abbrev-ref", "HEAD")
+    sha = os.environ.get("GITHUB_SHA") or git("rev-parse", "HEAD")
+    return {"branch": branch, "sha": sha, "runId": os.environ.get("GITHUB_RUN_ID"),
+            "builtAt": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+
 def icon_argument(work):
     if sys.platform.startswith("win"):
         return ["--icon", str(ROOT / "web" / "icon.ico")]
@@ -50,12 +66,16 @@ def build():
         raise SystemExit("Windows / macOS 専用のツールです。")
     shutil.rmtree(BUILD, ignore_errors=True)
     separator = ";" if sys.platform.startswith("win") else ":"
+    BUILD.mkdir(parents=True)
+    info = BUILD / "build-info.json"
+    info.write_text(json.dumps(build_info(), ensure_ascii=False), encoding="utf-8")
     with tempfile.TemporaryDirectory() as work:
         command = [sys.executable, "-m", "PyInstaller", str(ROOT / "app" / "desktop.py"),
                    "--name", NAME, "--windowed", "--noconfirm", "--clean",
                    "--paths", str(ROOT / "app"),
                    "--add-data", str(ROOT / "web") + separator + "web",
                    "--add-data", str(ROOT / "VERSION") + separator + ".",
+                   "--add-data", str(info) + separator + ".",
                    "--distpath", str(DIST), "--workpath", str(BUILD / "work"), "--specpath", str(BUILD),
                    "--osx-bundle-identifier", BUNDLE_ID] + icon_argument(work)
         subprocess.run(command, check=True, cwd=str(ROOT))

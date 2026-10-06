@@ -1,0 +1,7 @@
+.rail-bottom .build-label{display:block;margin-top:6px;overflow-wrap:anywhere;color:#5f7a72}
+body.trial .rail-bottom .build-label,body.trial #connection{color:var(--violet);border-color:var(--violet)}
+.version-trial{border-left:3px solid var(--violet);padding-left:12px}
+.version-steps{color:var(--muted);font-size:12px;line-height:1.9;padding-left:20px}
+.version-buttons{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+.version-progress progress{width:100%;height:10px;accent-color:var(--green)}
+.version-progress.failed,.version-error{border-color:#c0504d;color:#e07a72}

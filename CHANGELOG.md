@@ -11,6 +11,14 @@
 - C# の取得ブラウザーで行っていた当日BB/RB表の待機判定（`web/source-readiness.js`）、認証・確認画面での停止、空ページの後回しを `app/desktop.py` へ移植。
 - `requirements.txt`、CI（Windows / macOS / Linux のテスト）、macOS用アプリ生成 `tools/make_mac_app.py` を追加。EXE生成の `tools/build-windows-launcher.py` は削除。
 
+### バージョン機能 — 2026-10-06
+
+- 左メニューに「バージョン」を追加。GitHub上の各ブランチの配布パッケージを一覧し、選んだ版をダウンロードして別ウィンドウで起動する。進み具合は画面に表示。
+- 試す版は本番データのコピー（データフォルダー内の `versions/<ブランチ>-<コミット>/data`）で動き、本番データを変更しない。試用中は紫色の表示で区別し、ほかの版の操作を無効にする。
+- いま開いている版のブランチ・コミット・作成日時を画面に表示。配布パッケージは作成時に `build-info.json` を同梱する。
+- GitHubのトークンは画面から登録し、データフォルダーにだけ保存（本人のみ読み取り可）。成果物の情報は毎回GitHubから取り直して検証し、展開時はフォルダー外へのファイル書き込みを拒否する。
+- `package` ワークフローはプルリクエストでは動かさない（同じコミットの版の重複を防ぐ）。
+
 ### ダブルクリックで起動できる配布パッケージ — 2026-10-06
 
 - GitHub Actions（`.github/workflows/package.yml`）で、Python と pywebview を同梱した Windows 用フォルダー（`Joker's eye.exe`）と macOS 用 `Joker's eye.app` を作成。インストールやコマンド操作なしで起動できる。

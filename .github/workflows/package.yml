@@ -1,9 +1,9 @@
 name: package
 # Windows / macOS のダブルクリック用パッケージを作り、起動して画面が出ることを確認する。
 # 結果は Actions の実行画面の Artifacts からダウンロードできる。
+# プルリクエストでは動かさない（同じコミットのパッケージが重複するため。push で作られる）。
 on:
   push:
-  pull_request:
   workflow_dispatch:
 jobs:
   package:

@@ -26,6 +26,7 @@ from urllib.parse import parse_qs, urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scraper import Collector, today as source_today
 from platform_support import default_data_dir, launch_browser, show_error
+from versions import VersionManager
 
 APP = "jokers-eye"
 # The packaged app (tools/build_package.py) carries web/ and VERSION in its bundle folder.
@@ -554,6 +555,14 @@ class Store:
         with self.connect() as db:
             db.executemany("INSERT OR REPLACE INTO settings VALUES(?,?)",values.items())
 
+    def copy_into(self, folder):
+        """Consistent copy of the database and exported CSVs, for running another version on its own data."""
+        folder=Path(folder)
+        with self.connect() as source, closing(sqlite3.connect(folder/"jokers-eye.sqlite3")) as dest:
+            source.backup(dest)
+        if (self.folder/"exports").is_dir():
+            shutil.copytree(self.folder/"exports",folder/"exports")
+
     def backup(self):
         folder=self.folder/"backups"
         folder.mkdir(exist_ok=True)
@@ -577,6 +586,7 @@ class Host(ThreadingHTTPServer):
         self.token=secrets.token_urlsafe(32)
         self.last_seen=time.monotonic()
         self.focus_requested=threading.Event()
+        self.versions=VersionManager(store.folder,ROOT,VERSION,store.copy_into)
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
@@ -612,7 +622,16 @@ class Handler(BaseHTTPRequestHandler):
             if not self.allowed():
                 return self.reply({"error":"Joker's eyeを起動し直してください。"},403)
             if path=="/api/state":
-                return self.reply(self.server.store.state())
+                return self.reply(dict(self.server.store.state(),build=self.server.versions.build,trial=self.server.versions.trial))
+            if path=="/api/versions":
+                return self.reply(self.server.versions.overview())
+            if path=="/api/versions/status":
+                return self.reply(self.server.versions.status())
+            if path=="/api/versions/remote":
+                try:
+                    return self.reply(self.server.versions.remote())
+                except ValueError as ex:
+                    return self.reply({"error":str(ex)},400)
             if path=="/api/scrape/status":
                 return self.reply(self.server.store.collector.status())
             if path=="/api/scrape/browser-task":
@@ -661,7 +680,7 @@ class Handler(BaseHTTPRequestHandler):
             if path=="/api/health":
                 return self.reply({"app":APP,"version":VERSION})
             return self.reply({"error":"Not found"},404)
-        files={"/":"index.html","/app.js":"app.js","/base-sheet.js":"base-sheet.js","/map.js":"map.js","/floor-plan.js":"floor-plan.js","/fixed-floor.js":"fixed-floor.js","/fixed-floor.json":"fixed-floor.json","/fixed-floor-display.json":"fixed-floor-display.json","/scrape.js":"scrape.js","/style.css":"style.css","/map.css":"map.css","/juggler.js":"juggler.js","/juggler-math.js":"juggler-math.js","/juggler.css":"juggler.css","/juggler-specs.json":"juggler-specs.json","/icon.png":"icon.png","/icon.ico":"icon.ico","/template.csv":"template.csv","/manifest.json":"manifest.json","/floor-map.webp":"floor-map.webp"}
+        files={"/":"index.html","/app.js":"app.js","/versions.js":"versions.js","/versions.css":"versions.css","/base-sheet.js":"base-sheet.js","/map.js":"map.js","/floor-plan.js":"floor-plan.js","/fixed-floor.js":"fixed-floor.js","/fixed-floor.json":"fixed-floor.json","/fixed-floor-display.json":"fixed-floor-display.json","/scrape.js":"scrape.js","/style.css":"style.css","/map.css":"map.css","/juggler.js":"juggler.js","/juggler-math.js":"juggler-math.js","/juggler.css":"juggler.css","/juggler-specs.json":"juggler-specs.json","/icon.png":"icon.png","/icon.ico":"icon.ico","/template.csv":"template.csv","/manifest.json":"manifest.json","/floor-map.webp":"floor-map.webp"}
         if path not in files:
             return self.reply({"error":"Not found"},404)
         file=WEB/files[path]
@@ -727,6 +746,16 @@ class Handler(BaseHTTPRequestHandler):
                 result=self.server.store.collector.browser_result(payload)
             elif path=="/api/backup":
                 result={"path":self.server.store.backup()}
+            elif path=="/api/versions/token":
+                result=self.server.versions.set_token(payload.get("token"))
+            elif path=="/api/versions/token/delete":
+                result=self.server.versions.delete_token()
+            elif path=="/api/versions/install":
+                result=self.server.versions.install(payload["artifactId"])
+            elif path=="/api/versions/launch":
+                result=self.server.versions.launch(payload["id"])
+            elif path=="/api/versions/remove":
+                result=self.server.versions.remove(payload["id"])
             elif path=="/api/focus":
                 self.server.focus_requested.set()
                 result={"ok":True}
