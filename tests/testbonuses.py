@@ -80,7 +80,10 @@ class BonusCompletionTests(unittest.TestCase):
         self.assertEqual(self.collector.progress['added'],0)
         self.assertEqual(self.collector.progress['completed'],1)
         self.assertEqual(self.collector.status()['summary']['missingBonuses'],0)
-        self.assertEqual(len(self.calls),1)
+        # The day's report once (ordinary entry point), then only the one unfinished model.
+        self.assertEqual(len(self.calls),2)
+        self.assertEqual(self.calls[0],REPORT)
+        self.assertIn('kishu=',self.calls[1])
         self.assertNotIn(REPORT+'?kishu=all',self.calls)
 
     def test_model_failure_falls_back_to_actual_singleton_link(self):

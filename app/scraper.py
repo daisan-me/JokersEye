@@ -435,6 +435,13 @@ class Collector:
         failures=[]
         if html:self.cache_bonus_targets(html,day,url,rows)
         targets=self.get_bonus_targets(day)
+        pending=[m for m in groups if not all(r['bb'] is not None and r['rb'] is not None for r in groups[m])]
+        if pending and not html:
+            # Enter through the day's public report, as an ordinary visitor does, before the
+            # model pages. Opened directly in a fresh source-browser profile they come back
+            # as empty documents, which left every BB/RB repair run without values.
+            self.cache_bonus_targets(self.fetch(url,pace=3.0),day,url,rows)
+            targets=self.get_bonus_targets(day)
         with self.store.connect() as db:
             saved={r['seat']:dict(r) for r in db.execute('SELECT * FROM scraped_observations WHERE day=?',(day,))}
         complete=lambda r:saved.get(r['seat'],{}).get('bb') is not None and saved.get(r['seat'],{}).get('rb') is not None
