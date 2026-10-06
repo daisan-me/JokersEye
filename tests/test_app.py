@@ -64,9 +64,10 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(filtered['total'],1)
         self.assertEqual((filtered['rows'][0]['曜日'],filtered['rows'][0]['出率']),('金曜日','108.2%'))
         self.assertEqual([row['日付'] for row in self.store.gdb_rows({})['rows']],['2024-03-01','2024-03-02'])
-        plan=self.store.gdb_update_plan()
-        self.assertNotIn('2024-03-01',plan['missingDates']);self.assertNotIn('2024-03-02',plan['missingDates'])
-        self.assertEqual(plan['missingDates'][0],'2024-03-03')
+        plan=self.store.gdb_today_plan()  # from the last recorded date: 03-02 still lacks BB/RB, then 03-03 onward
+        self.assertEqual((plan['lastDate'],plan['start']),('2024-03-02','2024-03-02'))
+        self.assertEqual(plan['missingDates'][:2],['2024-03-02','2024-03-03'])
+        self.assertNotIn('2024-03-01',plan['missingDates'])
         self.assertEqual(self.store.gdb_bonus_plan(),{'start':'2024-03-01','targetEnd':plan['targetEnd'],'missingDates':['2024-03-02'],'missingDateCount':1,'missingRows':1})
         with self.store.connect() as db:  # a filled BB/RB changes fetched_at and refreshes the cached view
             db.execute("UPDATE scraped_observations SET bb=3,rb=4,fetched_at='2026-10-07T00:00:00Z' WHERE day='2024-03-02'")
@@ -112,6 +113,17 @@ class StoreTests(unittest.TestCase):
             self.assertEqual(store.gdb_rows_all()[0]['機種'],'旧機種')  # the seat records are kept
             store.collector.save_rows([dict(ROW,date='2024-03-02')])  # and new ones are saved without it
             self.assertEqual(store.state()['summary']['records'],2)
+    def test_today_plan_starts_at_the_last_recorded_date_and_retries_recent_unpublished_days(self):
+        empty=self.store.gdb_today_plan()
+        self.assertEqual((empty['lastDate'],empty['start'],empty['missingDates'][0]),(None,'2024-03-01','2024-03-01'))
+        self.store.collector.save_rows([dict(ROW,date='2024-03-05')])
+        self.store.collector.day_status('2024-03-02','','not-published',0,'TEST ONLY')  # before the last date: skipped
+        self.store.collector.day_status('2024-03-06','','not-published',0,'TEST ONLY')  # after it: tried again
+        plan=self.store.gdb_today_plan()
+        self.assertEqual((plan['lastDate'],plan['start']),('2024-03-05','2024-03-05'))
+        self.assertEqual(plan['missingDates'][0],'2024-03-06')  # 03-05 is complete and not requested again
+        self.assertNotIn('2024-03-02',plan['missingDates'])
+        self.assertEqual(plan['missingDates'][-1],plan['targetEnd'])
     def test_untrusted_fields_remain_text(self):
         self.store.collector.save_rows([dict(ROW,model='<script>alert(1)</script>')])
         self.assertEqual(self.store.observations('')['rows'][0]['機種'],'<script>alert(1)</script>')
@@ -163,22 +175,22 @@ class ApiTests(unittest.TestCase):
         req=urllib.request.Request(self.base+'/api/'+path,data=json.dumps(payload).encode(),headers={'X-Joker-Token':self.host.token,'Content-Type':'application/json'})
         with urllib.request.urlopen(req) as response:return json.load(response)
 
-    def test_new_scraping_defaults_to_bonus_capture(self):
+    def test_today_update_requests_the_plan_dates_with_bonus_capture(self):
         start=Mock(return_value={'state':'running'})
         self.host.store.collector.start=start
-        self.post('scrape/start',{'start':'2026-10-03','end':'2026-10-03'})
-        start.assert_called_once_with('2026-10-03','2026-10-03',True,None,False)
-
-    def test_gdb_update_requests_only_dates_without_records(self):
-        start=Mock(return_value={'state':'running'})
-        self.host.store.collector.start=start
-        self.host.store.gdb_update_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-01','2026-10-03']})
+        self.host.store.gdb_today_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-01','2026-10-03']})
         self.post('gdb/update',{})
         start.assert_called_once_with('2026-10-03','2026-10-01',True,['2026-10-01','2026-10-03'])
-        self.host.store.gdb_update_plan.return_value={'targetEnd':'2026-10-03','missingDates':[]}
+        self.host.store.gdb_today_plan.return_value={'targetEnd':'2026-10-03','missingDates':[]}
         start.reset_mock()
         self.assertEqual(self.post('gdb/update',{})['status'],'up-to-date')
         start.assert_not_called()
+
+    def test_scraping_starts_only_from_the_one_panel(self):
+        for path in ('scrape/start','gdb/bonuses'):
+            with self.assertRaises(urllib.error.HTTPError) as ex:
+                self.post(path,{})
+            self.assertEqual(ex.exception.code,404,path)
 
     def test_range_action_requests_only_plan_dates_with_bonus_capture(self):
         start=Mock(return_value={'state':'running'})
@@ -204,17 +216,6 @@ class ApiTests(unittest.TestCase):
             self.assertIn('スクレイピング中',json.load(ex.exception)['error'])
         finally:
             self.host.store.collector.active=False
-
-    def test_bonus_action_targets_only_plan_dates(self):
-        start=Mock(return_value={'state':'running'})
-        self.host.store.collector.start=start
-        self.host.store.gdb_bonus_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03'],'missingRows':3})
-        self.post('gdb/bonuses',{'start':'2026-10-03','end':'2026-10-03'})
-        start.assert_called_once_with('2026-10-03','2026-10-03',True,['2026-10-03'],True)
-        self.host.store.gdb_bonus_plan.return_value={'missingDates':[],'missingRows':0}
-        start.reset_mock()
-        self.assertEqual(self.post('gdb/bonuses',{})['status'],'up-to-date')
-        start.assert_not_called()
 
     def test_fixed_floor_assets_and_registration(self):
         with urllib.request.urlopen(self.base+'/fixed-floor.json') as response:

@@ -218,12 +218,13 @@ class Store:
             "missingJugglerBonusRows": sum((row["BB数"] == "" or row["RB数"] == "") and row["ジャグラーかジャグラーじゃないか"] == "ジャグラー" for row in rows),
         }
 
-    def gdb_update_plan(self):
-        """Dates from GDB_START to today that have no record yet (dates seen as unpublished are left out)."""
-        status = self.gdb_status()
-        actionable = status["actionableMissingDates"]
-        return {"targetEnd": status["endDate"], "missingDates": actionable, "missingDateCount": len(actionable),
-                "unpublishedDates": status["unpublishedDates"], "totalMissingDateCount": len(status["missingDates"])}
+    def gdb_today_plan(self):
+        """「本日までの分を更新」: from the last date recorded in GDB (or GDB_START) to today.
+        Dates after the last recorded one are tried even if they were unpublished at the last
+        attempt (today's report appears only after the day ends)."""
+        with self.connect() as db:
+            last = db.execute("SELECT MAX(day) FROM scraped_observations WHERE day>=?", (GDB_START,)).fetchone()[0]
+        return dict(self.gdb_range_plan(last or GDB_START, source_today(), retry_unpublished_after=last), lastDate=last)
 
     def gdb_bonus_plan(self, start=None, end=None):
         """Saved records whose BB or RB is still empty."""
@@ -236,19 +237,21 @@ class Store:
         return {"start": start, "targetEnd": end, "missingDates": [row[0] for row in days], "missingDateCount": len(days),
                 "missingRows": sum(row[1] for row in days)}
 
-    def gdb_range_plan(self, start, end):
-        """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out),
-        or a saved record whose BB or RB is empty. Complete dates are not requested again."""
+    def gdb_range_plan(self, start, end, retry_unpublished_after=None):
+        """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out,
+        except those after retry_unpublished_after), or a saved record whose BB or RB is empty.
+        Complete dates are not requested again."""
         if not start or not end:
             raise ValueError("取得する期間の開始日と終了日を指定してください。")
         if date.fromisoformat(start).isoformat()!=start or date.fromisoformat(end).isoformat()!=end or not GDB_START<=start<=end<=source_today():
             raise ValueError("取得する期間は %s から本日までの範囲で、開始日を終了日以前にしてください。" % GDB_START)
         status = self.gdb_status()
-        new_days = [day for day in status["actionableMissingDates"] if start <= day <= end]
+        retry = {day for day in status["unpublishedDates"] if retry_unpublished_after and day > retry_unpublished_after}
+        new_days = [day for day in status["missingDates"] if start <= day <= end and (day in status["actionableMissingDates"] or day in retry)]
         bonus_days = self.gdb_bonus_plan(start, end)["missingDates"]
         return {"start": start, "targetEnd": end, "missingDates": sorted(set(new_days) | set(bonus_days)),
                 "newDateCount": len(new_days), "bonusDateCount": len(bonus_days),
-                "unpublishedDates": [day for day in status["unpublishedDates"] if start <= day <= end]}
+                "unpublishedDates": [day for day in status["unpublishedDates"] if start <= day <= end and day not in retry]}
 
     @staticmethod
     def _parse_filter_number(value, label):
@@ -585,27 +588,15 @@ class Handler(BaseHTTPRequestHandler):
                 result={"ok":True}
             elif path=="/api/map/position":
                 result=self.server.store.save_position(payload)
-            elif path=="/api/scrape/start":
-                result=self.server.store.collector.start(payload.get('end'),payload.get('start'),payload.get('include_bonus',True),payload.get('only_dates'),payload.get('bonus_only',False))
             elif path=="/api/gdb/update":
                 if self.server.store.collector.active:
-                    raise ValueError("現在スクレイピング中です。完了後に不足日を取得してください。")
-                plan=self.server.store.gdb_update_plan()
+                    raise ValueError("現在スクレイピング中です。完了後に更新してください。")
+                plan=self.server.store.gdb_today_plan()
                 if not plan["missingDates"]:
                     result={"status":"up-to-date","plan":plan}
                 else:
-                    # Only dates with no saved record; saved dates are never re-requested by this action.
                     result=self.server.store.collector.start(plan["targetEnd"],min(plan["missingDates"]),True,plan["missingDates"])
                     result.update({"plan":plan})
-            elif path=="/api/gdb/bonuses":
-                if self.server.store.collector.active:
-                    raise ValueError("現在スクレイピング中です。完了後にBB/RBを補完してください。")
-                plan=self.server.store.gdb_bonus_plan(payload.get('start'),payload.get('end'))
-                if not plan['missingDates']:
-                    result={'status':'up-to-date','plan':plan}
-                else:
-                    result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'],True)
-                    result.update({'plan':plan})
             elif path=="/api/gdb/range":
                 if self.server.store.collector.active:
                     raise ValueError("現在スクレイピング中です。完了後に期間を指定して取得してください。")
