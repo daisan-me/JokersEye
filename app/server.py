@@ -14,6 +14,7 @@ import shutil
 import socket
 import sys
 import sqlite3
+import re
 import threading
 import time
 import unicodedata
@@ -23,14 +24,18 @@ from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scraper import Collector
+from scraper import Collector, today as source_today
 from platform_support import default_data_dir, launch_browser, show_error
 
 APP = "jokers-eye"
-VERSION = "1.1.0"
 ROOT = Path(__file__).resolve().parent.parent
+VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 WEB = ROOT / "web"
 START = "2023-04-27"
+BASE_SHEET_START = "2024-03-01"
+BASE_SHEET_END = "2026-09-30"
+BASE_SHEET_COLUMNS = ["日付", "曜日", "台番号", "機種", "ジャグラーかジャグラーじゃないか", "ゲーム数", "BB数", "RB数", "合成", "差枚", "出率"]
+JAPANESE_WEEKDAYS = ("月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日")
 SCHEMA = """
 PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -76,6 +81,14 @@ class Store:
             db.executescript(SCHEMA)
         self.seed_public_map()
         self.collector = Collector(self, WEB / 'report-index.json')
+        with self.connect() as db:
+            columns = {row[1] for row in db.execute("PRAGMA table_info(scraped_observations)")}
+            if columns and "combined" not in columns:
+                db.execute("ALTER TABLE scraped_observations ADD COLUMN combined TEXT")
+        self._base_cache_lock = threading.RLock()
+        self._base_write_lock = threading.RLock()
+        self._base_cache_key = None
+        self._base_cache_rows = []
 
     @contextmanager
     def connect(self):
@@ -96,8 +109,264 @@ class Store:
             summary["main"] = db.execute("SELECT COUNT(*) FROM observations WHERE day >= ? AND rate='main'", (START,)).fetchone()[0]
             latest = self.periods[-1] if self.periods else None
             map_count = latest["seatCount"] if latest else 0
-            positioned = db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
+            positioned = (WEB / "fixed-floor.json").is_file() or db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
             return {"app": APP, "version": VERSION, "summary": summary, "dataPath": str(self.folder), "settings": {r[0]:r[1] for r in db.execute("SELECT key,value FROM settings WHERE key NOT LIKE 'public_map_%'")}, "imports": [dict(r) for r in db.execute("SELECT * FROM imports ORDER BY id DESC LIMIT 100")], "mapRegistered": bool(positioned), "mapSeats": map_count, "mapReportDate": self.history_source.get("lastObservedDate"), "mapPeriods": len(self.periods), "mapReports": self.history_source.get("reportCount",0)}
+
+    def base_sheet_path(self):
+        return self.folder / "exports" / f"jokers-eye-base-data-{BASE_SHEET_START}_{BASE_SHEET_END}.csv"
+
+    @staticmethod
+    def _weekday(day):
+        return JAPANESE_WEEKDAYS[date.fromisoformat(day).weekday()]
+
+    @staticmethod
+    def _is_juggler(model):
+        return "ジャグラー" in unicodedata.normalize("NFKC", model or "")
+
+    @staticmethod
+    def _base_number(value):
+        if value is None or value == "":
+            return ""
+        return str(value)
+
+    @staticmethod
+    def _base_rate(value):
+        if value is None or value == "":
+            return ""
+        try:
+            text = f"{float(value):.1f}".rstrip("0").rstrip(".")
+        except (TypeError, ValueError):
+            return str(value)
+        return text + "%"
+
+    @staticmethod
+    def _base_combined_denominator(value):
+        match = re.fullmatch(r"1/(\d+(?:\.\d+)?)", str(value or "").strip())
+        return float(match.group(1)) if match else None
+
+    def _read_base_sheet(self):
+        path = self.base_sheet_path()
+        if not path.exists():
+            return []
+        stat = path.stat()
+        key = (str(path), stat.st_mtime_ns, stat.st_size)
+        with self._base_cache_lock:
+            if key == self._base_cache_key:
+                return list(self._base_cache_rows)
+            with path.open("r", encoding="utf-8-sig", newline="") as file:
+                reader = csv.DictReader(file)
+                if reader.fieldnames != BASE_SHEET_COLUMNS:
+                    raise ValueError("基礎データシートの列構成が不正です。")
+                rows = [{column: (row.get(column) or "") for column in BASE_SHEET_COLUMNS} for row in reader]
+            self._base_cache_key, self._base_cache_rows = key, rows
+            return list(rows)
+
+    @staticmethod
+    def _calendar_days(start, end):
+        result = []
+        current = date.fromisoformat(start)
+        last = date.fromisoformat(end)
+        while current <= last:
+            result.append(current.isoformat())
+            current += timedelta(days=1)
+        return result
+
+    def _base_rows_from_db(self, days=None, end=BASE_SHEET_END):
+        with self.connect() as db:
+            params = [BASE_SHEET_START, end]
+            where = "day BETWEEN ? AND ?"
+            if days is not None:
+                if not days:
+                    return []
+                placeholders = ",".join("?" for _ in days)
+                where += f" AND day IN ({placeholders})"
+                params.extend(days)
+            query = f"""SELECT day,seat,model,games,bb,rb,combined,net,payout_percent
+                FROM scraped_observations WHERE {where}
+                ORDER BY day,CAST(seat AS INTEGER),seat"""
+            source_rows = [dict(row) for row in db.execute(query, params)]
+        return [self._base_row(row) for row in source_rows]
+
+    def _base_row(self, row):
+        model = row.get("model") or ""
+        return {
+            "日付": row.get("day", ""),
+            "曜日": self._weekday(row["day"]),
+            "台番号": self._base_number(row.get("seat")),
+            "機種": model,
+            "ジャグラーかジャグラーじゃないか": "ジャグラー" if self._is_juggler(model) else "ジャグラーではない",
+            "ゲーム数": self._base_number(row.get("games")),
+            "BB数": self._base_number(row.get("bb")),
+            "RB数": self._base_number(row.get("rb")),
+            "合成": self._base_number(row.get("combined")),
+            "差枚": self._base_number(row.get("net")),
+            "出率": self._base_rate(row.get("payout_percent")),
+        }
+
+    def _write_base_sheet(self, rows):
+        path = self.base_sheet_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp = path.with_name(path.name + ".tmp")
+        with temp.open("w", encoding="utf-8-sig", newline="") as file:
+            writer = csv.DictWriter(file, fieldnames=BASE_SHEET_COLUMNS, extrasaction="ignore", lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(rows)
+        temp.replace(path)
+        with self._base_cache_lock:
+            self._base_cache_key = None
+            self._base_cache_rows = []
+        return path
+
+    def base_sheet_status(self):
+        path = self.base_sheet_path()
+        rows = self._read_base_sheet()
+        dates = sorted({row["日付"] for row in rows})
+        calendar_missing = [day for day in self._calendar_days(BASE_SHEET_START, BASE_SHEET_END) if day not in set(dates)]
+        with self.connect() as db:
+            unpublished = {row[0] for row in db.execute(
+                "SELECT day FROM scrape_days WHERE status='not-published' AND day BETWEEN ? AND ?",
+                (BASE_SHEET_START, BASE_SHEET_END)
+            )}
+        actionable_missing = [day for day in calendar_missing if day not in unpublished]
+        return {
+            "exists": path.exists(), "path": str(path), "columns": BASE_SHEET_COLUMNS,
+            "rowCount": len(rows), "dayCount": len(dates), "firstDate": dates[0] if dates else None,
+            "lastDate": dates[-1] if dates else None, "startDate": BASE_SHEET_START, "endDate": BASE_SHEET_END,
+            "missingDates": calendar_missing, "actionableMissingDates": actionable_missing,
+            "unpublishedDates": sorted(day for day in calendar_missing if day in unpublished),
+            "missingBonusRows": sum(row['BB数']=='' or row['RB数']=='' for row in rows),
+            "missingJugglerBonusRows": sum((row['BB数']=='' or row['RB数']=='') and self._is_juggler(row['機種']) for row in rows),
+        }
+
+    def build_base_sheet(self, mode="create"):
+        with self._base_write_lock:
+            return self._build_base_sheet(mode)
+
+    def _build_base_sheet(self, mode):
+        if mode not in ("create", "update", "bonuses"):
+            raise ValueError("基礎データシートの処理が不正です。")
+        existing = self._read_base_sheet()
+        if mode == "create" and existing:
+            return {"status": "exists", "addedRows": 0, "addedDates": [], "sheet": self.base_sheet_status()}
+        if mode != "create" and not self.base_sheet_path().exists():
+            raise ValueError("先に基礎データシートを作成してください。")
+        existing_dates = {row["日付"] for row in existing}
+        if mode == "create":
+            new_rows = self._base_rows_from_db()
+            rows = new_rows
+        elif mode == "update":
+            target_end = source_today()
+            target_days = self._calendar_days(BASE_SHEET_START, target_end)
+            missing = [day for day in target_days if day not in existing_dates]
+            new_rows = self._base_rows_from_db(missing, target_end)
+            rows = [dict(row) for row in existing] + new_rows
+        else:
+            new_rows = []
+            rows = [dict(row) for row in existing]
+        updated_rows = 0
+        if mode != "create":
+            source = {(row['日付'], row['台番号']): row for row in self._base_rows_from_db(end=source_today())}
+            for row in rows:
+                saved = source.get((row['日付'], row['台番号']))
+                # Enrichment changes only empty bonus fields of the same record.
+                # Preserve games/net/payout/model and any populated CSV counts.
+                if not saved or (row['機種'], row['ゲーム数']) != (saved['機種'], saved['ゲーム数']):
+                    continue
+                if any(row[key] and saved[key] and row[key] != saved[key] for key in ('BB数','RB数')):
+                    continue
+                changed = False
+                for key in ('BB数', 'RB数', '合成'):
+                    if row[key] == '' and saved[key] != '':
+                        row[key] = saved[key]
+                        changed = True
+                updated_rows += changed
+        rows.sort(key=lambda row: (row["日付"], int(row["台番号"]) if str(row["台番号"]).isdigit() else str(row["台番号"])))
+        self._write_base_sheet(rows)
+        return {"status": "created" if mode == "create" else "updated", "addedRows": len(new_rows), "updatedRows": updated_rows,
+                "addedDates": sorted({row["日付"] for row in new_rows}), "sheet": self.base_sheet_status()}
+
+    def base_sheet_update_plan(self):
+        status = self.base_sheet_status()
+        if not status["exists"]:
+            raise ValueError("先に基礎データシートを作成してください。")
+        today_end = source_today()
+        present = {row["日付"] for row in self._read_base_sheet()}
+        missing = [day for day in self._calendar_days(BASE_SHEET_START, today_end) if day not in present]
+        unpublished = set(status.get("unpublishedDates", []))
+        actionable = [day for day in missing if day not in unpublished]
+        return {"targetEnd": today_end, "missingDates": actionable, "missingDateCount": len(actionable),
+                "unpublishedDates": sorted(day for day in missing if day in unpublished),
+                "totalMissingDateCount": len(missing), "sheet": status}
+
+    def base_sheet_bonus_plan(self, start=None, end=None):
+        if not self.base_sheet_path().exists():
+            raise ValueError("先に基礎データシートを作成してください。")
+        start, end = start or BASE_SHEET_START, end or source_today()
+        if date.fromisoformat(start).isoformat()!=start or date.fromisoformat(end).isoformat()!=end or not BASE_SHEET_START<=start<=end<=source_today():
+            raise ValueError("BB/RB補完の日付範囲が不正です。")
+        # Local synchronization precedes planning; no source request is needed
+        # when counts have already been captured into SQLite.
+        self.build_base_sheet('bonuses')
+        wanted={(r['日付'],r['台番号']):r for r in self._read_base_sheet() if start<=r['日付']<=end and (r['BB数']=='' or r['RB数']=='')}
+        with self.connect() as db:
+            missing=[]
+            for r in db.execute('SELECT day,seat,model,games FROM scraped_observations WHERE day BETWEEN ? AND ? AND (bb IS NULL OR rb IS NULL) ORDER BY day,CAST(seat AS INTEGER)',(start,end)):
+                record=wanted.get((r['day'],r['seat']))
+                if record and (record['機種'],record['ゲーム数'])==(r['model'],self._base_number(r['games'])):
+                    missing.append(dict(r))
+        dates=sorted({r['day'] for r in missing})
+        return {'start':start,'targetEnd':end,'missingDates':dates,'missingDateCount':len(dates),'missingRows':len(missing),'unavailableRows':len(wanted)-len(missing)}
+
+    @staticmethod
+    def _parse_filter_number(value, label):
+        if value in (None, ""):
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError) as ex:
+            raise ValueError(label + "は数値で指定してください。") from ex
+
+    def base_sheet_rows(self, query):
+        rows = self._read_base_sheet()
+        from_day, to_day = query.get("from", ""), query.get("to", "")
+        if from_day: date.fromisoformat(from_day)
+        if to_day: date.fromisoformat(to_day)
+        if from_day and to_day and from_day > to_day: raise ValueError("日付の範囲が不正です。")
+        month = query.get("month", "")
+        if month and not re.fullmatch(r"\d{4}-\d{2}", month): raise ValueError("月はYYYY-MMで指定してください。")
+        weekday = query.get("weekday", "")
+        if weekday not in ("", "0", "1", "2", "3", "4", "5", "6"): raise ValueError("曜日の指定が不正です。")
+        games_min = self._parse_filter_number(query.get("games_min"), "ゲーム数")
+        net_min = self._parse_filter_number(query.get("net_min"), "差枚")
+        combined_min = self._parse_filter_number(query.get("combined_n_min"), "合成分母")
+        payout_min = self._parse_filter_number(query.get("payout_min"), "出率")
+        model = unicodedata.normalize("NFKC", query.get("model", "")).casefold()
+        juggler = query.get("juggler", "all")
+        if juggler not in ("all", "juggler", "non-juggler"): raise ValueError("ジャグラー判定の指定が不正です。")
+        filtered = []
+        for row in rows:
+            day = row["日付"]
+            if from_day and day < from_day or to_day and day > to_day or month and not day.startswith(month): continue
+            if weekday and date.fromisoformat(day).weekday() != int(weekday): continue
+            if model and model not in unicodedata.normalize("NFKC", row["機種"]).casefold(): continue
+            is_juggler = row["ジャグラーかジャグラーじゃないか"] == "ジャグラー"
+            if juggler == "juggler" and not is_juggler or juggler == "non-juggler" and is_juggler: continue
+            def number_or_none(key, percent=False):
+                value = row[key]
+                if not value: return None
+                try: return float(str(value).rstrip("%"))
+                except ValueError: return None
+            if games_min is not None and (number_or_none("ゲーム数") is None or number_or_none("ゲーム数") < games_min): continue
+            if net_min is not None and (number_or_none("差枚") is None or number_or_none("差枚") < net_min): continue
+            if combined_min is not None and (self._base_combined_denominator(row["合成"]) is None or self._base_combined_denominator(row["合成"]) < combined_min): continue
+            if payout_min is not None and (number_or_none("出率") is None or number_or_none("出率") < payout_min): continue
+            filtered.append(row)
+        total = len(filtered)
+        try: offset = max(0, int(query.get("offset", "0")))
+        except ValueError: raise ValueError("ページ位置が不正です。")
+        try: limit = min(500, max(1, int(query.get("limit", "100"))))
+        except ValueError: raise ValueError("表示件数が不正です。")
+        return {"rows": filtered[offset:offset + limit], "total": total, "offset": offset, "limit": limit, "status": self.base_sheet_status()}
 
     def seed_public_map(self):
         with self.connect() as db:
@@ -357,6 +626,22 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(Path(export['path']).read_bytes(),mime='text/csv; charset=utf-8',extra_headers={'Content-Disposition':'attachment; filename="gotham-city.csv"'})
                 except ValueError as ex:
                     return self.reply({'error':str(ex)},400)
+            if path=="/api/base-sheet/status":
+                try:
+                    return self.reply(self.server.store.base_sheet_status())
+                except ValueError as ex:
+                    return self.reply({"error":str(ex)},400)
+            if path=="/api/base-sheet/rows":
+                try:
+                    query = {key: values[0] for key, values in parse_qs(urlsplit(self.path).query).items()}
+                    return self.reply(self.server.store.base_sheet_rows(query))
+                except ValueError as ex:
+                    return self.reply({"error":str(ex)},400)
+            if path=="/api/base-sheet/download":
+                path_to_file = self.server.store.base_sheet_path()
+                if not path_to_file.exists():
+                    return self.reply({"error":"先に基礎データシートを作成してください。"},404)
+                return self.reply(path_to_file.read_bytes(), mime="text/csv; charset=utf-8", extra_headers={"Content-Disposition": "attachment; filename=\"jokers-eye-base-data.csv\""})
             if path=="/api/map":
                 query = parse_qs(urlsplit(self.path).query)
                 try:
@@ -375,7 +660,7 @@ class Handler(BaseHTTPRequestHandler):
             if path=="/api/health":
                 return self.reply({"app":APP,"version":VERSION})
             return self.reply({"error":"Not found"},404)
-        files={"/":"index.html","/app.js":"app.js","/map.js":"map.js","/floor-plan.js":"floor-plan.js","/scrape.js":"scrape.js","/style.css":"style.css","/map.css":"map.css","/icon.png":"icon.png","/icon.ico":"icon.ico","/template.csv":"template.csv","/manifest.json":"manifest.json","/floor-map.webp":"floor-map.webp"}
+        files={"/":"index.html","/app.js":"app.js","/base-sheet.js":"base-sheet.js","/map.js":"map.js","/floor-plan.js":"floor-plan.js","/fixed-floor.js":"fixed-floor.js","/fixed-floor.json":"fixed-floor.json","/fixed-floor-display.json":"fixed-floor-display.json","/scrape.js":"scrape.js","/style.css":"style.css","/map.css":"map.css","/juggler.js":"juggler.js","/juggler-math.js":"juggler-math.js","/juggler.css":"juggler.css","/juggler-specs.json":"juggler-specs.json","/icon.png":"icon.png","/icon.ico":"icon.ico","/template.csv":"template.csv","/manifest.json":"manifest.json","/floor-map.webp":"floor-map.webp"}
         if path not in files:
             return self.reply({"error":"Not found"},404)
         file=WEB/files[path]
@@ -404,7 +689,37 @@ class Handler(BaseHTTPRequestHandler):
             elif path=="/api/map/position":
                 result=self.server.store.save_position(payload)
             elif path=="/api/scrape/start":
-                result=self.server.store.collector.start(payload.get('end'),payload.get('start'),payload.get('include_bonus',False))
+                result=self.server.store.collector.start(payload.get('end'),payload.get('start'),payload.get('include_bonus',True),payload.get('only_dates'),payload.get('bonus_only',False))
+            elif path=="/api/base-sheet/create":
+                if self.server.store.collector.active:
+                    raise ValueError("現在スクレイピング中です。完了後に基礎データシートを作成してください。")
+                if self.server.store.base_sheet_path().exists():
+                    result={"status":"exists","sheetMode":"create","sheetBuildPending":False,"sheet":self.server.store.base_sheet_status()}
+                else:
+                    result=self.server.store.collector.start(BASE_SHEET_END,BASE_SHEET_START,True,sheet_mode='create')
+                    result.update({"sheetMode":"create","sheetBuildPending":True})
+            elif path=="/api/base-sheet/update":
+                if self.server.store.collector.active:
+                    raise ValueError("現在スクレイピング中です。完了後に基礎データシートを更新してください。")
+                plan=self.server.store.base_sheet_update_plan()
+                if not plan["missingDates"]:
+                    result={"status":"up-to-date","sheetMode":"update","sheetBuildPending":False,"plan":plan}
+                else:
+                    # Delta mode sends only dates absent from the existing CSV;
+                    # existing dates are never re-requested by this action.
+                    result=self.server.store.collector.start(plan["targetEnd"],min(plan["missingDates"]),True,plan["missingDates"])
+                    result.update({"sheetMode":"update","sheetBuildPending":True,"plan":plan})
+            elif path=="/api/base-sheet/bonuses":
+                if self.server.store.collector.active:
+                    raise ValueError("現在スクレイピング中です。完了後にBB/RBを補完してください。")
+                plan=self.server.store.base_sheet_bonus_plan(payload.get('start'),payload.get('end'))
+                if not plan['missingDates']:
+                    result={'status':'up-to-date','sheetMode':'bonuses','sheetBuildPending':False,'plan':plan}
+                else:
+                    result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'],True)
+                    result.update({'sheetMode':'bonuses','sheetBuildPending':True,'plan':plan})
+            elif path=="/api/base-sheet/build":
+                result=self.server.store.build_base_sheet(payload.get("mode","create"))
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop()
             elif path=="/api/scrape/browser-result":

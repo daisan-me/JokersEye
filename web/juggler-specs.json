@@ -1,0 +1,2652 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-10-04",
+  "sourceUrl": "https://www.kitadenshi.co.jp/slot/",
+  "machines": [
+    {
+      "id": "myjuggler6",
+      "name": "マイジャグラーVI",
+      "generation": 6,
+      "introduced": "2026年10月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/myjuggler6/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 273.1,
+          "rbDenominator": 409.6,
+          "combinedDenominator": 163.8,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 270.8,
+          "rbDenominator": 385.5,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 98.0
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 266.4,
+          "rbDenominator": 336.1,
+          "combinedDenominator": 148.6,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 254.0,
+          "rbDenominator": 290.0,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 240.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 126.8,
+          "payoutPercent": 105.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 229.1,
+          "rbDenominator": 229.1,
+          "combinedDenominator": 114.6,
+          "payoutPercent": 109.4
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2026/06/toy_haito.png"
+    },
+    {
+      "id": "neoimjugglerex",
+      "name": "ネオアイムジャグラーEX",
+      "generation": 6,
+      "introduced": "2025年9月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/neoimjugglerex/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 273.1,
+          "rbDenominator": 439.8,
+          "combinedDenominator": 168.5,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 269.7,
+          "rbDenominator": 399.6,
+          "combinedDenominator": 161.0,
+          "payoutPercent": 98.0
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 269.7,
+          "rbDenominator": 331.0,
+          "combinedDenominator": 148.6,
+          "payoutPercent": 99.5
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 259.0,
+          "rbDenominator": 315.1,
+          "combinedDenominator": 142.2,
+          "payoutPercent": 101.1
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 259.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 128.5,
+          "payoutPercent": 103.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 255.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 127.5,
+          "payoutPercent": 105.5
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 252,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2025/04/haito.png"
+    },
+    {
+      "id": "ultramiraclejuggler",
+      "name": "ウルトラミラクルジャグラー",
+      "generation": 6,
+      "introduced": "2024年12月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/ultramiraclejuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 267.5,
+          "rbDenominator": 425.6,
+          "combinedDenominator": 164.3,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 261.1,
+          "rbDenominator": 402.1,
+          "combinedDenominator": 158.3,
+          "payoutPercent": 98.1
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 256.0,
+          "rbDenominator": 350.5,
+          "combinedDenominator": 147.9,
+          "payoutPercent": 99.8
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 242.7,
+          "rbDenominator": 322.8,
+          "combinedDenominator": 138.6,
+          "payoutPercent": 102.1
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 233.2,
+          "rbDenominator": 297.9,
+          "combinedDenominator": 130.8,
+          "payoutPercent": 104.5
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 216.3,
+          "rbDenominator": 277.7,
+          "combinedDenominator": 121.6,
+          "payoutPercent": 108.1
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2024/10/haito.png"
+    },
+    {
+      "id": "mrjuggler",
+      "name": "ミスタージャグラー",
+      "generation": 6,
+      "introduced": "2024年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/mrjuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 268.6,
+          "rbDenominator": 374.5,
+          "combinedDenominator": 156.4,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 267.5,
+          "rbDenominator": 354.2,
+          "combinedDenominator": 152.4,
+          "payoutPercent": 98.0
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 260.1,
+          "rbDenominator": 331.0,
+          "combinedDenominator": 145.6,
+          "payoutPercent": 99.8
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 249.2,
+          "rbDenominator": 291.3,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 102.7
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 240.9,
+          "rbDenominator": 257.0,
+          "combinedDenominator": 124.4,
+          "payoutPercent": 105.5
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 237.4,
+          "rbDenominator": 237.4,
+          "combinedDenominator": 118.7,
+          "payoutPercent": 107.3
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2024/05/haito02.png"
+    },
+    {
+      "id": "jugglergirlsss",
+      "name": "ジャグラーガールズSS",
+      "generation": 6,
+      "introduced": "2024年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/jugglergirlsss/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 273.1,
+          "rbDenominator": 381.0,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 270.8,
+          "rbDenominator": 350.5,
+          "combinedDenominator": 152.8,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 260.1,
+          "rbDenominator": 316.6,
+          "combinedDenominator": 142.8,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 250.1,
+          "rbDenominator": 281.3,
+          "combinedDenominator": 132.4,
+          "payoutPercent": 102.1
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 243.6,
+          "rbDenominator": 270.8,
+          "combinedDenominator": 128.3,
+          "payoutPercent": 104.0
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 226.0,
+          "rbDenominator": 252.1,
+          "combinedDenominator": 119.2,
+          "payoutPercent": 107.5
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2024/02/jgss_haito.png"
+    },
+    {
+      "id": "gogojuggler3",
+      "name": "ゴーゴージャグラー3",
+      "generation": 6,
+      "introduced": "2023年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/gogojuggler3/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 259.0,
+          "rbDenominator": 354.2,
+          "combinedDenominator": 149.6,
+          "payoutPercent": 97.2
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 258.0,
+          "rbDenominator": 332.7,
+          "combinedDenominator": 145.3,
+          "payoutPercent": 98.2
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 257.0,
+          "rbDenominator": 306.2,
+          "combinedDenominator": 139.7,
+          "payoutPercent": 99.4
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 254.0,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 130.5,
+          "payoutPercent": 101.6
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 247.3,
+          "rbDenominator": 247.3,
+          "combinedDenominator": 123.7,
+          "payoutPercent": 103.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 234.9,
+          "rbDenominator": 234.9,
+          "combinedDenominator": 117.4,
+          "payoutPercent": 106.5
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2023/05/haito.png"
+    },
+    {
+      "id": "happyjugglerv3",
+      "name": "ハッピージャグラーV Ⅲ",
+      "generation": 6,
+      "introduced": "2022年10月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/happyjugglerv3/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 273.1,
+          "rbDenominator": 397.2,
+          "combinedDenominator": 161.8,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 270.8,
+          "rbDenominator": 362.1,
+          "combinedDenominator": 154.9,
+          "payoutPercent": 98.1
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 263.2,
+          "rbDenominator": 332.7,
+          "combinedDenominator": 146.9,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 254.0,
+          "rbDenominator": 300.6,
+          "combinedDenominator": 137.7,
+          "payoutPercent": 102.9
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 239.2,
+          "rbDenominator": 273.1,
+          "combinedDenominator": 127.5,
+          "payoutPercent": 105.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 226.0,
+          "rbDenominator": 256.0,
+          "combinedDenominator": 120.0,
+          "payoutPercent": 108.4
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2022/08/sh_haito.png"
+    },
+    {
+      "id": "myjuggler5",
+      "name": "マイジャグラーⅤ",
+      "generation": 6,
+      "introduced": "2021年12月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/myjuggler5/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 273.1,
+          "rbDenominator": 409.6,
+          "combinedDenominator": 163.8,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 270.8,
+          "rbDenominator": 385.5,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 98.0
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 266.4,
+          "rbDenominator": 336.1,
+          "combinedDenominator": 148.6,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 254.0,
+          "rbDenominator": 290.0,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 240.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 126.8,
+          "payoutPercent": 105.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 229.1,
+          "rbDenominator": 229.1,
+          "combinedDenominator": 114.6,
+          "payoutPercent": 109.4
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2021/10/haito.png"
+    },
+    {
+      "id": "funkyjuggler2",
+      "name": "ファンキージャグラー2",
+      "generation": 6,
+      "introduced": "2021年10月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/funkyjuggler2/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 266.4,
+          "rbDenominator": 439.8,
+          "combinedDenominator": 165.9,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 259.0,
+          "rbDenominator": 407.1,
+          "combinedDenominator": 158.3,
+          "payoutPercent": 98.5
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 256.0,
+          "rbDenominator": 366.1,
+          "combinedDenominator": 150.7,
+          "payoutPercent": 99.8
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 249.2,
+          "rbDenominator": 322.8,
+          "combinedDenominator": 140.6,
+          "payoutPercent": 102.0
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 240.1,
+          "rbDenominator": 299.3,
+          "combinedDenominator": 133.2,
+          "payoutPercent": 104.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 219.9,
+          "rbDenominator": 262.1,
+          "combinedDenominator": 119.6,
+          "payoutPercent": 109.0
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 240,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2021/07/haito.png"
+    },
+    {
+      "id": "imjugglerex2020_gr",
+      "name": "アイムジャグラーEX グリーンパネル",
+      "generation": 6,
+      "introduced": "2021年5月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex2020_gr/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 273.1,
+          "rbDenominator": 439.8,
+          "combinedDenominator": 168.5,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 269.7,
+          "rbDenominator": 399.6,
+          "combinedDenominator": 161.0,
+          "payoutPercent": 98.0
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 269.7,
+          "rbDenominator": 331.0,
+          "combinedDenominator": 148.6,
+          "payoutPercent": 99.5
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 259.0,
+          "rbDenominator": 315.1,
+          "combinedDenominator": 142.2,
+          "payoutPercent": 101.1
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 259.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 128.5,
+          "payoutPercent": 103.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 255.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 127.5,
+          "payoutPercent": 105.5
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 252,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2021/04/sighaitouhyo.png"
+    },
+    {
+      "id": "imjugglerex2020",
+      "name": "アイムジャグラーEX",
+      "generation": 6,
+      "introduced": "2020年12月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex2020/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 273.1,
+          "rbDenominator": 439.8,
+          "combinedDenominator": 168.5,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 269.7,
+          "rbDenominator": 399.6,
+          "combinedDenominator": 161.0,
+          "payoutPercent": 98.0
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 269.7,
+          "rbDenominator": 331.0,
+          "combinedDenominator": 148.6,
+          "payoutPercent": 99.5
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 259.0,
+          "rbDenominator": 315.1,
+          "combinedDenominator": 142.2,
+          "payoutPercent": 101.1
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 259.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 128.5,
+          "payoutPercent": 103.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 255.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 127.5,
+          "payoutPercent": 105.5
+        }
+      ],
+      "bonusNetCoins": {
+        "bb": 252,
+        "rb": 96
+      },
+      "grapePayoutCoins": 8,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2020/04/haitouhyo0401.png"
+    },
+    {
+      "id": "gogojuggler2",
+      "name": "ゴーゴージャグラー2",
+      "generation": 5,
+      "introduced": "2019年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/gogojuggler2/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 269.7,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 154.9,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 268.6,
+          "rbDenominator": 336.1,
+          "combinedDenominator": 149.3,
+          "payoutPercent": 98.2
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 266.4,
+          "rbDenominator": 318.1,
+          "combinedDenominator": 145.0,
+          "payoutPercent": 99.2
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 260.1,
+          "rbDenominator": 283.7,
+          "combinedDenominator": 135.7,
+          "payoutPercent": 101.6
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 255.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 127.5,
+          "payoutPercent": 103.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 242.7,
+          "rbDenominator": 242.7,
+          "combinedDenominator": 121.4,
+          "payoutPercent": 106.5
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2019/02/ggj2_haito-1.png"
+    },
+    {
+      "id": "myjuggler4",
+      "name": "マイジャグラーⅣ",
+      "generation": 5,
+      "introduced": "2018年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/myjuggler4/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 95.7
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 292.6,
+          "combinedDenominator": 138.9,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 277.7,
+          "combinedDenominator": 132.1,
+          "payoutPercent": 105.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 240.9,
+          "combinedDenominator": 120.5,
+          "payoutPercent": 109.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2018/05/myj4_haito-1.png"
+    },
+    {
+      "id": "imjugglerex-ae_gr",
+      "name": "アイムジャグラー EX-AE (グリーンパネル)",
+      "generation": 5,
+      "introduced": "2018年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex-ae_gr/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.2
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2018/01/ae_g_haito-1.png"
+    },
+    {
+      "id": "imjugglerex-ae",
+      "name": "アイムジャグラー EX-AE",
+      "generation": 5,
+      "introduced": "2017年8月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex-ae/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.2
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2017/06/ex-ae_haito-1.png"
+    },
+    {
+      "id": "supermiraclejuggler",
+      "name": "スーパーミラクルジャグラー",
+      "generation": 5,
+      "introduced": "2017年6月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/supermiraclejuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 282.5,
+          "rbDenominator": 468.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 96.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 273.1,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 167.2,
+          "payoutPercent": 97.8
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 268.6,
+          "rbDenominator": 372.4,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 99.5
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 256.0,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 146.3,
+          "payoutPercent": 102.0
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 251.1,
+          "rbDenominator": 304.8,
+          "combinedDenominator": 137.7,
+          "payoutPercent": 104.5
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 230.8,
+          "rbDenominator": 332.7,
+          "combinedDenominator": 136.2,
+          "payoutPercent": 108.1
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2017/04/smj_haito-1-1.png"
+    },
+    {
+      "id": "anniversaryedition_wh",
+      "name": "アイムジャグラーEX AnniversaryEdition ～プレミアムホワイト～",
+      "generation": 5,
+      "introduced": "2017年3月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/anniversaryedition_wh/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.2
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2017/01/jgae_w_haito-1.png"
+    },
+    {
+      "id": "anniversaryedition_pk",
+      "name": "アイムジャグラーEX AnniversaryEdition ～プレミアムピンク～",
+      "generation": 5,
+      "introduced": "2017年3月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/anniversaryedition_pk/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.2
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2017/01/jgae_p_haito-1.png"
+    },
+    {
+      "id": "newimjugglerex-ka",
+      "name": "ニューアイムジャグラー EX(レッドゴールドパネル)",
+      "generation": 5,
+      "introduced": "2016年9月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/newimjugglerex-ka/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.2
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2016/08/ex-ka_haito-1.png"
+    },
+    {
+      "id": "funkyjuggler",
+      "name": "ファンキージャグラー",
+      "generation": 5,
+      "introduced": "2016年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/funkyjuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 275.4,
+          "rbDenominator": 452.0,
+          "combinedDenominator": 171.1,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 271.9,
+          "rbDenominator": 407.1,
+          "combinedDenominator": 163.0,
+          "payoutPercent": 98.2
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 267.5,
+          "rbDenominator": 372.4,
+          "combinedDenominator": 155.7,
+          "payoutPercent": 99.8
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 260.1,
+          "rbDenominator": 336.1,
+          "combinedDenominator": 146.6,
+          "payoutPercent": 102.0
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 253.0,
+          "rbDenominator": 302.0,
+          "combinedDenominator": 137.7,
+          "payoutPercent": 104.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 232.4,
+          "rbDenominator": 275.4,
+          "combinedDenominator": 126.0,
+          "payoutPercent": 109.0
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2016/05/fjg_haito-1.png"
+    },
+    {
+      "id": "myjuggler3",
+      "name": "マイジャグラーⅢ",
+      "generation": 5,
+      "introduced": "2015年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/myjuggler3/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 95.7
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 292.6,
+          "combinedDenominator": 138.9,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 277.7,
+          "combinedDenominator": 132.1,
+          "payoutPercent": 105.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 240.9,
+          "combinedDenominator": 120.5,
+          "payoutPercent": 109.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2015/06/myj3_haito.png"
+    },
+    {
+      "id": "gogojuggler",
+      "name": "ゴーゴージャグラー",
+      "generation": 5,
+      "introduced": "2015年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/gogojuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 269.7,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 154.9,
+          "payoutPercent": 97.0
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 268.6,
+          "rbDenominator": 336.1,
+          "combinedDenominator": 149.3,
+          "payoutPercent": 98.2
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 266.4,
+          "rbDenominator": 318.1,
+          "combinedDenominator": 145.0,
+          "payoutPercent": 99.2
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 260.1,
+          "rbDenominator": 283.7,
+          "combinedDenominator": 135.7,
+          "payoutPercent": 101.6
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 255.0,
+          "rbDenominator": 255.0,
+          "combinedDenominator": 127.5,
+          "payoutPercent": 103.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 242.7,
+          "rbDenominator": 242.7,
+          "combinedDenominator": 121.4,
+          "payoutPercent": 106.5
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2015/01/ggj_haito.png"
+    },
+    {
+      "id": "newimjugglerex-kt_cl",
+      "name": "ニューアイムジャグラー EX-KT（クリスタルパネル）",
+      "generation": 5,
+      "introduced": "2014年11月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/newimjugglerex-kt_cl/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.2
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2014/09/nic_haito-2.png"
+    },
+    {
+      "id": "newimjugglerex-kt",
+      "name": "ニューアイムジャグラー EX-KT",
+      "generation": 5,
+      "introduced": "2014年8月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/newimjugglerex-kt/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.2
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2014/06/nkt_haito-1.png"
+    },
+    {
+      "id": "happyjugglerv2",
+      "name": "ハッピージャグラーVⅡ",
+      "generation": 5,
+      "introduced": "2014年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/happyjugglerv2/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 409.6,
+          "combinedDenominator": 168.9,
+          "payoutPercent": 96.1
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 315.1,
+          "combinedDenominator": 143.7,
+          "payoutPercent": 102.9
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 287.4,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 273.1,
+          "combinedDenominator": 128.0,
+          "payoutPercent": 108.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2014/01/hjv2_haito-1.png"
+    },
+    {
+      "id": "myjuggler2kk",
+      "name": "マイジャグラーⅡKK",
+      "generation": 5,
+      "introduced": "2013年11月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/myjuggler2kk/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 95.7
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 292.6,
+          "combinedDenominator": 138.9,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 277.7,
+          "combinedDenominator": 132.1,
+          "payoutPercent": 105.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 240.9,
+          "combinedDenominator": 120.5,
+          "payoutPercent": 109.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2013/06/myj2_p_haito-1.png"
+    },
+    {
+      "id": "minnanojuggler",
+      "name": "みんなのジャグラー",
+      "generation": 5,
+      "introduced": "2013年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/minnanojuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 264.3,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 167.2,
+          "payoutPercent": 97.2
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 264.3,
+          "rbDenominator": 409.6,
+          "combinedDenominator": 160.6,
+          "payoutPercent": 98.1
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 260.1,
+          "rbDenominator": 390.1,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 99.2
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 256.0,
+          "rbDenominator": 343.1,
+          "combinedDenominator": 146.6,
+          "payoutPercent": 101.6
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 248.2,
+          "rbDenominator": 283.7,
+          "combinedDenominator": 132.4,
+          "payoutPercent": 104.6
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 231.6,
+          "rbDenominator": 244.5,
+          "combinedDenominator": 118.9,
+          "payoutPercent": 109.8
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2013/05/mnj_haito-1.png"
+    },
+    {
+      "id": "jugglergirls",
+      "name": "ジャグラーガールズ",
+      "generation": 5,
+      "introduced": "2013年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/jugglergirls/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 397.2,
+          "combinedDenominator": 166.8,
+          "payoutPercent": 96.5
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.8
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 334.4,
+          "combinedDenominator": 150.3,
+          "payoutPercent": 99.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 297.9,
+          "combinedDenominator": 140.0,
+          "payoutPercent": 102.0
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 258.0,
+          "rbDenominator": 286.2,
+          "combinedDenominator": 135.7,
+          "payoutPercent": 103.9
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 270.8,
+          "combinedDenominator": 127.5,
+          "payoutPercent": 107.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2013/04/jgg_haito-1.png"
+    },
+    {
+      "id": "newimjugglerex_bk",
+      "name": "ニューアイムジャグラー EX (ブラックパネル)",
+      "generation": 5,
+      "introduced": "2012年11月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/newimjugglerex_bk/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.85
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.71
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.16
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2012/11/nije_b_haito-1.png"
+    },
+    {
+      "id": "myjuggler2",
+      "name": "マイジャグラーⅡ",
+      "generation": 5,
+      "introduced": "2012年8月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/myjuggler2/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 95.7
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 292.6,
+          "combinedDenominator": 138.9,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 277.7,
+          "combinedDenominator": 132.1,
+          "payoutPercent": 105.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 240.9,
+          "combinedDenominator": 120.5,
+          "payoutPercent": 109.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2012/08/myj2_haito-1.png"
+    },
+    {
+      "id": "newimjugglerex",
+      "name": "ニューアイムジャグラー EX",
+      "generation": 5,
+      "introduced": "2012年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/newimjugglerex/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.85
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.71
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.16
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2012/04/nij_p_haito-1.png"
+    },
+    {
+      "id": "miraclejuggler",
+      "name": "ミラクルジャグラー",
+      "generation": 5,
+      "introduced": "2011年11月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/miraclejuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 292.6,
+          "rbDenominator": 468.1,
+          "combinedDenominator": 180.1,
+          "payoutPercent": 95.7
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 170.7,
+          "payoutPercent": 97.5
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 399.6,
+          "combinedDenominator": 162.2,
+          "payoutPercent": 99.0
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 268.6,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 150.3,
+          "payoutPercent": 101.2
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 256.0,
+          "rbDenominator": 309.1,
+          "combinedDenominator": 140.0,
+          "payoutPercent": 103.9
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 230.8,
+          "rbDenominator": 356.2,
+          "combinedDenominator": 140.0,
+          "payoutPercent": 107.9
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2011/11/mlj_haito-1.png"
+    },
+    {
+      "id": "imjugglerapex",
+      "name": "アイムジャグラーAPEX",
+      "generation": 5,
+      "introduced": "2011年3月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerapex/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 455.1,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.85
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.71
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 273.1,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 273.1,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.16
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2011/03/ija_haito-1.png"
+    },
+    {
+      "id": "myjuggler",
+      "name": "マイジャグラー",
+      "generation": 5,
+      "introduced": "2010年8月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/myjuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 95.7
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 292.6,
+          "combinedDenominator": 138.9,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 277.7,
+          "combinedDenominator": 132.1,
+          "payoutPercent": 105.3
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 240.9,
+          "combinedDenominator": 120.5,
+          "payoutPercent": 109.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2010/08/myj_haito-1.png"
+    },
+    {
+      "id": "happyjugglerv",
+      "name": "ハッピージャグラーV",
+      "generation": 5,
+      "introduced": "2010年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/happyjugglerv/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 409.6,
+          "combinedDenominator": 168.9,
+          "payoutPercent": 96.1
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 159.1,
+          "payoutPercent": 97.9
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 273.1,
+          "rbDenominator": 341.3,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 99.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 264.3,
+          "rbDenominator": 315.1,
+          "combinedDenominator": 143.7,
+          "payoutPercent": 102.9
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 287.4,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 273.1,
+          "combinedDenominator": 128.0,
+          "payoutPercent": 108.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2010/04/hpj5_haito-1.png"
+    },
+    {
+      "id": "imjugglersp_wh",
+      "name": "アイムジャグラーSP (ホワイトパネル)",
+      "generation": 5,
+      "introduced": "2009年10月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglersp_wh/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 174.3,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 420.1,
+          "combinedDenominator": 168.9,
+          "payoutPercent": 96.8
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 327.7,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 98.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 268.6,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 146.3,
+          "payoutPercent": 100.9
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 260.1,
+          "rbDenominator": 260.1,
+          "combinedDenominator": 130.0,
+          "payoutPercent": 105.0
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2009/10/ijs_w_haito-1.png"
+    },
+    {
+      "id": "imjugglersp",
+      "name": "アイムジャグラーSP",
+      "generation": 5,
+      "introduced": "2009年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglersp/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 442.8,
+          "combinedDenominator": 174.3,
+          "payoutPercent": 95.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 420.1,
+          "combinedDenominator": 168.9,
+          "payoutPercent": 96.8
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 282.5,
+          "rbDenominator": 327.7,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 98.9
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 268.6,
+          "rbDenominator": 321.3,
+          "combinedDenominator": 146.3,
+          "payoutPercent": 100.9
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 268.6,
+          "rbDenominator": 268.6,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 260.1,
+          "rbDenominator": 260.1,
+          "combinedDenominator": 130.0,
+          "payoutPercent": 105.0
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2009/07/ijs_haito-1.png"
+    },
+    {
+      "id": "junkiejuggler_gr",
+      "name": "ジャンキージャグラー (グリーンパネル)",
+      "generation": 5,
+      "introduced": "2009年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/junkiejuggler_gr/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 292.6,
+          "rbDenominator": 512.0,
+          "combinedDenominator": 186.2,
+          "payoutPercent": 97.08
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 512.0,
+          "combinedDenominator": 182.0,
+          "payoutPercent": 98.24
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 268.6,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 165.5,
+          "payoutPercent": 101.55
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 260.1,
+          "rbDenominator": 399.6,
+          "combinedDenominator": 157.5,
+          "payoutPercent": 103.48
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 381.0,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 105.13
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 145.0,
+          "payoutPercent": 107.33
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2009/04/jaj_g_haito-1.png"
+    },
+    {
+      "id": "classicjuggler",
+      "name": "クラシックジャグラー",
+      "generation": 5,
+      "introduced": "2009年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/classicjuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 287.4,
+          "rbDenominator": 420.1,
+          "combinedDenominator": 170.7,
+          "payoutPercent": 96.9
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 409.6,
+          "combinedDenominator": 167.2,
+          "payoutPercent": 97.8
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 268.6,
+          "rbDenominator": 381.0,
+          "combinedDenominator": 157.5,
+          "payoutPercent": 100.7
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 260.1,
+          "rbDenominator": 356.2,
+          "combinedDenominator": 150.3,
+          "payoutPercent": 102.6
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 248.2,
+          "rbDenominator": 348.6,
+          "combinedDenominator": 145.0,
+          "payoutPercent": 104.7
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 309.1,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 107.4
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2009/04/clj_haito-1.png"
+    },
+    {
+      "id": "junkiejuggler_rd",
+      "name": "ジャンキージャグラー (レッドパネル)",
+      "generation": 5,
+      "introduced": "2008年10月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/junkiejuggler_rd/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 292.6,
+          "rbDenominator": 512.0,
+          "combinedDenominator": 186.2,
+          "payoutPercent": 97.08
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 512.0,
+          "combinedDenominator": 182.0,
+          "payoutPercent": 98.24
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 268.6,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 165.5,
+          "payoutPercent": 101.55
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 260.1,
+          "rbDenominator": 399.6,
+          "combinedDenominator": 157.5,
+          "payoutPercent": 103.48
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 381.0,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 105.13
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 145.0,
+          "payoutPercent": 107.33
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2008/10/jaj_r_haito-1.png"
+    },
+    {
+      "id": "junkiejuggler",
+      "name": "ジャンキージャグラー",
+      "generation": 5,
+      "introduced": "2008年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/junkiejuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 292.6,
+          "rbDenominator": 512.0,
+          "combinedDenominator": 186.2,
+          "payoutPercent": 97.08
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 282.5,
+          "rbDenominator": 512.0,
+          "combinedDenominator": 182.0,
+          "payoutPercent": 98.24
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 268.6,
+          "rbDenominator": 431.2,
+          "combinedDenominator": 165.5,
+          "payoutPercent": 101.55
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 260.1,
+          "rbDenominator": 399.6,
+          "combinedDenominator": 157.5,
+          "payoutPercent": 103.48
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 252.1,
+          "rbDenominator": 381.0,
+          "combinedDenominator": 151.7,
+          "payoutPercent": 105.13
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 364.1,
+          "combinedDenominator": 145.0,
+          "payoutPercent": 107.33
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2008/04/jaj_o_haito-1.png"
+    },
+    {
+      "id": "imjugglerex_bk",
+      "name": "アイムジャグラーEX (ブラックパネル)",
+      "generation": 5,
+      "introduced": "2007年10月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex_bk/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.85
+        },
+        {
+          "setting": 2,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.71
+        },
+        {
+          "setting": 4,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.16
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2007/10/ije_b_haito-1.png"
+    },
+    {
+      "id": "lovelyjuggler",
+      "name": "ラブリージャグラー",
+      "generation": 5,
+      "introduced": "2007年7月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/lovelyjuggler/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": 292.6,
+          "rbDenominator": 546.1,
+          "combinedDenominator": null,
+          "payoutPercent": 96.87
+        },
+        {
+          "setting": 2,
+          "bbDenominator": 277.7,
+          "rbDenominator": 528.5,
+          "combinedDenominator": null,
+          "payoutPercent": 98.93
+        },
+        {
+          "setting": 3,
+          "bbDenominator": 264.3,
+          "rbDenominator": 496.5,
+          "combinedDenominator": null,
+          "payoutPercent": 101.26
+        },
+        {
+          "setting": 4,
+          "bbDenominator": 256.0,
+          "rbDenominator": 455.1,
+          "combinedDenominator": null,
+          "payoutPercent": 103.28
+        },
+        {
+          "setting": 5,
+          "bbDenominator": 244.5,
+          "rbDenominator": 431.2,
+          "combinedDenominator": null,
+          "payoutPercent": 105.58
+        },
+        {
+          "setting": 6,
+          "bbDenominator": 240.9,
+          "rbDenominator": 372.4,
+          "combinedDenominator": null,
+          "payoutPercent": 107.88
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2007/07/lvja_haito-1.png"
+    },
+    {
+      "id": "imjugglerex_gr",
+      "name": "アイムジャグラーEX (グリーンパネル)",
+      "generation": 5,
+      "introduced": "2007年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex_gr/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.85
+        },
+        {
+          "setting": 2,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.71
+        },
+        {
+          "setting": 4,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.16
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2007/04/ije_g_haito-1.png"
+    },
+    {
+      "id": "imjuggler7_pk",
+      "name": "アイムジャグラー7 (ピンクパネル)",
+      "generation": 5,
+      "introduced": "2007年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjuggler7_pk/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 182.0,
+          "payoutPercent": 96.08
+        },
+        {
+          "setting": 2,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 174.3,
+          "payoutPercent": 97.25
+        },
+        {
+          "setting": 3,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 160.6,
+          "payoutPercent": 99.18
+        },
+        {
+          "setting": 4,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 148.9,
+          "payoutPercent": 101.1
+        },
+        {
+          "setting": 5,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 138.8,
+          "payoutPercent": 103.01
+        },
+        {
+          "setting": 6,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 132.1,
+          "payoutPercent": 105.18
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2007/04/aij7_p_haito-1.png"
+    },
+    {
+      "id": "imjuggler7_gr",
+      "name": "アイムジャグラー7 (グリーンパネル)",
+      "generation": 5,
+      "introduced": "2007年4月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjuggler7_gr/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 182.0,
+          "payoutPercent": 96.08
+        },
+        {
+          "setting": 2,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 174.3,
+          "payoutPercent": 97.25
+        },
+        {
+          "setting": 3,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 160.6,
+          "payoutPercent": 99.18
+        },
+        {
+          "setting": 4,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 148.9,
+          "payoutPercent": 101.1
+        },
+        {
+          "setting": 5,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 138.8,
+          "payoutPercent": 103.01
+        },
+        {
+          "setting": 6,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 132.1,
+          "payoutPercent": 105.18
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2007/04/aij7_g_haito-1.png"
+    },
+    {
+      "id": "imjugglerex_pk",
+      "name": "アイムジャグラーEX (ピンクパネル)",
+      "generation": 5,
+      "introduced": "2007年1月",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex_pk/",
+      "verifiedOn": "2026-10-04",
+      "settings": [
+        {
+          "setting": 1,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 176.2,
+          "payoutPercent": 95.85
+        },
+        {
+          "setting": 2,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 172.5,
+          "payoutPercent": 96.7
+        },
+        {
+          "setting": 3,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 156.0,
+          "payoutPercent": 98.71
+        },
+        {
+          "setting": 4,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 147.6,
+          "payoutPercent": 100.8
+        },
+        {
+          "setting": 5,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 135.4,
+          "payoutPercent": 102.8
+        },
+        {
+          "setting": 6,
+          "bbDenominator": null,
+          "rbDenominator": null,
+          "combinedDenominator": 134.3,
+          "payoutPercent": 105.16
+        }
+      ],
+      "bonusNetCoins": null,
+      "grapePayoutCoins": null,
+      "payoutSourceUrl": "https://www.kitadenshi.co.jp/cms/wp-content/uploads/2007/01/ije_p_haito-1.png"
+    }
+  ],
+  "unpublishedSeparateBonusTables": [
+    {
+      "name": "アイムジャグラーEX (ブラックパネル)",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex_bk/",
+      "reason": "メーカーの一覧にBB・RB別の表が未掲載"
+    },
+    {
+      "name": "アイムジャグラーEX (グリーンパネル)",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex_gr/",
+      "reason": "メーカーの一覧にBB・RB別の表が未掲載"
+    },
+    {
+      "name": "アイムジャグラー7 (ピンクパネル)",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjuggler7_pk/",
+      "reason": "メーカーの一覧にBB・RB別の表が未掲載"
+    },
+    {
+      "name": "アイムジャグラー7 (グリーンパネル)",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjuggler7_gr/",
+      "reason": "メーカーの一覧にBB・RB別の表が未掲載"
+    },
+    {
+      "name": "アイムジャグラーEX (ピンクパネル)",
+      "sourceUrl": "https://www.kitadenshi.co.jp/slot/imjugglerex_pk/",
+      "reason": "メーカーの一覧にBB・RB別の表が未掲載"
+    }
+  ]
+}

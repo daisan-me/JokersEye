@@ -39,7 +39,7 @@ class ScraperTests(unittest.TestCase):
             with self.assertRaises(ValueError):self.store.collector.start(end)
         with self.assertRaises(ValueError):parse_report('<script>browser challenge</script>','2026-09-01','https://min-repo.com/3326458/')
 
-    def test_default_update_retries_older_gaps_after_new_days(self):
+    def test_default_update_does_not_retry_older_failures(self):
         collector=self.store.collector
         collector.save_rows(parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/'))
         collector.day_status('2026-09-01','https://min-repo.com/3326458/','complete',2,'TEST ONLY')
@@ -53,9 +53,10 @@ class ScraperTests(unittest.TestCase):
         collector.fetch=fetch
         collector.progress={'id':'test-delta','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-02',None)
-        self.assertEqual(collector.progress['total'],2)
+        self.assertEqual(collector.progress['total'],1)
         self.assertEqual(collector.progress['completed'],1)
-        self.assertEqual(calls[-1],'https://min-repo.com/810716/')
+        self.assertEqual(collector.progress['state'],'complete')
+        self.assertNotIn('https://min-repo.com/810716/',calls)
         self.assertEqual(collector.status()['summary']['records'],2)
 
     def test_explicit_range_does_not_retry_outside_it(self):
@@ -83,10 +84,16 @@ class ScraperTests(unittest.TestCase):
         rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
         detail='<h1>9/1(火) ゴッサムシティ</h1><time datetime="2026-09-02">9/2</time><table><tr><th>台番</th><th>G数</th><th>BB</th><th>RB</th></tr><tr><td>1</td><td>0</td><td>0</td><td>0</td></tr><tr><td>2</td><td>2,345</td><td>-</td><td>5</td></tr></table>'
         values=parse_bonuses(detail,'2026-09-01','TEST ONLY',rows)
-        self.assertEqual(values,{'1':(0,0),'2':(None,5)})
+        self.assertEqual(values,{'1':(0,0,None),'2':(None,5,None)})
         for bad in [detail.replace('2,345','2,346'),detail.replace('2026-09-02','2025-09-02'),detail.replace('<td>2</td>','<td>3</td>')]:
             with self.assertRaises(ValueError):parse_bonuses(bad,'2026-09-01','TEST ONLY',rows)
         with self.assertRaises(ValueError):number('1.5')
+
+    def test_bonus_combined_accepts_decimal_denominator_and_missing_marker(self):
+        rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
+        detail='<h1>9/1(火) ゴッサムシティ</h1><time datetime="2026-09-02">9/2</time><table><tr><th>台番</th><th>G数</th><th>BB</th><th>RB</th><th>合成</th></tr><tr><td>1</td><td>0</td><td>0</td><td>0</td><td>-</td></tr><tr><td>2</td><td>2,345</td><td>10</td><td>5</td><td>1/156.3</td></tr></table>'
+        values=parse_bonuses(detail,'2026-09-01','TEST ONLY',rows)
+        self.assertEqual(values,{'1':(0,0,None),'2':(10,5,'1/156.3')})
 
     def test_bonus_links_and_provenance_preserved_on_rescrape(self):
         rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
@@ -111,7 +118,7 @@ class ScraperTests(unittest.TestCase):
         collector.fetch=fetch
         collector.progress={'id':'test-success','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-01','2026-09-01')
-        self.assertEqual(calls[1:],[url,url+'?kishu=all'])
+        self.assertEqual(calls,[url,url+'?kishu=all'])
         self.assertEqual(collector.progress['state'],'complete')
         self.assertEqual(collector.progress['added'],2)
         self.assertEqual(collector.status()['coverage'],[{'status':'complete','days':1}])
@@ -156,9 +163,9 @@ class ScraperTests(unittest.TestCase):
         collector.fetch=failing_fetch
         collector.progress={'id':'test-bonus-fail','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-01','2026-09-01',True)
-        self.assertEqual(collector.progress['state'],'failed')
+        self.assertEqual(collector.progress['state'],'complete')
         self.assertEqual(collector.status()['coverage'],[{'status':'complete','days':1}])
-        self.assertEqual(collector.status()['bonusFailures'][0]['status'],'failed')
+        self.assertEqual(collector.status()['bonusFailures'][0]['status'],'partial')
         calls=[]
         def success_fetch(target,**kwargs):
             calls.append(target)
