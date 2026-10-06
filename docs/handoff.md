@@ -1,5 +1,13 @@
 # 引き継ぎメモ
 
+## 登録した観測の11列表示と貸区分の廃止（2026-10-07、ブランチ `feature/observation-columns`）
+
+- ユーザー指示：「登録した観測」にもGDBと同じ11列（記入例：3/12 金 114 ～ 非ジャグラー 3000 12 13 1/120 970 107.3%）を表示する。貸区分は今後まったく扱わず、表示もDBからもなくす。
+- `Store.observations(day)` は `scraped_observations` だけから `_gdb_row` の11列を返す（`columns` 付き）。画面（`web/app.js` の `observationCells`）で日付を「M/D」、曜日を1文字、系統を「ジャグラー／非ジャグラー」、空欄を「未取得」に整える。
+- 貸区分の削除：`scraped_observations.rate`（`Collector.__init__`）と `installations.rate`（`Store._drop_lending_rate`）を `ALTER TABLE … DROP COLUMN` で削除。旧CSV取り込み用の `observations`・`imports` は空のときだけ削除（中身があれば残すが、アプリは読まない）。`state().summary` から `legacy`・`main` を外し、`withBonus`（BB・RBが両方ある記録数）を追加。
+- 本番データフォルダーの状況（2026-10-07 01:36に作り直されていた）：`GothamDataBase.sqlite` に削除前の台データ318,368行が戻り、`backups` とログは無くなっていた。起動中のアプリはmainから作った版（`Downloads\JokersEye-1.3.1-windows`）。ユーザー側の操作と判断し、触れていない。
+- 検証（Windows）：Python単体テスト72件・Nodeテスト4本。本番DBのコピー（318,368行・`rate` 列あり）で起動し、`rate` 列と空の旧表が消え、台データ318,368行・店内マップ28,210件が残ることを確認。画面の「登録した観測」が11列で表示され、どのページにも「貸」の表記がないことを確認。
+
 ## 期間を指定した取得（2026-10-07、ブランチ `feature/range-fetch`）
 
 - ユーザー指示：期間を指定してデータを取得できる機能を付け、GitHubのブランチに上げ、Windows用のダウンロードURLをGitHubに貼る。背景：全期間（約950日・約73,000ページ）を長時間回したあとで取り方の誤りに気づくと検証と取り直しに時間がかかるため、短い期間で試してから広げたい。
