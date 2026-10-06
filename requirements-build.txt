@@ -1,0 +1,3 @@
+# 配布用パッケージ（tools/build_package.py）を作るときだけ使う
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8

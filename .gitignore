@@ -21,3 +21,4 @@ dist/
 *.exe
 *.dll
 *.pyd
+build/

@@ -28,7 +28,8 @@ from scraper import Collector, today as source_today
 from platform_support import default_data_dir, launch_browser, show_error
 
 APP = "jokers-eye"
-ROOT = Path(__file__).resolve().parent.parent
+# The packaged app (tools/build_package.py) carries web/ and VERSION in its bundle folder.
+ROOT = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 WEB = ROOT / "web"
 START = "2023-04-27"

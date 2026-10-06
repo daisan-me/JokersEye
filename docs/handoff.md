@@ -18,6 +18,13 @@
 - Windows / macOS 実機の pywebview 取得ブラウザーでの BB・RB 取得一式（WebView2・WKWebView の `run_js` で待機判定スクリプトが動くこと）。
 - 上の「Windows / macOS 共通構成」の未検証項目は引き続き未確認。
 
+## コマンド不要の配布パッケージ（2026-10-06）
+
+- ユーザーはコマンドラインを使わず、常に画面（GitHub・アプリ）で進捗と結果を確認したい。配布と確認はこの前提で設計する。
+- `.github/workflows/package.yml` が Windows / macOS で PyInstaller パッケージを作り、`tools/smoke_test_package.py` で起動確認してから Artifacts に置く。ビルドは `tools/build_package.py`、ビルド用依存は `requirements-build.txt`。
+- パッケージ内では `sys._MEIPASS` を ROOT とし、`web/`・`VERSION` を同梱する。Linux で `app/server.py` を同じ設定で固め、起動・版数の応答を確認済み。
+- コード署名・公証は未対応。Windows の SmartScreen、macOS の Gatekeeper の確認画面が出る。
+
 ## Windows / macOS 共通構成（mainの旧1.1.0 / 2026-10-05）
 
 - 1.0 の Windows 専用構成（C# + WebView2 の EXE と同梱 Python）を、Windows / macOS 共通の Python 構成へ置き換えた。

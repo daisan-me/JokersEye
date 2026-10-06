@@ -11,6 +11,12 @@
 - C# の取得ブラウザーで行っていた当日BB/RB表の待機判定（`web/source-readiness.js`）、認証・確認画面での停止、空ページの後回しを `app/desktop.py` へ移植。
 - `requirements.txt`、CI（Windows / macOS / Linux のテスト）、macOS用アプリ生成 `tools/make_mac_app.py` を追加。EXE生成の `tools/build-windows-launcher.py` は削除。
 
+### ダブルクリックで起動できる配布パッケージ — 2026-10-06
+
+- GitHub Actions（`.github/workflows/package.yml`）で、Python と pywebview を同梱した Windows 用フォルダー（`Joker's eye.exe`）と macOS 用 `Joker's eye.app` を作成。インストールやコマンド操作なしで起動できる。
+- 作成後に実際に起動し、画面・版数・店内マップが表示されることを自動確認（`tools/smoke_test_package.py`）。
+- パッケージでは `web/` と `VERSION` をアプリ内から読み込む（`app/server.py`）。
+
 ### BB・RB取得機能の完成 — 2026-10-05
 
 - 10月3日に全310台・ジャグラー102台を取得できた方式を、通常取得・基礎データシート作成・不足日更新へ接続。機種別表と必要な個別台の当日表を組み合わせる。

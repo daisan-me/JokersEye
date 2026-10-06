@@ -2,6 +2,17 @@
 
 ゴッサムシティの観測データと店内配置を研究する、Windows / macOS 共通のローカルアプリです。
 
+## ダウンロードして使う（コマンド不要）
+
+Python のインストールもコマンド操作も不要な、ダブルクリックで起動するパッケージを GitHub が自動で作ります。
+
+1. GitHub のリポジトリ画面で「Actions」→「package」を開き、使いたいブランチの最新の実行（緑のチェック）を選びます。
+2. 画面下の「Artifacts」から、Windows は `JokersEye-<版数>-windows`、macOS は `JokersEye-<版数>-macos` をダウンロードします。
+3. Windows：ZIP を右クリック →「すべて展開」し、`Joker's eye` フォルダーの `Joker's eye.exe` をダブルクリックします。「Windows によって PC が保護されました」と出た場合は「詳細情報」→「実行」を選びます。
+4. macOS：ダウンロードした ZIP を開き、中の `Joker's eye.zip` をダブルクリックして出てきた `Joker's eye.app` を「アプリケーション」へ移します。初回に開けない場合は「システム設定」→「プライバシーとセキュリティ」の「このまま開く」を選びます。
+
+Windows には Microsoft Edge WebView2 Runtime が必要です（Windows 11 には標準で入っています）。データの保存先は下の「保存先・更新」と同じで、以前の版のデータをそのまま使います。心配な場合は、起動前にエクスプローラー／Finderで保存先フォルダーをコピーしておきます。コード署名は未対応のため、上の確認画面が出ます。
+
 ## セットアップと起動
 
 必要なもの：Python 3.10 以上（推奨 3.12。`.python-version` 参照）と、OS 標準の WebView（Windows 10/11 は Microsoft Edge WebView2 Runtime、macOS は WKWebView で追加インストール不要）。Windows で WebView2 Runtime がない場合は[Microsoft公式配布ページ](https://developer.microsoft.com/microsoft-edge/webview2/)から Evergreen Runtime を入れてください。
