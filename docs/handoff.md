@@ -1,6 +1,20 @@
 # 引き継ぎメモ
 
-## GDB の作成と旧台データの削除（2026-10-07、ブランチ `feature/gotham-database`）
+## GDB を SQLite 1ファイルにし、CSV を廃止（2026-10-07、ブランチ `feature/gotham-database`）
+
+- ユーザー指示：CSVだけで管理する不都合（部分更新・同時アクセス・Excel保存での値化け・重複防止）を説明したうえで、ユーザーがSQLiteを選択。GDBのCSVは削除し、今後CSVは使わない。SQLiteのファイル名を `GothamDataBase.sqlite` にする。
+- ユーザー判断：アプリのCSV機能はすべて外し、DBだけにする（一覧と3つの操作はDBを直接読む形で残す）。
+- 変更内容：
+  - `app/server.py`：DBファイルを `GothamDataBase.sqlite` に変更。旧 `jokers-eye.sqlite3`（と `-wal`・`-shm`）は起動時に一度だけ改名して引き継ぐ。バックアップは `backups/GothamDataBase-日時.sqlite`。別版の試用（`copy_into`）は、1.3.1以前の版も読めるよう旧名でコピーする（新しい版は起動時に改名）。
+  - 基礎データシート（CSV）の作成・更新・同期・ダウンロードを廃止し、`gdb_rows_all`（DBから11列を作る。件数と最新 `fetched_at` が変わるまでキャッシュ）・`gdb_status`・`gdb_update_plan`・`gdb_bonus_plan`・`gdb_rows` に置き換え。APIは `/api/gdb/status|rows`（GET）、`/api/gdb/update|bonuses`（POST）。「CSVを作成」と「不足分だけ更新」は「不足日を取得」（2024-03-01〜本日でDBに記録がない日）にまとめた。
+  - `app/scraper.py`：`exports` へのCSV自動書き出し（10日ごと・終了時）と、終了時の基礎データシート同期を削除。
+  - CSV取り込み（`/api/import`・`web/template.csv`）、`/api/scrape/csv`、`tools/verify-bonus-sheet.py`、`tools/export_existing_facts.py` を削除。`tools/audit_juggler_inputs.py` はDBだけを読む。
+  - 画面：`web/base-sheet.js` → `web/gdb.js`（カード名「GothamDataBase（GDB）」）。データ管理の「CSVを取り込む」を削除。履歴は取り込み履歴の代わりに取得の実行履歴（`scrape_runs`）を表示。設定にDBファイル名を表示。
+  - `observations`・`imports` テーブルは既存DBとの互換のため残したが、書き込む機能はなくなった。
+- 検証（Windows）：Python単体テスト67件・Nodeテスト4本に合格。本番DBのコピー（旧名）で起動し、`GothamDataBase.sqlite` への改名、店内マップ91期間の読み込み、データ管理・ダッシュボード・履歴・設定・マップの各画面にCSVの文言がないこと、GDBカードの表示（不足日951日）を確認した。
+- 本番データフォルダー：見出し行だけの `GothamDataBase.csv` を削除した。`backups\exports-before-gdb-*` の旧CSVはバックアップとして残している。本番の `jokers-eye.sqlite3` は、この版を初めて起動したときに改名される。
+
+## GDB（CSV）の作成と旧台データの削除（2026-10-07、ブランチ `feature/gotham-database`）
 
 - ユーザー指示：台データは `GothamDataBase.csv`（GDB）1枚で扱う。旧台データは中身が使い物にならないので一度削除する。GDBは型（見出し行）だけ作り、スクレイピングで埋めるのは後で。開始日は2024-03-01のまま。ルールは `AGENTS.md` の「GDB」に記載。
 - ユーザー判断：削除は「取得データとCSVだけ」、バックアップは残す。アプリのコードは変えず、GDBファイルを作るだけ。
@@ -10,7 +24,7 @@
   - 店内マップの `map_versions`・`seats`・`installations`（28,210件）と `settings` は残した（`web/map-history.json` から起動時に作り直される）。
   - `exports` のCSV4つ（`gotham-city-*`・`coverage-*`）を `backups\exports-before-gdb-20261007-000926-6969fd\` に移した。
   - 見出し行だけの `GothamDataBase.csv` を作成。
-- 注意：アプリのコードは変えていないため、画面から取得するとSQLiteと `exports` に台データが再び溜まり、GDBには書かれない。GDBに保存する作りへの切り替えは未着手。
+- （同日、上の「GDB を SQLite 1ファイルにし、CSV を廃止」でGDBのCSVは削除し、GDBはSQLiteになった。）
 
 ## スクレイピングの修正（2026-10-06、ブランチ `fix/scrape-completion`）
 
