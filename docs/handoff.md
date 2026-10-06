@@ -1,5 +1,14 @@
 # 引き継ぎメモ
 
+## 取得操作を1つのパネルにまとめる（2026-10-07、ブランチ `feature/single-scrape-panel`）
+
+- ユーザーの設計：パネルで期間指定または本日までを取得 → GDB（SQLite）に保存 → 「登録した観測」で確認。「本日までの分を更新」はGDBに記録されている最後の日から今日まで。取得の操作が2つのパネルに分かれている意味はない。
+- `web/scrape.js`：唯一の取得パネル。`POST /api/gdb/update`（本日まで）と `POST /api/gdb/range`（期間指定）を呼ぶ。BB・RBは常に取得。取得終了時に `state`・「登録した観測」を読み直し、`jokers:data-changed` イベントを出す。
+- `web/gdb.js`：閲覧専用（取得ボタンを削除）。`jokers:data-changed` で状態と一覧を読み直す。
+- `Store.gdb_today_plan()`：GDB_START以降の最後の記録日（なければGDB_START）から今日までの `gdb_range_plan`。最後の記録日より後の「未掲載」日は再確認する（当日のレポートは翌日に出るため）。`gdb_range_plan(..., retry_unpublished_after=)` を追加。
+- 削除：`POST /api/scrape/start`（旧パネルの本日まで・指定範囲）、`POST /api/gdb/bonuses`、`Store.gdb_update_plan`。
+- 検証（Windows）：Python単体テスト72件・Nodeテスト4本。検証用データ（10/3の310行）で起動し、パネルから2026-10-02を期間指定で取得：完了、BB/RB 310/310、失敗0、終了後にパネル・「登録した観測」（10/2が選択肢に追加）・GDBの一覧が自動で620行に更新された。「本日までの分を更新」は10/4〜10/7の4日を対象に開始することを確認し、すぐ停止した。
+
 ## データフォルダーの振り替え問題と置き場所の固定（2026-10-07）
 
 - 発見：Claudeデスクトップアプリ内のシェル（エージェントのBash/PowerShell）と、そこから起動したプロセスは、`%LOCALAPPDATA%` への書き込みが `C:\Users\daisa\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Local` に振り替えられる。エクスプローラー（Claudeの外）で見ると、本物の `C:\Users\daisa\AppData\Local\JokersEye` は存在しなかった。`AppData\Roaming`（スタートメニュー・タスクバーのショートカット）とドキュメント・ダウンロードは振り替えられなかった。
