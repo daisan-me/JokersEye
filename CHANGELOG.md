@@ -24,6 +24,8 @@
 - GitHub Actions（`.github/workflows/package.yml`）で、Python と pywebview を同梱した Windows 用フォルダー（`Joker's eye.exe`）と macOS 用 `Joker's eye.app` を作成。インストールやコマンド操作なしで起動できる。
 - 作成後に実際に起動し、画面・版数・店内マップが表示されることを自動確認（`tools/smoke_test_package.py`）。
 - パッケージでは `web/` と `VERSION` をアプリ内から読み込む（`app/server.py`）。
+- Windows でダウンロードした ZIP を展開した版が起動しない問題を修正（.NET が「インターネットから取得」の印が付いた部品を拒否していた）。起動確認はこの状態を再現して行う。
+- 日本語 Windows で起動エラーの表示自体が失敗する問題を修正。
 
 ### BB・RB取得機能の完成 — 2026-10-05
 

@@ -23,6 +23,10 @@ jobs:
           python-version-file: .python-version
       - run: python -m pip install --disable-pip-version-check -r requirements.txt -r requirements-build.txt
       - run: python tools/build_package.py
+      - name: ダウンロードした状態で.NETの設定がない場合の起動失敗を記録（失敗してもジョブは止めない）
+        if: runner.os == 'Windows'
+        run: python tools/smoke_test_package.py --without-dotnet-config
+        timeout-minutes: 5
       - run: python tools/smoke_test_package.py
         timeout-minutes: 5
       - id: version

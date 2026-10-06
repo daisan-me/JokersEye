@@ -25,6 +25,23 @@ PACKAGE = BUILD / "package"
 DOCS = ("README.md", "CHANGELOG.md")
 
 
+# .NET Framework refuses assemblies carrying the "downloaded from the Internet" mark, which Explorer's
+# "Extract All" copies onto every file of a downloaded ZIP. pywebview loads Python.Runtime.dll and the
+# WebView2 assemblies through pythonnet, so the packaged app opts in for its own files.
+DOTNET_CONFIG = """<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <runtime>
+    <loadFromRemoteSources enabled="true" />
+  </runtime>
+</configuration>
+"""
+
+
+def dotnet_config_path(folder=None):
+    """Windows: the config .NET reads for the app (<exe>.config next to the EXE)."""
+    return (Path(folder) if folder else app_path()) / (NAME + ".exe.config")
+
+
 def app_path():
     """The built app: a folder with the EXE on Windows, an .app bundle on macOS."""
     return DIST / (NAME + ".app") if sys.platform == "darwin" else DIST / NAME
@@ -81,6 +98,8 @@ def build():
         subprocess.run(command, check=True, cwd=str(ROOT))
     if not executable_path().exists():
         raise SystemExit("ビルド結果が見つかりません: %s" % executable_path())
+    if sys.platform.startswith("win"):
+        dotnet_config_path().write_text(DOTNET_CONFIG, encoding="utf-8")
     PACKAGE.mkdir(parents=True)
     if sys.platform == "darwin":
         # ditto keeps the bundle's permissions and symlinks; GitHub's artifact zip does not.

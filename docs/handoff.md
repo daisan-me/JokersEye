@@ -33,6 +33,7 @@
 - `.github/workflows/package.yml` が Windows / macOS で PyInstaller パッケージを作り、`tools/smoke_test_package.py` で起動確認してから Artifacts に置く。ビルドは `tools/build_package.py`、ビルド用依存は `requirements-build.txt`。
 - パッケージ内では `sys._MEIPASS` を ROOT とし、`web/`・`VERSION` を同梱する。Linux で `app/server.py` を同じ設定で固め、起動・版数の応答を確認済み。
 - コード署名・公証は未対応。Windows の SmartScreen、macOS の Gatekeeper の確認画面が出る。
+- （2026-10-06 ユーザー報告）Windowsでダウンロードした ZIP を「すべて展開」した版が起動しなかった。展開した全ファイルに「インターネットから取得」の印（Zone.Identifier）が付き、.NET Framework が `Python.Runtime.dll` の読み込みを拒否したため（`Failed to resolve Python.Runtime.Loader.Initialize`）。EXE の横に `Joker's eye.exe.config`（`loadFromRemoteSources`）を置いて解決。CI の起動確認は、この印を付けたコピーで行う。同時に、日本語Windowsでエラー表示自体が cp932 の文字コードで失敗していた問題も修正。
 
 ## Windows / macOS 共通構成（mainの旧1.1.0 / 2026-10-05）
 
