@@ -18,6 +18,7 @@ TIMEOUT = 180
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to a code page without「●」etc.
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     with tempfile.TemporaryDirectory() as folder:
         report = Path(folder) / "diagnostics.json"
