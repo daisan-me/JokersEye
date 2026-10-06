@@ -1,5 +1,17 @@
 # 引き継ぎメモ
 
+## GDB の作成と旧台データの削除（2026-10-07、ブランチ `feature/gotham-database`）
+
+- ユーザー指示：台データは `GothamDataBase.csv`（GDB）1枚で扱う。旧台データは中身が使い物にならないので一度削除する。GDBは型（見出し行）だけ作り、スクレイピングで埋めるのは後で。開始日は2024-03-01のまま。ルールは `AGENTS.md` の「GDB」に記載。
+- ユーザー判断：削除は「取得データとCSVだけ」、バックアップは残す。アプリのコードは変えず、GDBファイルを作るだけ。
+- 本番データフォルダー（`%LOCALAPPDATA%\JokersEye`）で行ったこと：
+  - 削除前のSQLiteを `backups\jokers-eye-before-gdb-20261007-000926-6969fd.sqlite3` に保存（整合性確認済み、取得データ318,368行）。
+  - SQLiteの `scraped_observations`・`scrape_days`・`scrape_bonus_days`・`scrape_bonus_targets`・`scrape_report_index`・`scrape_runs` を空にしてVACUUM（72MB→4.6MB）。
+  - 店内マップの `map_versions`・`seats`・`installations`（28,210件）と `settings` は残した（`web/map-history.json` から起動時に作り直される）。
+  - `exports` のCSV4つ（`gotham-city-*`・`coverage-*`）を `backups\exports-before-gdb-20261007-000926-6969fd\` に移した。
+  - 見出し行だけの `GothamDataBase.csv` を作成。
+- 注意：アプリのコードは変えていないため、画面から取得するとSQLiteと `exports` に台データが再び溜まり、GDBには書かれない。GDBに保存する作りへの切り替えは未着手。
+
 ## スクレイピングの修正（2026-10-06、ブランチ `fix/scrape-completion`）
 
 - ユーザー報告：Joker's Eye からスクレイピングしても、(1) 全日程のBB/RBが埋まらない、(2) いつまでも完了しない、(3) 完了しても取得用ブラウザーが閉じない。
