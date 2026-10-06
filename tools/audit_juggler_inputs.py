@@ -28,8 +28,6 @@ def audit(folder):
             FROM scraped_observations WHERE is_juggler(model) GROUP BY day
             HAVING SUM(bb IS NOT NULL AND rb IS NOT NULL)>0 ORDER BY day''')]
         result['bonusCollectionStatus'] = [dict(row) for row in db.execute('SELECT * FROM scrape_bonus_days ORDER BY day')]
-        result['manualObservationSummary'] = dict(db.execute('''SELECT COUNT(*) rows,
-            COUNT(DISTINCT day) days,MIN(day) first,MAX(day) last FROM observations WHERE is_juggler(model)''').fetchone())
         result['samples'] = [dict(row) for row in db.execute('''SELECT day,seat,model,games,bb,rb,combined,net,
             source_url,bonus_source_url FROM scraped_observations WHERE is_juggler(model)
             AND day IN ('2024-03-01','2025-03-17','2026-09-30') ORDER BY day,CAST(seat AS INTEGER)''')][:12]

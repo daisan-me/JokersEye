@@ -40,11 +40,9 @@ JAPANESE_WEEKDAYS = ("月曜日", "火曜日", "水曜日", "木曜日", "金曜
 SCHEMA = """
 PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS imports(id INTEGER PRIMARY KEY,created_at TEXT NOT NULL,filename TEXT NOT NULL,rows INTEGER NOT NULL,source TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS observations(day TEXT NOT NULL,seat TEXT NOT NULL,model TEXT NOT NULL,games INTEGER NOT NULL CHECK(games>=0),bb INTEGER NOT NULL CHECK(bb>=0),rb INTEGER NOT NULL CHECK(rb>=0),net INTEGER,rate TEXT NOT NULL CHECK(rate IN ('main','low','unknown')),import_id INTEGER NOT NULL REFERENCES imports(id),PRIMARY KEY(day,seat));
 CREATE TABLE IF NOT EXISTS map_versions(id INTEGER PRIMARY KEY,valid_from TEXT NOT NULL,valid_to TEXT,notes TEXT);
 CREATE TABLE IF NOT EXISTS seats(map_id INTEGER REFERENCES map_versions(id),seat TEXT,island TEXT,side TEXT,position INTEGER,x REAL,y REAL,left_seat TEXT,right_seat TEXT,PRIMARY KEY(map_id,seat));
-CREATE TABLE IF NOT EXISTS installations(seat TEXT,model TEXT,rate TEXT,valid_from TEXT,valid_to TEXT,source TEXT,PRIMARY KEY(seat,valid_from));
+CREATE TABLE IF NOT EXISTS installations(seat TEXT,model TEXT,valid_from TEXT,valid_to TEXT,source TEXT,PRIMARY KEY(seat,valid_from));
 CREATE TABLE IF NOT EXISTS analyses(id INTEGER PRIMARY KEY,created_at TEXT NOT NULL,kind TEXT NOT NULL,parameters TEXT NOT NULL,result TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS physical_positions(period TEXT NOT NULL,seat TEXT NOT NULL,image_revision TEXT NOT NULL,x REAL NOT NULL,y REAL NOT NULL,angle REAL NOT NULL,evidence TEXT NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(period,seat,image_revision));
 PRAGMA user_version=1;
@@ -81,6 +79,7 @@ class Store:
         self.period_index = {p["id"]: p for p in self.periods}
         with self.connect() as db:
             db.executescript(SCHEMA)
+            self._drop_lending_rate(db)
         self.seed_public_map()
         self.collector = Collector(self, WEB / 'report-index.json')
         with self.connect() as db:
@@ -101,6 +100,17 @@ class Store:
             if part.exists():
                 part.rename(self.folder / (DB_NAME + suffix))
 
+    @staticmethod
+    def _drop_lending_rate(db):
+        """The lending rate (貸区分) is no longer recorded (user decision, 2026-10-07).
+        Drops the old column, and the old CSV-import tables when they are empty."""
+        if "rate" in {row[1] for row in db.execute("PRAGMA table_info(installations)")}:
+            db.execute("ALTER TABLE installations DROP COLUMN rate")
+        for table in ("observations", "imports"):  # observations refers to imports: drop it first
+            exists = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone()
+            if exists and not db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]:
+                db.execute(f"DROP TABLE {table}")
+
     @contextmanager
     def connect(self):
         db = sqlite3.connect(self.path, timeout=15)
@@ -114,10 +124,8 @@ class Store:
 
     def state(self):
         with self.connect() as db:
-            union = "(SELECT day,seat,rate FROM observations UNION ALL SELECT day,seat,rate FROM scraped_observations s WHERE NOT EXISTS (SELECT 1 FROM observations o WHERE o.day=s.day AND o.seat=s.seat))"
-            summary = dict(db.execute("SELECT COUNT(*) records,COUNT(DISTINCT day) days,COUNT(DISTINCT seat) seats,MIN(day) first,MAX(day) last FROM " + union).fetchone())
-            summary["legacy"] = db.execute("SELECT COUNT(*) FROM observations WHERE day < ?", (START,)).fetchone()[0]
-            summary["main"] = db.execute("SELECT COUNT(*) FROM observations WHERE day >= ? AND rate='main'", (START,)).fetchone()[0]
+            summary = dict(db.execute("""SELECT COUNT(*) records,COUNT(DISTINCT day) days,COUNT(DISTINCT seat) seats,MIN(day) first,MAX(day) last,
+                SUM(bb IS NOT NULL AND rb IS NOT NULL) withBonus FROM scraped_observations""").fetchone())
             latest = self.periods[-1] if self.periods else None
             map_count = latest["seatCount"] if latest else 0
             positioned = (WEB / "fixed-floor.json").is_file() or db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
@@ -311,9 +319,9 @@ class Store:
                     for number in range(start, end + 1):
                         seat = str(number)
                         seats.append((map_id, seat))
-                        installations.append((seat, model, None, period["validFrom"], period["validToExclusive"], period["reportUrl"] + "?num=" + seat))
+                        installations.append((seat, model, period["validFrom"], period["validToExclusive"], period["reportUrl"] + "?num=" + seat))
                 db.executemany("INSERT OR IGNORE INTO seats(map_id,seat) VALUES(?,?)", seats)
-                db.executemany("""INSERT INTO installations(seat,model,rate,valid_from,valid_to,source) VALUES(?,?,?,?,?,?)
+                db.executemany("""INSERT INTO installations(seat,model,valid_from,valid_to,source) VALUES(?,?,?,?,?)
                     ON CONFLICT(seat,valid_from) DO UPDATE SET valid_to=excluded.valid_to
                     WHERE installations.model=excluded.model AND installations.source=excluded.source""", installations)
             db.execute("INSERT INTO settings(key,value) VALUES('public_map_revision',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (self.history_revision,))
@@ -425,13 +433,13 @@ class Store:
         return {"seat":number, "entries":entries, "coverage":self.coverage()}
 
     def observations(self, day):
+        """One saved day in the GDB columns (日付・曜日・台番号・機種・ジャグラーか・ゲーム数・BB数・RB数・合成・差枚・出率)."""
         with self.connect() as db:
-            days=[r[0] for r in db.execute("SELECT day FROM observations UNION SELECT day FROM scraped_observations ORDER BY day DESC")]
+            days=[r[0] for r in db.execute("SELECT DISTINCT day FROM scraped_observations ORDER BY day DESC")]
             selected=day or (days[0] if days else "")
-            rows=[dict(r) for r in db.execute("""SELECT day,seat,model,games,bb,rb,net,rate FROM observations WHERE day=?
-                UNION ALL SELECT day,seat,model,games,bb,rb,net,rate FROM scraped_observations s WHERE day=? AND NOT EXISTS (SELECT 1 FROM observations o WHERE o.day=s.day AND o.seat=s.seat)""",(selected,selected))]
-            rows.sort(key=lambda r:(int(r['seat']) if r['seat'].isdigit() else 100000,r['seat']))
-            return {"days":days,"selected":selected,"rows":rows}
+            rows=[self._gdb_row(dict(r)) for r in db.execute("""SELECT day,seat,model,games,bb,rb,combined,net,payout_percent
+                FROM scraped_observations WHERE day=? ORDER BY CAST(seat AS INTEGER),seat""",(selected,))]
+            return {"days":days,"selected":selected,"columns":GDB_COLUMNS,"rows":rows}
 
     def settings(self, payload):
         values={k:str(payload[k]) for k in ("notes", "theme") if k in payload}

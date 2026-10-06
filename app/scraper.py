@@ -16,7 +16,7 @@ from urllib.parse import quote, urljoin, urlsplit, parse_qs, unquote
 START = '2023-04-27'
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
-CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,rate TEXT NOT NULL,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
+CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
 CREATE TABLE IF NOT EXISTS scrape_days(day TEXT PRIMARY KEY,url TEXT,status TEXT NOT NULL,rows INTEGER NOT NULL DEFAULT 0,message TEXT NOT NULL DEFAULT '',checked_at TEXT);
 CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT);
 CREATE TABLE IF NOT EXISTS scrape_bonus_days(day TEXT PRIMARY KEY,status TEXT NOT NULL,rows INTEGER NOT NULL,message TEXT NOT NULL,checked_at TEXT NOT NULL);
@@ -92,7 +92,7 @@ def parse_report(html, day, url):
             if seat in rows: raise ValueError('台番号が重複しています: '+seat)
             row=dict(date=day,seat=seat,model=values['機種'],games=number(values['G数']),
                 bb=number(values.get('BB','')),rb=number(values.get('RB','')),net=number(values.get('差枚','')),
-                rate='unknown',payout_percent=number(values.get('出率',''),False),source_url=url,
+                payout_percent=number(values.get('出率',''),False),source_url=url,
                 published_at=published,fetched_at=now(),status='scraped')
             if not row['model'] or any(row[k] is not None and not 0<=row[k]<=1000000 for k in ('games','bb','rb')):
                 raise ValueError('機種名または回転・ボーナス数が不正です。')
@@ -206,6 +206,8 @@ class Collector:
             db.executescript(SCHEMA)
             if 'bonus_source_url' not in {r[1] for r in db.execute('PRAGMA table_info(scraped_observations)')}:
                 db.execute('ALTER TABLE scraped_observations ADD COLUMN bonus_source_url TEXT')
+            if 'rate' in {r[1] for r in db.execute('PRAGMA table_info(scraped_observations)')}:
+                db.execute('ALTER TABLE scraped_observations DROP COLUMN rate')  # 貸区分 is no longer recorded
             db.execute("UPDATE scrape_runs SET state='interrupted',finished_at=?,message='アプリ終了で中断。次回再開できます。' WHERE state='running'",(now(),))
             previous=db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone()
             if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'])
@@ -510,11 +512,11 @@ class Collector:
 
     def save_rows(self,rows):
         with self.store.connect() as db:
-            db.executemany('''INSERT INTO scraped_observations(day,seat,model,games,bb,rb,combined,net,rate,payout_percent,source_url,published_at,fetched_at,bonus_source_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            db.executemany('''INSERT INTO scraped_observations(day,seat,model,games,bb,rb,combined,net,payout_percent,source_url,published_at,fetched_at,bonus_source_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(day,seat) DO UPDATE SET model=excluded.model,games=excluded.games,
                 bb=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.bb,scraped_observations.bb) ELSE excluded.bb END,
                 rb=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.rb,scraped_observations.rb) ELSE excluded.rb END,
                 combined=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.combined,scraped_observations.combined) ELSE excluded.combined END,
                 net=excluded.net,payout_percent=excluded.payout_percent,source_url=excluded.source_url,published_at=excluded.published_at,fetched_at=excluded.fetched_at,
                 bonus_source_url=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.bonus_source_url,scraped_observations.bonus_source_url) ELSE excluded.bonus_source_url END''',
-                [(r['date'],r['seat'],r['model'],r['games'],r['bb'],r['rb'],r.get('combined'),r['net'],r['rate'],r['payout_percent'],r['source_url'],r['published_at'],r['fetched_at'],r.get('bonus_source_url')) for r in rows])
+                [(r['date'],r['seat'],r['model'],r['games'],r['bb'],r['rb'],r.get('combined'),r['net'],r['payout_percent'],r['source_url'],r['published_at'],r['fetched_at'],r.get('bonus_source_url')) for r in rows])
