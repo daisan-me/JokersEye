@@ -34,6 +34,12 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(exported[0]['bb'],'');self.assertEqual(exported[0]['games'],'0')
         self.assertEqual(result['rows'],2)
         self.assertEqual(server.Store(self.tmp.name).collector.status()['summary']['records'],2)
+    def test_browser_task_reports_whether_a_run_is_active(self):
+        collector=self.store.collector
+        self.assertEqual(collector.browser_task(),{'active':False})
+        collector.active=True;collector.pending={'id':'x','url':'https://min-repo.com/1/'}
+        self.assertEqual(collector.browser_task(),{'id':'x','url':'https://min-repo.com/1/','active':True})
+        collector.active=False;collector.pending=None
     def test_past_future_ranges_and_blocked_html(self):
         for end in ['2020-01-01','2099-01-01','bad']:
             with self.assertRaises(ValueError):self.store.collector.start(end)

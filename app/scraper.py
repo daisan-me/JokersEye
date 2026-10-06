@@ -247,7 +247,8 @@ class Collector:
         return result['html']
 
     def browser_task(self):
-        with self.lock: return self.pending or {}
+        # `active` lets the desktop close its source browser once the run has ended.
+        with self.lock: return dict(self.pending or {},active=self.active)
 
     def browser_result(self,payload):
         with self.lock:

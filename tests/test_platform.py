@@ -97,7 +97,7 @@ class FakeClient:
         return self.task
 
 
-class SourceBrowserUrlTests(unittest.TestCase):
+class SourceBrowserWindowTests(unittest.TestCase):
     def browser(self, task, window):
         source = desktop.SourceBrowser(None, FakeClient(task), tempfile.gettempdir())
         source.window = window
@@ -108,6 +108,31 @@ class SourceBrowserUrlTests(unittest.TestCase):
         self.assertEqual(source.current_url(), 'https://min-repo.com/1/?kishu=L%E6%9D%B1')
         source.window.href = None  # navigating: fall back to pywebview's URL
         self.assertEqual(source.current_url(), 'https://min-repo.com/1/?kishu=L東京喰種')
+
+    def test_window_closes_when_the_run_has_ended(self):
+        window = FakeWindow()
+        source = self.browser({'active': False}, window)
+        source.poll()
+        self.assertEqual(window.destroyed, 1)
+        self.assertIsNone(source.window)
+        self.assertTrue(source.on_closing())  # the close is not turned back into hide + stop
+        self.assertEqual(window.hidden, 0)
+        source.poll()  # nothing left to close
+        self.assertEqual(window.destroyed, 1)
+
+    def test_window_stays_open_while_the_run_is_active(self):
+        window = FakeWindow()
+        source = self.browser({'active': True}, window)
+        source.poll()
+        self.assertEqual(window.destroyed, 0)
+        self.assertIs(source.window, window)
+
+    def test_user_close_during_a_run_hides_and_stops(self):
+        window = FakeWindow()
+        source = self.browser({'active': True}, window)
+        self.assertFalse(source.on_closing())
+        self.assertEqual(window.hidden, 1)
+        self.assertIn('scrape/stop', source.client.requests)
 
 
 class SingleInstanceTests(unittest.TestCase):

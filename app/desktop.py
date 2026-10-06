@@ -163,7 +163,7 @@ class SourceBrowser:
             self.window.show()
 
     def on_closing(self):
-        if self.disposed:
+        if self.disposed or self.window is None:  # app exit, or close_window() after the run ended
             return True
         self.window.hide()
         try:
@@ -190,6 +190,16 @@ class SourceBrowser:
         except Exception:
             return ""
 
+    def close_window(self):
+        """Close the source browser once the collector has finished (or was stopped)."""
+        window, self.window = self.window, None
+        if window is None:
+            return
+        try:
+            window.destroy()
+        except Exception as ex:
+            self.log("close-window " + type(ex).__name__)
+
     def run(self):
         while not self.stop_event.wait(0.75):
             if self.busy or self.disposed:
@@ -207,6 +217,9 @@ class SourceBrowser:
             task = self.client.request("scrape/browser-task")
         except (OSError, ValueError):
             return
+        # The collector reports `active` until the run (including the CSV sync) ends.
+        if task.get("active") is False and self.window is not None:
+            self.close_window()
         if "id" not in task or task["id"] == self.last_task:
             return
         task_id, error = task["id"], None
@@ -273,11 +286,7 @@ class SourceBrowser:
     def dispose(self):
         self.disposed = True
         self.stop_event.set()
-        if self.window is not None:
-            try:
-                self.window.destroy()
-            except Exception:
-                pass
+        self.close_window()
 
 
 def set_app_identity(root):
