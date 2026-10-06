@@ -19,7 +19,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import server  # noqa: E402
@@ -64,9 +64,12 @@ def source_url_allowed(url):
 
 
 def same_page(left, right):
+    """Same page regardless of percent-encoding. WebView2 reports the URL through
+    System.Uri.ToString(), which unescapes non-ASCII query text (?kishu=L東京喰種), while
+    the collector requests the encoded form (?kishu=L%E6%9D%B1...)."""
     a, b = urlsplit(left), urlsplit(right)
-    return (a.scheme.lower(), (a.hostname or "").lower(), unquote(a.path), a.query) == \
-           (b.scheme.lower(), (b.hostname or "").lower(), unquote(b.path), b.query)
+    return (a.scheme.lower(), (a.hostname or "").lower(), unquote(a.path), parse_qsl(a.query, keep_blank_values=True)) == \
+           (b.scheme.lower(), (b.hostname or "").lower(), unquote(b.path), parse_qsl(b.query, keep_blank_values=True))
 
 
 class SingleInstance:
@@ -177,8 +180,13 @@ class SourceBrowser:
             return None
 
     def current_url(self):
+        # The page's own location.href keeps the browser's percent-encoding; pywebview's
+        # get_current_url() on WebView2 is an unescaped System.Uri string.
+        href = self.evaluate("location.href")
+        if isinstance(href, str) and href:
+            return href
         try:
-            return self.window.get_current_url() or ""
+            return str(self.window.get_current_url() or "")
         except Exception:
             return ""
 
@@ -257,7 +265,9 @@ class SourceBrowser:
                 self.evaluate("location.reload()")
         if self.disposed:
             return None
-        self.log("unreadable-page %s %s" % (url, status_text))
+        shape = self.evaluate("JSON.stringify({title:document.title,length:document.documentElement.outerHTML.length,"
+                              "tables:document.querySelectorAll('table').length})")
+        self.log("unreadable-page %s %s %s" % (url, status_text, shape if isinstance(shape, str) else ""))
         raise RuntimeError("公開ページを表示できませんでした（%s）。未掲載・閲覧制限・ブラウザー確認を確認してください。制限の回避は行いません。" % status_text)
 
     def dispose(self):
