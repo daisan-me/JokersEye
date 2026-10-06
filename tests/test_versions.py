@@ -148,11 +148,14 @@ class ManagerTests(unittest.TestCase):
             urllib.request.urlopen = original_open
         self.assertEqual(self.manager.status()['state'], 'done', self.manager.status())
         ident = 'feature-x-ccccccc'
-        for _ in range(100):
-            if report.exists():
+        launched = None
+        for _ in range(100):  # the fake app creates the file before writing to it
+            try:
+                launched = json.loads(report.read_text(encoding='utf-8'))
                 break
-            time.sleep(0.05)
-        launched = json.loads(report.read_text(encoding='utf-8'))
+            except (OSError, ValueError):
+                time.sleep(0.05)
+        self.assertIsNotNone(launched, 'the fake app did not report its launch')
         data = self.folder / 'versions' / ident / 'data'
         self.assertEqual(launched['argv'], ['--data', str(data)])
         self.assertEqual(json.loads(launched['trial'])['branch'], 'feature/x')
