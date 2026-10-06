@@ -1,7 +1,8 @@
 'use strict';
 
 /* GothamDataBase (GDB): the 11-column view of the seat records stored in GothamDataBase.sqlite.
-   Scraping is started explicitly; "不足日を取得" sends only dates that have no record yet. */
+   Scraping is started explicitly; "不足日を取得" sends only dates that have no record yet and
+   "期間を指定して取得" only the dates of the chosen range that still lack a record or BB/RB. */
 (() => {
   const headers = ['日付', '曜日', '台番号', '機種', 'ジャグラーかジャグラーじゃないか', 'ゲーム数', 'BB数', 'RB数', '合成', '差枚', '出率'];
   let mounted = false;
@@ -31,6 +32,8 @@
       <div class="card-header"><div><div class="kicker">MIN-REPO / GOTHAM DATABASE</div><h2>GothamDataBase（GDB）</h2></div><span class="tag" id="gdb-tag">0行</span></div>
       <p>みんレポ ゴッサムシティの台別記録を、日付・台番号ごとに1行で保存して閲覧します（2024/03/01以降）。空欄は公開ページで取得できなかった値です。</p>
       <div class="gdb-actions"><button class="primary" id="gdb-update">不足日を取得</button><button class="secondary" id="gdb-bonuses">BB・RBの不足だけ補完</button><button class="secondary" id="gdb-stop" disabled>補完・取得を停止</button></div>
+      <div class="toolbar gdb-range"><label>開始日<input id="range-from" type="date" min="2024-03-01"></label><label>終了日<input id="range-to" type="date" min="2024-03-01"></label><button class="secondary" id="gdb-range">期間を指定して取得</button></div>
+      <p class="hint">期間内で、記録がない日は全台表とBB・RBを取得し、BB・RBが空の日はそこだけ補完します。揃っている日・機種は再取得しません。まず1週間ほどで試してから広げると、取り方の問題に早く気づけます。</p>
       <details><summary>BB・RB補完の対象期間（空欄なら保存済みの全期間）</summary><div class="toolbar"><label>開始日<input id="bonus-from" type="date" min="2024-03-01"></label><label>終了日<input id="bonus-to" type="date" min="2024-03-01"></label></div><p class="hint">保存済みの日付・台のうちBBまたはRBが空欄のものだけ対象にします。取得済み機種は再巡回しません。全台表の数値は再取得せず、機種別・個別台の当日表で補完します。多日数の補完には時間がかかります。</p></details>
       <p class="hint" id="gdb-status">状態を確認中…</p>
       <div class="gdb-filters">
@@ -51,6 +54,9 @@
       <div class="gdb-pagination"><button class="secondary" id="gdb-prev">← 前へ</button><span id="gdb-page">1</span><button class="secondary" id="gdb-next">次へ →</button></div>`;
     app.querySelector('#gdb-update').addEventListener('click', () => runAction('update'));
     app.querySelector('#gdb-bonuses').addEventListener('click', () => runAction('bonuses'));
+    app.querySelector('#gdb-range').addEventListener('click', () => runAction('range'));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);  // Japan time, as the server
+    app.querySelectorAll('#range-from,#range-to,#bonus-from,#bonus-to').forEach(input => { input.max = today; });
     app.querySelector('#gdb-stop').addEventListener('click', async () => { try { await api('scrape/stop', {}); } catch (error) { showError(error); } });
     app.querySelector('#gdb-apply').addEventListener('click', () => { offset = 0; loadRows().catch(showError); });
     app.querySelector('#gdb-reset').addEventListener('click', () => { app.querySelectorAll('.gdb-filters input').forEach(input => { input.value = ''; }); app.querySelector('#gdb-juggler').value = 'all'; app.querySelector('#gdb-weekday').value = ''; offset = 0; loadRows().catch(showError); });
@@ -101,12 +107,14 @@
     if (activeMode) return;
     setBusy(true); activeMode = mode;
     const status = document.querySelector('#gdb-status');
-    if (status) status.textContent = mode === 'bonuses' ? 'BB・RBの実値が不足する日・台だけを補完しています…' : '記録のない日だけを対象に、BB・RBを含めて取得しています…';
+    if (status) status.textContent = {bonuses: 'BB・RBの実値が不足する日・台だけを補完しています…', range: '指定した期間の不足を取得しています…'}[mode] || '記録のない日だけを対象に、BB・RBを含めて取得しています…';
     try {
-      const payload = mode === 'bonuses' ? {start: document.querySelector('#bonus-from').value || null, end: document.querySelector('#bonus-to').value || null} : {};
+      const payload = mode === 'bonuses' ? {start: document.querySelector('#bonus-from').value || null, end: document.querySelector('#bonus-to').value || null}
+        : mode === 'range' ? {start: document.querySelector('#range-from').value || null, end: document.querySelector('#range-to').value || null} : {};
       const result = await api('gdb/' + mode, payload);
       if (result.status === 'up-to-date') {
         activeMode = ''; setBusy(false); await loadStatus(); await loadRows();
+        if (mode === 'range' && status) status.textContent += ' / 指定した期間に取得が必要な日はありません。';
         return;
       }
       await pollUntilFinished(mode);
@@ -122,7 +130,7 @@
       try {
         const progress = await api('scrape/status');
         if (progress.active || progress.state === 'running') {
-          if (status) status.textContent = `${mode === 'bonuses' ? 'BB・RB補完' : '不足日の取得'}: ${progress.completed || 0}/${progress.total || 0}日 / ${progress.bonusRows || 0}/${progress.bonusTotal || 0}台 / ${progress.message || '取得中…'}`;
+          if (status) status.textContent = `${{bonuses: 'BB・RB補完', range: '期間指定の取得'}[mode] || '不足日の取得'}: ${progress.completed || 0}/${progress.total || 0}日 / ${progress.bonusRows || 0}/${progress.bonusTotal || 0}台 / ${progress.message || '取得中…'}`;
           pollTimer = setTimeout(tick, 1800);
           return;
         }

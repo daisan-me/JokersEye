@@ -228,6 +228,20 @@ class Store:
         return {"start": start, "targetEnd": end, "missingDates": [row[0] for row in days], "missingDateCount": len(days),
                 "missingRows": sum(row[1] for row in days)}
 
+    def gdb_range_plan(self, start, end):
+        """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out),
+        or a saved record whose BB or RB is empty. Complete dates are not requested again."""
+        if not start or not end:
+            raise ValueError("取得する期間の開始日と終了日を指定してください。")
+        if date.fromisoformat(start).isoformat()!=start or date.fromisoformat(end).isoformat()!=end or not GDB_START<=start<=end<=source_today():
+            raise ValueError("取得する期間は %s から本日までの範囲で、開始日を終了日以前にしてください。" % GDB_START)
+        status = self.gdb_status()
+        new_days = [day for day in status["actionableMissingDates"] if start <= day <= end]
+        bonus_days = self.gdb_bonus_plan(start, end)["missingDates"]
+        return {"start": start, "targetEnd": end, "missingDates": sorted(set(new_days) | set(bonus_days)),
+                "newDateCount": len(new_days), "bonusDateCount": len(bonus_days),
+                "unpublishedDates": [day for day in status["unpublishedDates"] if start <= day <= end]}
+
     @staticmethod
     def _parse_filter_number(value, label):
         if value in (None, ""):
@@ -583,6 +597,16 @@ class Handler(BaseHTTPRequestHandler):
                     result={'status':'up-to-date','plan':plan}
                 else:
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'],True)
+                    result.update({'plan':plan})
+            elif path=="/api/gdb/range":
+                if self.server.store.collector.active:
+                    raise ValueError("現在スクレイピング中です。完了後に期間を指定して取得してください。")
+                plan=self.server.store.gdb_range_plan(payload.get('start'),payload.get('end'))
+                if not plan['missingDates']:
+                    result={'status':'up-to-date','plan':plan}
+                else:
+                    # New dates get the full table plus BB/RB; saved dates only their missing BB/RB.
+                    result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
                     result.update({'plan':plan})
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop()

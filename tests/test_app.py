@@ -72,6 +72,17 @@ class StoreTests(unittest.TestCase):
             db.execute("UPDATE scraped_observations SET bb=3,rb=4,fetched_at='2026-10-07T00:00:00Z' WHERE day='2024-03-02'")
         self.assertEqual(self.store.gdb_status()['missingBonusRows'],0)
         self.assertEqual(self.store.gdb_bonus_plan()['missingDates'],[])
+    def test_range_plan_takes_new_and_bonus_missing_dates_inside_the_range_only(self):
+        self.store.collector.save_rows([ROW,dict(ROW,date='2024-03-02',seat='2',bb=None,rb=None),dict(ROW,date='2024-03-09',seat='3',bb=None)])
+        self.store.collector.day_status('2024-03-04','','not-published',0,'TEST ONLY')
+        plan=self.store.gdb_range_plan('2024-03-01','2024-03-05')
+        # 03-01 is complete, 03-02 lacks BB/RB, 03-03 and 03-05 have no record, 03-04 is known unpublished
+        self.assertEqual(plan['missingDates'],['2024-03-02','2024-03-03','2024-03-05'])
+        self.assertEqual((plan['newDateCount'],plan['bonusDateCount'],plan['unpublishedDates']),(2,1,['2024-03-04']))
+        self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['missingDates'],[])
+        for start,end in ((None,'2024-03-05'),('2024-03-01',''),('2024-02-29','2024-03-05'),('2024-03-05','2024-03-01'),('2024-03-01','2099-01-01'),('2024-3-1','2024-03-05')):
+            with self.assertRaises(ValueError):
+                self.store.gdb_range_plan(start,end)
     def test_untrusted_fields_remain_text(self):
         self.store.collector.save_rows([dict(ROW,model='<script>alert(1)</script>')])
         self.assertEqual(self.store.observations('')['rows'][0]['model'],'<script>alert(1)</script>')
@@ -139,6 +150,31 @@ class ApiTests(unittest.TestCase):
         start.reset_mock()
         self.assertEqual(self.post('gdb/update',{})['status'],'up-to-date')
         start.assert_not_called()
+
+    def test_range_action_requests_only_plan_dates_with_bonus_capture(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.host.store.gdb_range_plan=Mock(return_value={'targetEnd':'2024-03-07','missingDates':['2024-03-02','2024-03-05']})
+        self.post('gdb/range',{'start':'2024-03-01','end':'2024-03-07'})
+        self.host.store.gdb_range_plan.assert_called_once_with('2024-03-01','2024-03-07')
+        start.assert_called_once_with('2024-03-07','2024-03-02',True,['2024-03-02','2024-03-05'])
+        self.host.store.gdb_range_plan.return_value={'targetEnd':'2024-03-07','missingDates':[]}
+        start.reset_mock()
+        self.assertEqual(self.post('gdb/range',{'start':'2024-03-01','end':'2024-03-07'})['status'],'up-to-date')
+        start.assert_not_called()
+
+    def test_range_action_rejects_a_missing_date_and_a_running_collector(self):
+        with self.assertRaises(urllib.error.HTTPError) as ex:
+            self.post('gdb/range',{'start':'2024-03-01'})
+        self.assertEqual(ex.exception.code,400)
+        self.assertIn('開始日と終了日',json.load(ex.exception)['error'])
+        self.host.store.collector.active=True
+        try:
+            with self.assertRaises(urllib.error.HTTPError) as ex:
+                self.post('gdb/range',{'start':'2024-03-01','end':'2024-03-02'})
+            self.assertIn('スクレイピング中',json.load(ex.exception)['error'])
+        finally:
+            self.host.store.collector.active=False
 
     def test_bonus_action_targets_only_plan_dates(self):
         start=Mock(return_value={'state':'running'})
