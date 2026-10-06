@@ -20,7 +20,7 @@
     card.className = 'card';
     card.id = 'gdb-card';
     card.innerHTML = '<div id="gdb-app"><p>GDBを読み込み中…</p></div>';
-    observations.closest('.card')?.after(card);
+    observations.closest('.card')?.before(card);  // above 「登録した観測」, below the scraping panel
     return card.querySelector('#gdb-app');
   }
 
