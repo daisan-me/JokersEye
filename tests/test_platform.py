@@ -55,11 +55,84 @@ class SourceBrowserRuleTests(unittest.TestCase):
         self.assertTrue(desktop.same_page('HTTPS://Min-Repo.com/tag/%E3%82%B4/', 'https://min-repo.com/tag/ゴ/'))
         self.assertFalse(desktop.same_page('https://min-repo.com/1/?kishu=all', 'https://min-repo.com/1/'))
 
+    def test_model_page_matches_the_unescaped_url_webview2_reports(self):
+        # pywebview on WebView2 returns System.Uri.ToString(): non-ASCII query text unescaped.
+        requested = 'https://min-repo.com/3389999/?kishu=L%E6%9D%B1%E4%BA%AC%E5%96%B0%E7%A8%AE'
+        self.assertTrue(desktop.same_page('https://min-repo.com/3389999/?kishu=L東京喰種', requested))
+        self.assertTrue(desktop.same_page('https://min-repo.com/1/?kishu=%E3%82%B9%E3%83%9E%E3%82%B9%E3%83%AD+%E3%83%8F%E3%83%8A%E3%83%93',
+                                          'https://min-repo.com/1/?kishu=スマスロ%20ハナビ'))
+        self.assertFalse(desktop.same_page('https://min-repo.com/3389999/?kishu=L東京喰種', 'https://min-repo.com/3389999/?kishu=L%E6%9D%B1'))
+        self.assertFalse(desktop.same_page('https://min-repo.com/1/?kishu=A-SLOT%2B', 'https://min-repo.com/1/?kishu=A-SLOT+'))
+
     def test_javascript_results_from_both_engines(self):
         for value in (True, 1, 'true'):
             self.assertTrue(desktop.truthy(value))
         for value in (False, 0, None, 'false', ''):
             self.assertFalse(desktop.truthy(value))
+
+
+class FakeWindow:
+    def __init__(self, href=None):
+        self.href, self.destroyed, self.hidden = href, 0, 0
+
+    def run_js(self, script):
+        return self.href if script == 'location.href' else None
+
+    def get_current_url(self):
+        return 'https://min-repo.com/1/?kishu=L東京喰種'
+
+    def destroy(self):
+        self.destroyed += 1
+
+    def hide(self):
+        self.hidden += 1
+
+
+class FakeClient:
+    def __init__(self, task):
+        self.task, self.requests = task, []
+
+    def request(self, path, payload=None, timeout=3):
+        self.requests.append(path)
+        return self.task
+
+
+class SourceBrowserWindowTests(unittest.TestCase):
+    def browser(self, task, window):
+        source = desktop.SourceBrowser(None, FakeClient(task), tempfile.gettempdir())
+        source.window = window
+        return source
+
+    def test_current_url_prefers_the_encoded_location(self):
+        source = self.browser({}, FakeWindow('https://min-repo.com/1/?kishu=L%E6%9D%B1'))
+        self.assertEqual(source.current_url(), 'https://min-repo.com/1/?kishu=L%E6%9D%B1')
+        source.window.href = None  # navigating: fall back to pywebview's URL
+        self.assertEqual(source.current_url(), 'https://min-repo.com/1/?kishu=L東京喰種')
+
+    def test_window_closes_when_the_run_has_ended(self):
+        window = FakeWindow()
+        source = self.browser({'active': False}, window)
+        source.poll()
+        self.assertEqual(window.destroyed, 1)
+        self.assertIsNone(source.window)
+        self.assertTrue(source.on_closing())  # the close is not turned back into hide + stop
+        self.assertEqual(window.hidden, 0)
+        source.poll()  # nothing left to close
+        self.assertEqual(window.destroyed, 1)
+
+    def test_window_stays_open_while_the_run_is_active(self):
+        window = FakeWindow()
+        source = self.browser({'active': True}, window)
+        source.poll()
+        self.assertEqual(window.destroyed, 0)
+        self.assertIs(source.window, window)
+
+    def test_user_close_during_a_run_hides_and_stops(self):
+        window = FakeWindow()
+        source = self.browser({'active': True}, window)
+        self.assertFalse(source.on_closing())
+        self.assertEqual(window.hidden, 1)
+        self.assertIn('scrape/stop', source.client.requests)
 
 
 class SingleInstanceTests(unittest.TestCase):

@@ -1,5 +1,61 @@
 # 引き継ぎメモ
 
+## 期間を指定した取得（2026-10-07、ブランチ `feature/range-fetch`）
+
+- ユーザー指示：期間を指定してデータを取得できる機能を付け、GitHubのブランチに上げ、Windows用のダウンロードURLをGitHubに貼る。背景：全期間（約950日・約73,000ページ）を長時間回したあとで取り方の誤りに気づくと検証と取り直しに時間がかかるため、短い期間で試してから広げたい。
+- `Store.gdb_range_plan(start, end)`：範囲内で「記録がない日（既知の未掲載日は除く）」と「BBまたはRBが空の日」を合わせた日付を返す。`POST /api/gdb/range` はその日付だけを `Collector.start(..., include_bonus=True, only_dates=...)` に渡す（記録済みの日は既存行を使いBB/RBだけ補完）。開始日・終了日は必須で、2024-03-01〜本日。
+- 画面：GDBカードに開始日・終了日と「期間を指定して取得」ボタン。データ管理上部の「初回の取得範囲を指定」（旧来の範囲取得）は残している。
+- 検証（Windows）：Python単体テスト70件・Nodeテスト4本。空のGDBで修正版を起動し、画面から2026-10-03〜2026-10-03を指定して取得：完了、310台・BB/RB不足0、失敗0、CSVなし、取得ブラウザーは終了後に閉じた。日付未入力ではエラーを表示。
+- 未決定：スクレイピングの高速化（案A〜E）。ユーザーは「同時に開く」可否を検討中。これまでの記録に429・403・確認画面は0件。
+
+## GDB を SQLite 1ファイルにし、CSV を廃止（2026-10-07、ブランチ `feature/gotham-database`）
+
+- ユーザー指示：CSVだけで管理する不都合（部分更新・同時アクセス・Excel保存での値化け・重複防止）を説明したうえで、ユーザーがSQLiteを選択。GDBのCSVは削除し、今後CSVは使わない。SQLiteのファイル名を `GothamDataBase.sqlite` にする。
+- ユーザー判断：アプリのCSV機能はすべて外し、DBだけにする（一覧と3つの操作はDBを直接読む形で残す）。
+- 変更内容：
+  - `app/server.py`：DBファイルを `GothamDataBase.sqlite` に変更。旧 `jokers-eye.sqlite3`（と `-wal`・`-shm`）は起動時に一度だけ改名して引き継ぐ。バックアップは `backups/GothamDataBase-日時.sqlite`。別版の試用（`copy_into`）は、1.3.1以前の版も読めるよう旧名でコピーする（新しい版は起動時に改名）。
+  - 基礎データシート（CSV）の作成・更新・同期・ダウンロードを廃止し、`gdb_rows_all`（DBから11列を作る。件数と最新 `fetched_at` が変わるまでキャッシュ）・`gdb_status`・`gdb_update_plan`・`gdb_bonus_plan`・`gdb_rows` に置き換え。APIは `/api/gdb/status|rows`（GET）、`/api/gdb/update|bonuses`（POST）。「CSVを作成」と「不足分だけ更新」は「不足日を取得」（2024-03-01〜本日でDBに記録がない日）にまとめた。
+  - `app/scraper.py`：`exports` へのCSV自動書き出し（10日ごと・終了時）と、終了時の基礎データシート同期を削除。
+  - CSV取り込み（`/api/import`・`web/template.csv`）、`/api/scrape/csv`、`tools/verify-bonus-sheet.py`、`tools/export_existing_facts.py` を削除。`tools/audit_juggler_inputs.py` はDBだけを読む。
+  - 画面：`web/base-sheet.js` → `web/gdb.js`（カード名「GothamDataBase（GDB）」）。データ管理の「CSVを取り込む」を削除。履歴は取り込み履歴の代わりに取得の実行履歴（`scrape_runs`）を表示。設定にDBファイル名を表示。
+  - `observations`・`imports` テーブルは既存DBとの互換のため残したが、書き込む機能はなくなった。
+- 検証（Windows）：Python単体テスト67件・Nodeテスト4本に合格。本番DBのコピー（旧名）で起動し、`GothamDataBase.sqlite` への改名、店内マップ91期間の読み込み、データ管理・ダッシュボード・履歴・設定・マップの各画面にCSVの文言がないこと、GDBカードの表示（不足日951日）を確認した。
+- 本番データフォルダー：見出し行だけの `GothamDataBase.csv` を削除した。`backups\exports-before-gdb-*` の旧CSVはバックアップとして残している。本番の `jokers-eye.sqlite3` は、この版を初めて起動したときに改名される。
+
+## GDB（CSV）の作成と旧台データの削除（2026-10-07、ブランチ `feature/gotham-database`）
+
+- ユーザー指示：台データは `GothamDataBase.csv`（GDB）1枚で扱う。旧台データは中身が使い物にならないので一度削除する。GDBは型（見出し行）だけ作り、スクレイピングで埋めるのは後で。開始日は2024-03-01のまま。ルールは `AGENTS.md` の「GDB」に記載。
+- ユーザー判断：削除は「取得データとCSVだけ」、バックアップは残す。アプリのコードは変えず、GDBファイルを作るだけ。
+- 本番データフォルダー（`%LOCALAPPDATA%\JokersEye`）で行ったこと：
+  - 削除前のSQLiteを `backups\jokers-eye-before-gdb-20261007-000926-6969fd.sqlite3` に保存（整合性確認済み、取得データ318,368行）。
+  - SQLiteの `scraped_observations`・`scrape_days`・`scrape_bonus_days`・`scrape_bonus_targets`・`scrape_report_index`・`scrape_runs` を空にしてVACUUM（72MB→4.6MB）。
+  - 店内マップの `map_versions`・`seats`・`installations`（28,210件）と `settings` は残した（`web/map-history.json` から起動時に作り直される）。
+  - `exports` のCSV4つ（`gotham-city-*`・`coverage-*`）を `backups\exports-before-gdb-20261007-000926-6969fd\` に移した。
+  - 見出し行だけの `GothamDataBase.csv` を作成。
+- （同日、上の「GDB を SQLite 1ファイルにし、CSV を廃止」でGDBのCSVは削除し、GDBはSQLiteになった。）
+
+## スクレイピングの修正（2026-10-06、ブランチ `fix/scrape-completion`）
+
+- ユーザー報告：Joker's Eye からスクレイピングしても、(1) 全日程のBB/RBが埋まらない、(2) いつまでも完了しない、(3) 完了しても取得用ブラウザーが閉じない。
+- 原因(1)(2)：pywebview 6.2.1 の WebView2 実装は `get_current_url()` に `System.Uri.ToString()`（日本語に戻した形）を返す。`same_page` が生の query を比べていたため `?kishu=<日本語>` の機種別ページが常に不一致になり、各ページ110回×0.5秒待って `unreadable-page … loading` で失敗していた（本番の `source-browser.log` に51件）。1日あたり約70機種×2回＋個別台フォールバックで、1日分だけで数時間かかっていた。
+- 修正：`SourceBrowser.current_url()` はページの `location.href` を優先し、`same_page` は `parse_qsl` で query を比較する。
+- 追加原因：Cookie のない新しい取得用プロファイルで機種別ページを直接開くと、空の文書（HTTP 200・188文字・表0）が返る。補完（既存行を使う経路）では公開レポートを一度も開かずに機種別ページへ直行していた。`collect_bonuses` は、未完了の機種があり、この回で全台表を読んでいない場合、最初にその日の公開レポートを1回開く（以後の機種は既存どおり）。
+- 原因(3)：取得ブラウザーを閉じる処理がなかった。`/api/scrape/browser-task` に `active` を加え、`active: false` でウィンドウを閉じる。ユーザーが取得中に閉じた場合は従来どおり隠して停止する。
+- 10/3 のBB/RBが本番で63台しかないのは、10/3の営業中に取った値が、17:26の取得で最新の全台表（G数が変化）に置き換わり、規則どおりBB/RBが空に戻ったため。
+
+### 検証済み（Windows 実機）
+
+- Python 単体テスト69件、Node のテスト4本。
+- 本番データフォルダーのコピー（SQLite は backup API で複製）で修正版 `app/desktop.py` を起動し、10/3だけBB/RB付きで取得：約6分で complete、310台全件・ジャグラー102台。本番DBとの比較で、基礎列の変更0件、10/3以外のBB/RB変更0件、既存のBB/RB値の変更0件。取得終了後に取得用ブラウザーのウィンドウが閉じたことを確認。
+- 本番の SQLite・CSV は変更していない（読み取り専用で参照のみ）。
+
+### 未完了・注意
+
+- 全日程のBB/RB補完は未実行。BB/RB不足は1,025日・317,685行。1日約6〜8分のため、全期間で連続約100時間かかる見込み（1ページ3秒の間隔は負荷抑制のため維持）。途中で停止しても、揃った機種は再取得しない。
+- 通常の「本日までのデータをスクレイプ」は前方更新のまま。過去日のBB/RBは「指定範囲を取得」（BB・RBにチェック）または基礎データシートの操作で補完する。
+- 修正はまだ配布パッケージになっていない。手元の 1.3.1（`Downloads\JokersEye-1.3.1-windows (2)`）は旧コードのまま。
+- `application.log` は `/api/scrape/browser-task` の0.75秒ごとのポーリングを毎回記録しており、11MB超に増えている（未対応）。
+
 ## main と feature の統合（2026-10-06）
 
 - ユーザー指示により、`feature/bbrb-scraper`（1.3.1）を main（Windows / macOS 共通構成）へ統合した。作業ブランチは `integrate/main-bbrb-scraper`。版数は1.3.1のまま。

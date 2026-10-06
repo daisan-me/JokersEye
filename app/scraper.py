@@ -3,10 +3,8 @@
 The desktop host supplies ordinary, rendered public pages through a broker.
 No authentication tokens/cookies are extracted from the source browser.
 """
-import csv
 from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
-import io
 import json
 from pathlib import Path
 import re
@@ -17,7 +15,6 @@ from urllib.parse import quote, urljoin, urlsplit, parse_qs, unquote
 
 START = '2023-04-27'
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
-COLUMNS = ['date','seat','model','games','bb','rb','combined','net','rate','payout_percent','source_url','published_at','fetched_at','status','bonus_source_url']
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,rate TEXT NOT NULL,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
 CREATE TABLE IF NOT EXISTS scrape_days(day TEXT PRIMARY KEY,url TEXT,status TEXT NOT NULL,rows INTEGER NOT NULL DEFAULT 0,message TEXT NOT NULL DEFAULT '',checked_at TEXT);
@@ -202,7 +199,7 @@ def parse_bonuses(html, day, model, rows, seat=None):
 
 class Collector:
     def __init__(self, store, index_path):
-        self.store=store; self.lock=threading.Lock(); self.export_lock=threading.Lock(); self.event=threading.Event(); self.cancelled=threading.Event()
+        self.store=store; self.lock=threading.Lock(); self.event=threading.Event(); self.cancelled=threading.Event()
         self.pending=None; self.answer=None; self.active=False; self.progress={'state':'idle'};self.page_expectations={}
         self.seed=json.loads(Path(index_path).read_text(encoding='utf-8'))['reports'] if Path(index_path).exists() else []
         with store.connect() as db:
@@ -247,7 +244,8 @@ class Collector:
         return result['html']
 
     def browser_task(self):
-        with self.lock: return self.pending or {}
+        # `active` lets the desktop close its source browser once the run has ended.
+        with self.lock: return dict(self.pending or {},active=self.active)
 
     def browser_result(self,payload):
         with self.lock:
@@ -266,10 +264,9 @@ class Collector:
             result['bonusFailures']=[dict(r) for r in db.execute("SELECT day,status,message,rows FROM scrape_bonus_days WHERE status!='complete' ORDER BY day DESC LIMIT 40")]
         return result
 
-    def start(self,end=None,start=None,include_bonus=True,only_dates=None,bonus_only=False,sheet_mode=None):
+    def start(self,end=None,start=None,include_bonus=True,only_dates=None,bonus_only=False):
         if not isinstance(include_bonus,bool):raise ValueError('BB/RB取得の指定が不正です。')
         if not isinstance(bonus_only,bool) or (bonus_only and not include_bonus):raise ValueError('BB/RB補完の指定が不正です。')
-        if sheet_mode not in (None,'create','update','bonuses'):raise ValueError('CSV同期の指定が不正です。')
         end=end or today(); date.fromisoformat(end)
         if not START<=end<=today(): raise ValueError('取得終了日が対象範囲外です。')
         if start and (date.fromisoformat(start).isoformat()!=start or not START<=start<=end): raise ValueError('取得開始日が対象範囲外です。')
@@ -282,7 +279,7 @@ class Collector:
         with self.lock:
             if self.active: return dict(self.progress)
             self.active=True; self.cancelled.clear()
-            self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[],'sheetMode':sheet_mode}
+            self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
         return self.status()
 
@@ -388,7 +385,7 @@ class Collector:
                     message=str(ex)
                     # A failure on one date must not abort the delta run. The
                     # first implementation raised here, so one transient empty
-                    # page left every later date absent from the CSV. Persist the
+                    # page left every later date unsaved. Persist the
                     # failed date and continue; the next delta run can retry it.
                     if not all_saved:
                         self.day_status(day,url,'partial' if saved else 'failed',saved,message)
@@ -400,24 +397,13 @@ class Collector:
                     # of requests. Ordinary parse/empty-page failures continue.
                     if self.cancelled.is_set() or '公開サイトが取得を制限しました' in message:
                         raise
-                    if self.progress['completed']%10==0: self.export(self.store.folder/'exports',START,end)
                     continue
-                if self.progress['completed']%10==0: self.export(self.store.folder/'exports',START,end)
-            self.export(self.store.folder/'exports',START,end)
             with self.store.connect() as db:
                 missing=sum(db.execute('SELECT COUNT(*) FROM scraped_observations WHERE day=? AND (bb IS NULL OR rb IS NULL)',(day,)).fetchone()[0] for day in days)
             with self.lock: self.progress.update(state='complete',missingBonusRows=missing,message='取得処理が終了しました。対象日のBB/RB不足: '+str(missing)+'台。未掲載・失敗は取得状況を確認してください。')
         except Exception as ex:
             with self.lock: self.progress.update(state='stopped' if self.cancelled.is_set() else 'failed',message=str(ex))
-            self.export(self.store.folder/'exports',START,end)
         finally:
-            # Persist completed bonus enrichment into the existing 11-column
-            # CSV even if the user leaves the data tab or stops midway.
-            try:
-                if self.store.base_sheet_path().exists() or self.progress.get('sheetMode')=='create':
-                    self.store.build_base_sheet('bonuses' if bonus_only else ('update' if self.store.base_sheet_path().exists() else 'create'))
-            except Exception as ex:
-                with self.lock:self.progress.update(state='failed',message=self.progress.get('message','')+' CSV同期失敗: '+str(ex))
             with self.store.connect() as db:
                 db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=? WHERE id=?',(self.progress['state'],now(),self.progress['message'],run_id))
             with self.lock: self.active=False; self.pending=None
@@ -435,6 +421,13 @@ class Collector:
         failures=[]
         if html:self.cache_bonus_targets(html,day,url,rows)
         targets=self.get_bonus_targets(day)
+        pending=[m for m in groups if not all(r['bb'] is not None and r['rb'] is not None for r in groups[m])]
+        if pending and not html:
+            # Enter through the day's public report, as an ordinary visitor does, before the
+            # model pages. Opened directly in a fresh source-browser profile they come back
+            # as empty documents, which left every BB/RB repair run without values.
+            self.cache_bonus_targets(self.fetch(url,pace=3.0),day,url,rows)
+            targets=self.get_bonus_targets(day)
         with self.store.connect() as db:
             saved={r['seat']:dict(r) for r in db.execute('SELECT * FROM scraped_observations WHERE day=?',(day,))}
         complete=lambda r:saved.get(r['seat'],{}).get('bb') is not None and saved.get(r['seat'],{}).get('rb') is not None
@@ -525,32 +518,3 @@ class Collector:
                 net=excluded.net,payout_percent=excluded.payout_percent,source_url=excluded.source_url,published_at=excluded.published_at,fetched_at=excluded.fetched_at,
                 bonus_source_url=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.bonus_source_url,scraped_observations.bonus_source_url) ELSE excluded.bonus_source_url END''',
                 [(r['date'],r['seat'],r['model'],r['games'],r['bb'],r['rb'],r.get('combined'),r['net'],r['rate'],r['payout_percent'],r['source_url'],r['published_at'],r['fetched_at'],r.get('bonus_source_url')) for r in rows])
-
-    def export(self,folder,start,end):
-        with self.export_lock:
-            return self._export(folder,start,end)
-
-    def _export(self,folder,start,end):
-        folder=Path(folder); folder.mkdir(parents=True,exist_ok=True)
-        with self.store.connect() as db:
-            rows=[dict(r) for r in db.execute('SELECT day AS date,seat,model,games,bb,rb,combined,net,rate,payout_percent,source_url,published_at,fetched_at,bonus_source_url FROM scraped_observations WHERE day BETWEEN ? AND ? ORDER BY day,CAST(seat AS INTEGER)',(start,end))]
-            coverage={r['day']:dict(r) for r in db.execute('SELECT * FROM scrape_days WHERE day BETWEEN ? AND ? ORDER BY day',(start,end))}
-            bonus_coverage={r['day']:dict(r) for r in db.execute('SELECT * FROM scrape_bonus_days WHERE day BETWEEN ? AND ?',(start,end))}
-        for r in rows: r['status']='scraped'
-        data_file=folder/f'gotham-city-{start}_{end}.csv'
-        self.write_csv(data_file,COLUMNS,rows)
-        days=[]; d=date.fromisoformat(start)
-        while d<=date.fromisoformat(end):
-            key=d.isoformat(); entry=coverage.get(key,{'day':key,'status':'not-attempted','rows':0,'message':'未取得','url':'','checked_at':''})
-            bonus=bonus_coverage.get(key,{})
-            entry.update(bonus_status=bonus.get('status','not-attempted'),bonus_rows=bonus.get('rows',0),bonus_message=bonus.get('message','BB/RB追加取得は未実行'))
-            days.append(entry); d+=timedelta(days=1)
-        self.write_csv(folder/f'coverage-{start}_{end}.csv',['day','status','rows','message','url','checked_at','bonus_status','bonus_rows','bonus_message'],days)
-        return {'path':str(data_file),'rows':len(rows),'days':len({r['date'] for r in rows})}
-
-    @staticmethod
-    def write_csv(path,columns,rows):
-        tmp=path.with_suffix('.csv.tmp')
-        with tmp.open('w',encoding='utf-8-sig',newline='') as file:
-            writer=csv.DictWriter(file,fieldnames=columns,extrasaction='ignore',lineterminator='\n'); writer.writeheader();writer.writerows(rows)
-        tmp.replace(path)

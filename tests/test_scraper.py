@@ -1,4 +1,3 @@
-import csv
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -23,17 +22,21 @@ class ScraperTests(unittest.TestCase):
     def test_validate_identity_and_duplicates(self):
         for html in [FIXTURE.replace('ゴッサムシティ','別の店'),FIXTURE.replace('9/1(火)','9/2(水)'),FIXTURE.replace('<td>2</td>','<td>1</td>'),FIXTURE.replace('2026-09-02','2025-09-02')]:
             with self.assertRaises(ValueError):parse_report(html,'2026-09-01','https://min-repo.com/3326458/')
-    def test_idempotent_save_csv_and_manual_preservation(self):
+    def test_idempotent_save_and_missing_values_stay_empty(self):
         rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
         self.store.collector.save_rows(rows);self.store.collector.save_rows(rows)
         self.assertEqual(self.store.state()['summary']['records'],2)
         self.assertEqual(len(self.store.observations('2026-09-01')['rows']),2)
         self.store.collector.day_status('2026-09-01',rows[0]['source_url'],'partial',2,'TEST ONLY')
-        result=self.store.collector.export(Path(self.tmp.name)/'exports','2026-09-01','2026-09-02')
-        with open(result['path'],encoding='utf-8-sig',newline='') as file: exported=list(csv.DictReader(file))
-        self.assertEqual(exported[0]['bb'],'');self.assertEqual(exported[0]['games'],'0')
-        self.assertEqual(result['rows'],2)
+        saved=self.store.gdb_rows_all()
+        self.assertEqual((saved[0]['BB数'],saved[0]['ゲーム数']),('','0'))
         self.assertEqual(server.Store(self.tmp.name).collector.status()['summary']['records'],2)
+    def test_browser_task_reports_whether_a_run_is_active(self):
+        collector=self.store.collector
+        self.assertEqual(collector.browser_task(),{'active':False})
+        collector.active=True;collector.pending={'id':'x','url':'https://min-repo.com/1/'}
+        self.assertEqual(collector.browser_task(),{'id':'x','url':'https://min-repo.com/1/','active':True})
+        collector.active=False;collector.pending=None
     def test_past_future_ranges_and_blocked_html(self):
         for end in ['2020-01-01','2099-01-01','bad']:
             with self.assertRaises(ValueError):self.store.collector.start(end)
@@ -58,6 +61,7 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(collector.progress['state'],'complete')
         self.assertNotIn('https://min-repo.com/810716/',calls)
         self.assertEqual(collector.status()['summary']['records'],2)
+        self.assertEqual(list(Path(self.tmp.name).rglob('*.csv')),[])  # a run keeps everything in the database
 
     def test_explicit_range_does_not_retry_outside_it(self):
         collector=self.store.collector
