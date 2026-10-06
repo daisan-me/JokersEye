@@ -13,7 +13,7 @@ from contextlib import closing
 spec=importlib.util.spec_from_file_location('server',Path(__file__).resolve().parents[1]/'app/server.py')
 server=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(server)
-ROW={'date':'2024-03-01','seat':'1','model':'マイジャグラーV','games':7000,'bb':30,'rb':25,'combined':'1/127','net':1500,'rate':'unknown','payout_percent':108.2,'source_url':'https://min-repo.com/1/','published_at':'2024-03-02','fetched_at':'2026-10-03T00:00:00Z'}
+ROW={'date':'2024-03-01','seat':'1','model':'マイジャグラーV','games':7000,'bb':30,'rb':25,'combined':'1/127','net':1500,'payout_percent':108.2,'source_url':'https://min-repo.com/1/','published_at':'2024-03-02','fetched_at':'2026-10-03T00:00:00Z'}
 
 class StoreTests(unittest.TestCase):
     def setUp(self):
@@ -29,7 +29,7 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(reopened.state()['summary']['records'],1)
         self.assertEqual(reopened.state()['settings']['notes'],'検証メモ')
         self.assertEqual(reopened.state()['databaseFile'],'GothamDataBase.sqlite')
-        self.assertEqual(reopened.observations('')['rows'][0]['seat'],'1')
+        self.assertEqual(reopened.observations('')['rows'][0]['台番号'],'1')
     def test_database_is_one_gotham_database_file(self):
         self.assertEqual(self.store.path,Path(self.tmp.name)/'GothamDataBase.sqlite')
         self.assertTrue(self.store.path.exists())
@@ -83,9 +83,38 @@ class StoreTests(unittest.TestCase):
         for start,end in ((None,'2024-03-05'),('2024-03-01',''),('2024-02-29','2024-03-05'),('2024-03-05','2024-03-01'),('2024-03-01','2099-01-01'),('2024-3-1','2024-03-05')):
             with self.assertRaises(ValueError):
                 self.store.gdb_range_plan(start,end)
+    def test_registered_observations_use_the_gdb_columns_without_lending_rate(self):
+        self.store.collector.save_rows([dict(ROW,date='2026-03-13',seat='114',model='スマスロ北斗の拳',games=3000,bb=12,rb=13,combined='1/120',net=970,payout_percent=107.3),
+                                        dict(ROW,date='2026-03-13',seat='2',bb=None,rb=None,combined=None)])
+        result=self.store.observations('2026-03-13')
+        self.assertEqual(result['columns'],server.GDB_COLUMNS)
+        self.assertEqual([row['台番号'] for row in result['rows']],['2','114'])
+        self.assertEqual(list(result['rows'][1].values()),['2026-03-13','金曜日','114','スマスロ北斗の拳','ジャグラーではない','3000','12','13','1/120','970','107.3%'])
+        self.assertEqual((result['rows'][0]['BB数'],result['rows'][0]['ジャグラーかジャグラーじゃないか']),('','ジャグラー'))
+        summary=self.store.state()['summary']
+        self.assertEqual((summary['records'],summary['withBonus']),(2,1))
+        self.assertNotIn('main',summary)
+    def test_lending_rate_is_removed_from_an_old_database(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
+                db.executescript("""
+                    CREATE TABLE imports(id INTEGER PRIMARY KEY,created_at TEXT NOT NULL,filename TEXT NOT NULL,rows INTEGER NOT NULL,source TEXT NOT NULL);
+                    CREATE TABLE observations(day TEXT NOT NULL,seat TEXT NOT NULL,model TEXT NOT NULL,games INTEGER NOT NULL,bb INTEGER NOT NULL,rb INTEGER NOT NULL,net INTEGER,rate TEXT NOT NULL,import_id INTEGER NOT NULL REFERENCES imports(id),PRIMARY KEY(day,seat));
+                    CREATE TABLE installations(seat TEXT,model TEXT,rate TEXT,valid_from TEXT,valid_to TEXT,source TEXT,PRIMARY KEY(seat,valid_from));
+                    CREATE TABLE scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,rate TEXT NOT NULL,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,bonus_source_url TEXT,PRIMARY KEY(day,seat));
+                    INSERT INTO scraped_observations VALUES('2024-03-01','1','旧機種',100,1,2,'1/33',50,'unknown',101.0,'https://min-repo.com/1/',NULL,'2026-10-01',NULL);""")
+            store=server.Store(folder)
+            with store.connect() as db:
+                tables={row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+                for table in ('scraped_observations','installations'):
+                    self.assertNotIn('rate',{row[1] for row in db.execute(f'PRAGMA table_info({table})')},table)
+            self.assertFalse({'observations','imports'}&tables)
+            self.assertEqual(store.gdb_rows_all()[0]['機種'],'旧機種')  # the seat records are kept
+            store.collector.save_rows([dict(ROW,date='2024-03-02')])  # and new ones are saved without it
+            self.assertEqual(store.state()['summary']['records'],2)
     def test_untrusted_fields_remain_text(self):
         self.store.collector.save_rows([dict(ROW,model='<script>alert(1)</script>')])
-        self.assertEqual(self.store.observations('')['rows'][0]['model'],'<script>alert(1)</script>')
+        self.assertEqual(self.store.observations('')['rows'][0]['機種'],'<script>alert(1)</script>')
 
 class ApiTests(unittest.TestCase):
     def setUp(self):

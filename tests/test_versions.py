@@ -120,7 +120,7 @@ class ManagerTests(unittest.TestCase):
                 self.manager.remove(bad)
 
     def test_install_downloads_copies_data_and_launches_with_its_own_folder(self):
-        self.store.collector.save_rows([{'date': '2026-01-01', 'seat': '1', 'model': 'A', 'games': 10, 'bb': 1, 'rb': 0, 'net': 5, 'rate': 'unknown',
+        self.store.collector.save_rows([{'date': '2026-01-01', 'seat': '1', 'model': 'A', 'games': 10, 'bb': 1, 'rb': 0, 'net': 5,
                                          'payout_percent': None, 'source_url': 'https://min-repo.com/1/', 'published_at': None, 'fetched_at': '2026-01-02T00:00:00Z'}])
         report = Path(self.tmp.name) / 'launched.json'
         package = Path(self.tmp.name) / 'package.zip'
