@@ -1,0 +1,3061 @@
+{
+  "schemaVersion": 3,
+  "purpose": "ユーザー指定の島修正を反映した310台の配置見本。番号は各面の1〜nで、実店舗の台番号ではない。",
+  "sourceImage": "gotham-island-local-numbered-v2.png",
+  "totalSymbols": 310,
+  "islandFaces": 32,
+  "tileSize": 8.6,
+  "fontSize": 5,
+  "outputDimensions": [
+    3840,
+    2160
+  ],
+  "rules": [
+    "背中合わせの列は別島として採番を1に戻す",
+    "同じ列の途中の設備用の空きは番号を継続",
+    "実台番号ではなく島内の順番を示す",
+    "削除済みC10を復元しない",
+    "変更指定のない島の四角の配置・個数・大きさは変えない"
+  ],
+  "floorOutline": [
+    [
+      307,
+      12
+    ],
+    [
+      401,
+      12
+    ],
+    [
+      401,
+      110
+    ],
+    [
+      546,
+      110
+    ],
+    [
+      546,
+      91
+    ],
+    [
+      625,
+      91
+    ],
+    [
+      625,
+      108
+    ],
+    [
+      833,
+      108
+    ],
+    [
+      833,
+      124
+    ],
+    [
+      860,
+      177
+    ],
+    [
+      972,
+      172
+    ],
+    [
+      972,
+      208
+    ],
+    [
+      961,
+      210
+    ],
+    [
+      961,
+      439
+    ],
+    [
+      863,
+      439
+    ],
+    [
+      825,
+      478
+    ],
+    [
+      790,
+      515
+    ],
+    [
+      617,
+      515
+    ],
+    [
+      617,
+      449
+    ],
+    [
+      523,
+      448
+    ],
+    [
+      500,
+      424
+    ],
+    [
+      409,
+      448
+    ],
+    [
+      399,
+      612
+    ],
+    [
+      307,
+      612
+    ],
+    [
+      307,
+      449
+    ],
+    [
+      281,
+      437
+    ],
+    [
+      250,
+      418
+    ],
+    [
+      225,
+      393
+    ],
+    [
+      209,
+      362
+    ],
+    [
+      198,
+      328
+    ],
+    [
+      200,
+      291
+    ],
+    [
+      214,
+      249
+    ],
+    [
+      238,
+      220
+    ],
+    [
+      270,
+      196
+    ],
+    [
+      307,
+      178
+    ]
+  ],
+  "islands": [
+    {
+      "id": "F01",
+      "sourceSegments": [
+        "L01"
+      ],
+      "name": "左外周・半円",
+      "count": 24,
+      "points": [
+        {
+          "x": 279,
+          "y": 184,
+          "angle": 143.13010235415598,
+          "sourceSegment": "L01",
+          "localNumber": 1
+        },
+        {
+          "x": 267,
+          "y": 193,
+          "angle": 143.13010235415598,
+          "sourceSegment": "L01",
+          "localNumber": 2
+        },
+        {
+          "x": 255,
+          "y": 202,
+          "angle": 140.4403320310055,
+          "sourceSegment": "L01",
+          "localNumber": 3
+        },
+        {
+          "x": 244,
+          "y": 212,
+          "angle": 133.66778014613035,
+          "sourceSegment": "L01",
+          "localNumber": 4
+        },
+        {
+          "x": 234,
+          "y": 224,
+          "angle": 126.86989764584402,
+          "sourceSegment": "L01",
+          "localNumber": 5
+        },
+        {
+          "x": 226,
+          "y": 236,
+          "angle": 120.96375653207352,
+          "sourceSegment": "L01",
+          "localNumber": 6
+        },
+        {
+          "x": 219,
+          "y": 249,
+          "angle": 114.77514056883193,
+          "sourceSegment": "L01",
+          "localNumber": 7
+        },
+        {
+          "x": 214,
+          "y": 262,
+          "angle": 108.43494882292202,
+          "sourceSegment": "L01",
+          "localNumber": 8
+        },
+        {
+          "x": 210,
+          "y": 276,
+          "angle": 104.0362434679265,
+          "sourceSegment": "L01",
+          "localNumber": 9
+        },
+        {
+          "x": 207,
+          "y": 290,
+          "angle": 100.12467165539783,
+          "sourceSegment": "L01",
+          "localNumber": 10
+        },
+        {
+          "x": 205,
+          "y": 304,
+          "angle": 94.08561677997488,
+          "sourceSegment": "L01",
+          "localNumber": 11
+        },
+        {
+          "x": 205,
+          "y": 318,
+          "angle": 87.95459151111277,
+          "sourceSegment": "L01",
+          "localNumber": 12
+        },
+        {
+          "x": 206,
+          "y": 332,
+          "angle": 81.86989764584403,
+          "sourceSegment": "L01",
+          "localNumber": 13
+        },
+        {
+          "x": 209,
+          "y": 346,
+          "angle": 75.96375653207353,
+          "sourceSegment": "L01",
+          "localNumber": 14
+        },
+        {
+          "x": 213,
+          "y": 360,
+          "angle": 71.56505117707799,
+          "sourceSegment": "L01",
+          "localNumber": 15
+        },
+        {
+          "x": 218,
+          "y": 373,
+          "angle": 64.3589941756947,
+          "sourceSegment": "L01",
+          "localNumber": 16
+        },
+        {
+          "x": 225,
+          "y": 385,
+          "angle": 57.9946167919165,
+          "sourceSegment": "L01",
+          "localNumber": 17
+        },
+        {
+          "x": 233,
+          "y": 397,
+          "angle": 53.53076560994813,
+          "sourceSegment": "L01",
+          "localNumber": 18
+        },
+        {
+          "x": 242,
+          "y": 408,
+          "angle": 47.862405226111754,
+          "sourceSegment": "L01",
+          "localNumber": 19
+        },
+        {
+          "x": 252,
+          "y": 418,
+          "angle": 42.13759477388826,
+          "sourceSegment": "L01",
+          "localNumber": 20
+        },
+        {
+          "x": 263,
+          "y": 427,
+          "angle": 36.46923439005187,
+          "sourceSegment": "L01",
+          "localNumber": 21
+        },
+        {
+          "x": 275,
+          "y": 435,
+          "angle": 33.690067525979785,
+          "sourceSegment": "L01",
+          "localNumber": 22
+        },
+        {
+          "x": 287,
+          "y": 443,
+          "angle": 29.248826336546973,
+          "sourceSegment": "L01",
+          "localNumber": 23
+        },
+        {
+          "x": 300,
+          "y": 449,
+          "angle": 24.775140568831922,
+          "sourceSegment": "L01",
+          "localNumber": 24
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "sourceSegments": [
+        "L02"
+      ],
+      "name": "左上・短い壁沿い",
+      "count": 7,
+      "points": [
+        {
+          "x": 399,
+          "y": 181,
+          "angle": 0,
+          "sourceSegment": "L02",
+          "localNumber": 1
+        },
+        {
+          "x": 414,
+          "y": 181,
+          "angle": 0,
+          "sourceSegment": "L02",
+          "localNumber": 2
+        },
+        {
+          "x": 428,
+          "y": 181,
+          "angle": 0,
+          "sourceSegment": "L02",
+          "localNumber": 3
+        },
+        {
+          "x": 442,
+          "y": 181,
+          "angle": 0,
+          "sourceSegment": "L02",
+          "localNumber": 4
+        },
+        {
+          "x": 457,
+          "y": 181,
+          "angle": 5.710593137499642,
+          "sourceSegment": "L02",
+          "localNumber": 5
+        },
+        {
+          "x": 472,
+          "y": 184,
+          "angle": 17.241459398939977,
+          "sourceSegment": "L02",
+          "localNumber": 6
+        },
+        {
+          "x": 486,
+          "y": 190,
+          "angle": 23.19859051364819,
+          "sourceSegment": "L02",
+          "localNumber": 7
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "sourceSegments": [
+        "L03"
+      ],
+      "name": "左上円弧・外側",
+      "count": 16,
+      "points": [
+        {
+          "x": 273.8094128230469,
+          "y": 269.1408550234408,
+          "sourceSegment": "L03",
+          "angle": -58.53333333333321,
+          "localNumber": 1
+        },
+        {
+          "x": 281.126967080589,
+          "y": 257.1840831460209,
+          "sourceSegment": "L03",
+          "angle": -54.06666666666669,
+          "localNumber": 2
+        },
+        {
+          "x": 290.212466046496,
+          "y": 246.50865797503903,
+          "sourceSegment": "L03",
+          "angle": -45.13333333333343,
+          "localNumber": 3
+        },
+        {
+          "x": 300.8454899142067,
+          "y": 237.3735719070578,
+          "sourceSegment": "L03",
+          "angle": -36.19999999999998,
+          "localNumber": 4
+        },
+        {
+          "x": 312.76807496891837,
+          "y": 230.00044776230766,
+          "sourceSegment": "L03",
+          "angle": -27.266666666666627,
+          "localNumber": 5
+        },
+        {
+          "x": 325.69097194635475,
+          "y": 224.56816207842695,
+          "sourceSegment": "L03",
+          "angle": -18.333333333333346,
+          "localNumber": 6
+        },
+        {
+          "x": 339.30066339825396,
+          "y": 221.20850545537274,
+          "sourceSegment": "L03",
+          "angle": -9.399999999999972,
+          "localNumber": 7
+        },
+        {
+          "x": 353.2669698189617,
+          "y": 220.00298523421077,
+          "sourceSegment": "L03",
+          "angle": -0.4666666666666234,
+          "localNumber": 8
+        },
+        {
+          "x": 367.2510600038098,
+          "y": 220.98084807876774,
+          "sourceSegment": "L03",
+          "angle": 8.466666666666667,
+          "localNumber": 9
+        },
+        {
+          "x": 380.9136713030478,
+          "y": 224.1183704335351,
+          "sourceSegment": "L03",
+          "angle": 17.399999999999977,
+          "localNumber": 10
+        },
+        {
+          "x": 393.92334034289723,
+          "y": 229.3394340717523,
+          "sourceSegment": "L03",
+          "angle": 26.333333333333318,
+          "localNumber": 11
+        },
+        {
+          "x": 405.9644445313628,
+          "y": 236.51737277051862,
+          "sourceSegment": "L03",
+          "angle": 35.26666666666669,
+          "localNumber": 12
+        },
+        {
+          "x": 416.74485925691084,
+          "y": 245.47804531145658,
+          "sourceSegment": "L03",
+          "angle": 44.19999999999998,
+          "localNumber": 13
+        },
+        {
+          "x": 426.00304501165374,
+          "y": 256.00406025403606,
+          "sourceSegment": "L03",
+          "angle": 53.13333333333336,
+          "localNumber": 14
+        },
+        {
+          "x": 433.5143925010633,
+          "y": 267.8400499859541,
+          "sourceSegment": "L03",
+          "angle": 62.066666666666656,
+          "localNumber": 15
+        },
+        {
+          "x": 439.09667180393853,
+          "y": 280.6988660988559,
+          "sourceSegment": "L03",
+          "angle": 66.53333333333319,
+          "localNumber": 16
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "sourceSegments": [
+        "L04",
+        "L05",
+        "L06"
+      ],
+      "name": "左上円弧・内側左端＋左上円弧・内側中央＋左上円弧・内側右端",
+      "count": 9,
+      "points": [
+        {
+          "x": 288.40352196454535,
+          "y": 274.12408810177106,
+          "angle": -55.34947545533033,
+          "sourceSegment": "L04",
+          "localNumber": 1
+        },
+        {
+          "x": 296.1976028027357,
+          "y": 262.84721261205766,
+          "angle": -50.038512867345396,
+          "sourceSegment": "L04",
+          "localNumber": 2
+        },
+        {
+          "x": 329.99535961822716,
+          "y": 239.89264845393961,
+          "angle": -18.434703852062867,
+          "sourceSegment": "L05",
+          "localNumber": 3
+        },
+        {
+          "x": 343.45400701709485,
+          "y": 236.73521942705898,
+          "angle": -7.976952074458678,
+          "sourceSegment": "L05",
+          "localNumber": 4
+        },
+        {
+          "x": 357.2714540524002,
+          "y": 236.0704316029425,
+          "angle": 2.4667081177103767,
+          "sourceSegment": "L05",
+          "localNumber": 5
+        },
+        {
+          "x": 370.97759847954654,
+          "y": 237.92090263646523,
+          "angle": 12.914775260844538,
+          "sourceSegment": "L05",
+          "localNumber": 6
+        },
+        {
+          "x": 384.1061248320442,
+          "y": 242.22367512426618,
+          "angle": 23.38519684933033,
+          "sourceSegment": "L05",
+          "localNumber": 7
+        },
+        {
+          "x": 415.747613456751,
+          "y": 267.9972832527363,
+          "angle": 55.05641742418987,
+          "sourceSegment": "L06",
+          "localNumber": 8
+        },
+        {
+          "x": 422.51590932319505,
+          "y": 279.9014884123908,
+          "angle": 60.37902266158941,
+          "sourceSegment": "L06",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "sourceSegments": [
+        "L07"
+      ],
+      "name": "左中央・右開口のC字",
+      "count": 11,
+      "points": [
+        {
+          "x": 383.5788383248865,
+          "y": 297,
+          "angle": 60,
+          "sourceSegment": "L07",
+          "localNumber": 1
+        },
+        {
+          "x": 371.5,
+          "y": 286.01923788646684,
+          "angle": 30,
+          "sourceSegment": "L07",
+          "localNumber": 2
+        },
+        {
+          "x": 355,
+          "y": 282,
+          "angle": 0,
+          "sourceSegment": "L07",
+          "localNumber": 3
+        },
+        {
+          "x": 338.5,
+          "y": 286.01923788646684,
+          "angle": 330,
+          "sourceSegment": "L07",
+          "localNumber": 4
+        },
+        {
+          "x": 326.4211616751135,
+          "y": 297,
+          "angle": 300,
+          "sourceSegment": "L07",
+          "localNumber": 5
+        },
+        {
+          "x": 322,
+          "y": 312,
+          "angle": 270,
+          "sourceSegment": "L07",
+          "localNumber": 6
+        },
+        {
+          "x": 326.4211616751135,
+          "y": 327,
+          "angle": 240,
+          "sourceSegment": "L07",
+          "localNumber": 7
+        },
+        {
+          "x": 338.5,
+          "y": 337.98076211353316,
+          "angle": 210,
+          "sourceSegment": "L07",
+          "localNumber": 8
+        },
+        {
+          "x": 355,
+          "y": 342,
+          "angle": 180,
+          "sourceSegment": "L07",
+          "localNumber": 9
+        },
+        {
+          "x": 371.5,
+          "y": 337.98076211353316,
+          "angle": 150,
+          "sourceSegment": "L07",
+          "localNumber": 10
+        },
+        {
+          "x": 383.5788383248865,
+          "y": 327,
+          "angle": 120,
+          "sourceSegment": "L07",
+          "localNumber": 11
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "sourceSegments": [
+        "L08"
+      ],
+      "name": "左下円弧・外側",
+      "count": 16,
+      "points": [
+        {
+          "x": 269.42766412926824,
+          "y": 340.7818128993102,
+          "sourceSegment": "L08",
+          "angle": 65.33333333333314,
+          "localNumber": 1
+        },
+        {
+          "x": 275.53940276729145,
+          "y": 354.09007464142786,
+          "sourceSegment": "L08",
+          "angle": 60.66666666666666,
+          "localNumber": 2
+        },
+        {
+          "x": 283.72853759910066,
+          "y": 366.2309663089564,
+          "sourceSegment": "L08",
+          "angle": 51.3333333333334,
+          "localNumber": 3
+        },
+        {
+          "x": 293.77824542770276,
+          "y": 376.8830342929655,
+          "sourceSegment": "L08",
+          "angle": 42,
+          "localNumber": 4
+        },
+        {
+          "x": 305.42244078436386,
+          "y": 385.76424447357317,
+          "sourceSegment": "L08",
+          "angle": 32.666666666666664,
+          "localNumber": 5
+        },
+        {
+          "x": 318.3528210564759,
+          "y": 392.63944961922465,
+          "sourceSegment": "L08",
+          "angle": 23.33333333333331,
+          "localNumber": 6
+        },
+        {
+          "x": 332.2270293960299,
+          "y": 397.32661536483965,
+          "sourceSegment": "L08",
+          "angle": 14.000000000000075,
+          "localNumber": 7
+        },
+        {
+          "x": 346.67771927989276,
+          "y": 399.7016399240056,
+          "sourceSegment": "L08",
+          "angle": 4.666666666666777,
+          "localNumber": 8
+        },
+        {
+          "x": 361.32228072010724,
+          "y": 399.7016399240056,
+          "sourceSegment": "L08",
+          "angle": -4.666666666666777,
+          "localNumber": 9
+        },
+        {
+          "x": 375.7729706039701,
+          "y": 397.32661536483965,
+          "sourceSegment": "L08",
+          "angle": -14.000000000000075,
+          "localNumber": 10
+        },
+        {
+          "x": 389.6471789435241,
+          "y": 392.63944961922465,
+          "sourceSegment": "L08",
+          "angle": -23.33333333333331,
+          "localNumber": 11
+        },
+        {
+          "x": 402.57755921563614,
+          "y": 385.76424447357317,
+          "sourceSegment": "L08",
+          "angle": -32.666666666666664,
+          "localNumber": 12
+        },
+        {
+          "x": 414.22175457229724,
+          "y": 376.8830342929655,
+          "sourceSegment": "L08",
+          "angle": -42,
+          "localNumber": 13
+        },
+        {
+          "x": 424.27146240089934,
+          "y": 366.2309663089564,
+          "sourceSegment": "L08",
+          "angle": -51.33333333333331,
+          "localNumber": 14
+        },
+        {
+          "x": 432.4605972327086,
+          "y": 354.09007464142786,
+          "sourceSegment": "L08",
+          "angle": -60.66666666666666,
+          "localNumber": 15
+        },
+        {
+          "x": 438.57233587073176,
+          "y": 340.7818128993102,
+          "sourceSegment": "L08",
+          "angle": -65.33333333333334,
+          "localNumber": 16
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "sourceSegments": [
+        "L09",
+        "L10",
+        "L11"
+      ],
+      "name": "左下円弧・内側左端＋左下円弧・内側中央＋左下円弧・内側右端",
+      "count": 9,
+      "points": [
+        {
+          "x": 284.962135991067,
+          "y": 339.6955657651848,
+          "angle": 61.73434953817195,
+          "sourceSegment": "L09",
+          "localNumber": 1
+        },
+        {
+          "x": 291.9444419143867,
+          "y": 352.68176011554544,
+          "angle": 56.18510251516472,
+          "sourceSegment": "L09",
+          "localNumber": 2
+        },
+        {
+          "x": 325.50042296416507,
+          "y": 380.2991490415444,
+          "angle": 22.601334383434896,
+          "sourceSegment": "L10",
+          "localNumber": 3
+        },
+        {
+          "x": 339.4752283645743,
+          "y": 384.56116726271586,
+          "angle": 11.31174096246398,
+          "sourceSegment": "L10",
+          "localNumber": 4
+        },
+        {
+          "x": 354,
+          "y": 386,
+          "angle": 0,
+          "sourceSegment": "L10",
+          "localNumber": 5
+        },
+        {
+          "x": 368.52477163542574,
+          "y": 384.56116726271586,
+          "angle": -11.31174096246398,
+          "sourceSegment": "L10",
+          "localNumber": 6
+        },
+        {
+          "x": 382.49957703583493,
+          "y": 380.2991490415444,
+          "angle": -22.601334383434942,
+          "sourceSegment": "L10",
+          "localNumber": 7
+        },
+        {
+          "x": 416.0555580856133,
+          "y": 352.68176011554544,
+          "angle": -56.18510251516475,
+          "sourceSegment": "L11",
+          "localNumber": 8
+        },
+        {
+          "x": 423.037864008933,
+          "y": 339.6955657651848,
+          "angle": -61.73434953817195,
+          "sourceSegment": "L11",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "sourceSegments": [
+        "L12"
+      ],
+      "name": "左下・短い湾曲列",
+      "count": 8,
+      "points": [
+        {
+          "x": 400,
+          "y": 440,
+          "angle": 0,
+          "sourceSegment": "L12",
+          "localNumber": 1
+        },
+        {
+          "x": 414,
+          "y": 440,
+          "angle": 0,
+          "sourceSegment": "L12",
+          "localNumber": 2
+        },
+        {
+          "x": 429,
+          "y": 440,
+          "angle": -1.9749340108819768,
+          "sourceSegment": "L12",
+          "localNumber": 3
+        },
+        {
+          "x": 443,
+          "y": 439,
+          "angle": -7.85331330197822,
+          "sourceSegment": "L12",
+          "localNumber": 4
+        },
+        {
+          "x": 458,
+          "y": 436,
+          "angle": -15.42216131873867,
+          "sourceSegment": "L12",
+          "localNumber": 5
+        },
+        {
+          "x": 472,
+          "y": 431,
+          "angle": -23.962488974578186,
+          "sourceSegment": "L12",
+          "localNumber": 6
+        },
+        {
+          "x": 485,
+          "y": 424,
+          "angle": -29.98163936884934,
+          "sourceSegment": "L12",
+          "localNumber": 7
+        },
+        {
+          "x": 498,
+          "y": 416,
+          "angle": -31.607502246248902,
+          "sourceSegment": "L12",
+          "localNumber": 8
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "sourceSegments": [
+        "T01"
+      ],
+      "name": "上端・壁沿い波形",
+      "count": 15,
+      "points": [
+        {
+          "x": 589,
+          "y": 128,
+          "angle": 24.775140568831922,
+          "sourceSegment": "T01",
+          "localNumber": 1
+        },
+        {
+          "x": 602,
+          "y": 134,
+          "angle": 18.43494882292201,
+          "sourceSegment": "T01",
+          "localNumber": 2
+        },
+        {
+          "x": 616,
+          "y": 137,
+          "angle": 2.0454084888872277,
+          "sourceSegment": "T01",
+          "localNumber": 3
+        },
+        {
+          "x": 630,
+          "y": 135,
+          "angle": -14.036243467926477,
+          "sourceSegment": "T01",
+          "localNumber": 4
+        },
+        {
+          "x": 644,
+          "y": 130,
+          "angle": -22.166345822082455,
+          "sourceSegment": "T01",
+          "localNumber": 5
+        },
+        {
+          "x": 657,
+          "y": 124,
+          "angle": -21.447736327105353,
+          "sourceSegment": "T01",
+          "localNumber": 6
+        },
+        {
+          "x": 672,
+          "y": 119,
+          "angle": -11.689369175439191,
+          "sourceSegment": "T01",
+          "localNumber": 7
+        },
+        {
+          "x": 686,
+          "y": 118,
+          "angle": 3.945186229037563,
+          "sourceSegment": "T01",
+          "localNumber": 8
+        },
+        {
+          "x": 701,
+          "y": 121,
+          "angle": 20.772254682045833,
+          "sourceSegment": "T01",
+          "localNumber": 9
+        },
+        {
+          "x": 715,
+          "y": 129,
+          "angle": 26.56505117707799,
+          "sourceSegment": "T01",
+          "localNumber": 10
+        },
+        {
+          "x": 729,
+          "y": 135,
+          "angle": 17.81888891452278,
+          "sourceSegment": "T01",
+          "localNumber": 11
+        },
+        {
+          "x": 743,
+          "y": 138,
+          "angle": 5.9061411137704996,
+          "sourceSegment": "T01",
+          "localNumber": 12
+        },
+        {
+          "x": 758,
+          "y": 138,
+          "angle": -9.782407031807287,
+          "sourceSegment": "T01",
+          "localNumber": 13
+        },
+        {
+          "x": 772,
+          "y": 133,
+          "angle": -24.904768808095184,
+          "sourceSegment": "T01",
+          "localNumber": 14
+        },
+        {
+          "x": 786,
+          "y": 125,
+          "angle": -29.744881296942225,
+          "sourceSegment": "T01",
+          "localNumber": 15
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "sourceSegments": [
+        "T02"
+      ],
+      "name": "上中央U字・上側",
+      "count": 8,
+      "points": [
+        {
+          "x": 553.6486020245096,
+          "y": 168.06760098906096,
+          "sourceSegment": "T02",
+          "localNumber": 1,
+          "angle": 41.2080373487641
+        },
+        {
+          "x": 566.6590728181504,
+          "y": 179.46063137229035,
+          "sourceSegment": "T02",
+          "localNumber": 2,
+          "angle": 32.957047837333086
+        },
+        {
+          "x": 582.3757498947208,
+          "y": 186.69262617164665,
+          "sourceSegment": "T02",
+          "localNumber": 3,
+          "angle": 18.152512838754156
+        },
+        {
+          "x": 599.338718127504,
+          "y": 190.17514723412899,
+          "sourceSegment": "T02",
+          "localNumber": 4,
+          "angle": 5.7998738342530665
+        },
+        {
+          "x": 616.6612818724961,
+          "y": 190.17514723412896,
+          "sourceSegment": "T02",
+          "localNumber": 5,
+          "angle": -5.799873834253161
+        },
+        {
+          "x": 633.6242501052793,
+          "y": 186.69262617164662,
+          "sourceSegment": "T02",
+          "localNumber": 6,
+          "angle": -18.152512838754202
+        },
+        {
+          "x": 649.3409271818497,
+          "y": 179.4606313722903,
+          "sourceSegment": "T02",
+          "localNumber": 7,
+          "angle": -32.95704783733304
+        },
+        {
+          "x": 662.3513979754905,
+          "y": 168.06760098906096,
+          "sourceSegment": "T02",
+          "localNumber": 8,
+          "angle": -41.208037348763966
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "sourceSegments": [
+        "T03"
+      ],
+      "name": "上中央U字・下側",
+      "count": 10,
+      "points": [
+        {
+          "x": 546.7766205002423,
+          "y": 175.1797194933022,
+          "sourceSegment": "T03",
+          "localNumber": 1,
+          "angle": 46.062216090845936
+        },
+        {
+          "x": 557.5029938170362,
+          "y": 186.31136879927521,
+          "sourceSegment": "T03",
+          "localNumber": 2,
+          "angle": 38.874979290647055
+        },
+        {
+          "x": 570.6440519677401,
+          "y": 194.4211060850243,
+          "sourceSegment": "T03",
+          "localNumber": 3,
+          "angle": 25.765251304078415
+        },
+        {
+          "x": 585.1396720045329,
+          "y": 199.6507890689997,
+          "sourceSegment": "T03",
+          "localNumber": 4,
+          "angle": 14.703171879019024
+        },
+        {
+          "x": 600.311584805569,
+          "y": 202.205993073933,
+          "sourceSegment": "T03",
+          "localNumber": 5,
+          "angle": 4.781290297641955
+        },
+        {
+          "x": 615.688415194431,
+          "y": 202.205993073933,
+          "sourceSegment": "T03",
+          "localNumber": 6,
+          "angle": -4.781290297642026
+        },
+        {
+          "x": 630.860327995467,
+          "y": 199.65078906899967,
+          "sourceSegment": "T03",
+          "localNumber": 7,
+          "angle": -14.70317187901913
+        },
+        {
+          "x": 645.3559480322598,
+          "y": 194.42110608502426,
+          "sourceSegment": "T03",
+          "localNumber": 8,
+          "angle": -25.765251304078276
+        },
+        {
+          "x": 658.4970061829638,
+          "y": 186.31136879927521,
+          "sourceSegment": "T03",
+          "localNumber": 9,
+          "angle": -38.874979290646884
+        },
+        {
+          "x": 669.2233794997577,
+          "y": 175.1797194933022,
+          "sourceSegment": "T03",
+          "localNumber": 10,
+          "angle": -46.062216090845936
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "sourceSegments": [
+        "T04"
+      ],
+      "name": "右上壁沿い・短い縦カーブ",
+      "count": 4,
+      "points": [
+        {
+          "x": 827,
+          "y": 136,
+          "angle": 40.23635830927382,
+          "sourceSegment": "T04",
+          "localNumber": 1
+        },
+        {
+          "x": 840,
+          "y": 147,
+          "angle": 47.38594403038882,
+          "sourceSegment": "T04",
+          "localNumber": 2
+        },
+        {
+          "x": 850,
+          "y": 161,
+          "angle": 60.4612177404419,
+          "sourceSegment": "T04",
+          "localNumber": 3
+        },
+        {
+          "x": 857,
+          "y": 177,
+          "angle": 66.37062226934319,
+          "sourceSegment": "T04",
+          "localNumber": 4
+        }
+      ]
+    },
+    {
+      "id": "F13",
+      "sourceSegments": [
+        "T05"
+      ],
+      "name": "右上円弧・外側",
+      "count": 9,
+      "points": [
+        {
+          "x": 710.1735631757508,
+          "y": 220.5198138073352,
+          "angle": -49.98001237948798,
+          "sourceSegment": "T05",
+          "localNumber": 1
+        },
+        {
+          "x": 719.668165645879,
+          "y": 209.21260028841596,
+          "angle": -41.73715304076095,
+          "sourceSegment": "T05",
+          "localNumber": 2
+        },
+        {
+          "x": 732.6749248817745,
+          "y": 200.44564328833513,
+          "angle": -26.65409895265077,
+          "sourceSegment": "T05",
+          "localNumber": 3
+        },
+        {
+          "x": 748.186121295163,
+          "y": 194.89817689902236,
+          "angle": -12.971072208635514,
+          "sourceSegment": "T05",
+          "localNumber": 4
+        },
+        {
+          "x": 765,
+          "y": 193,
+          "angle": 0,
+          "sourceSegment": "T05",
+          "localNumber": 5
+        },
+        {
+          "x": 781.813878704837,
+          "y": 194.89817689902236,
+          "angle": 12.971072208635514,
+          "sourceSegment": "T05",
+          "localNumber": 6
+        },
+        {
+          "x": 797.3250751182255,
+          "y": 200.44564328833513,
+          "angle": 26.65409895265077,
+          "sourceSegment": "T05",
+          "localNumber": 7
+        },
+        {
+          "x": 810.331834354121,
+          "y": 209.21260028841596,
+          "angle": 41.73715304076095,
+          "sourceSegment": "T05",
+          "localNumber": 8
+        },
+        {
+          "x": 819.8264368242492,
+          "y": 220.5198138073352,
+          "angle": 49.98001237948798,
+          "sourceSegment": "T05",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F14",
+      "sourceSegments": [
+        "T06"
+      ],
+      "name": "右上円弧・内側",
+      "count": 7,
+      "points": [
+        {
+          "x": 720.8157670342829,
+          "y": 227.71514163136467,
+          "angle": -46.2218388205902,
+          "sourceSegment": "T06",
+          "localNumber": 1
+        },
+        {
+          "x": 731.2569092435682,
+          "y": 216.8189085516553,
+          "angle": -34.99736798853288,
+          "sourceSegment": "T06",
+          "localNumber": 2
+        },
+        {
+          "x": 746.7602706970656,
+          "y": 209.55038069194066,
+          "angle": -16.224477936766995,
+          "sourceSegment": "T06",
+          "localNumber": 3
+        },
+        {
+          "x": 765,
+          "y": 207,
+          "angle": 0,
+          "sourceSegment": "T06",
+          "localNumber": 4
+        },
+        {
+          "x": 783.2397293029344,
+          "y": 209.55038069194066,
+          "angle": 16.224477936767038,
+          "sourceSegment": "T06",
+          "localNumber": 5
+        },
+        {
+          "x": 798.7430907564318,
+          "y": 216.81890855165534,
+          "angle": 34.99736798853293,
+          "sourceSegment": "T06",
+          "localNumber": 6
+        },
+        {
+          "x": 809.1842329657171,
+          "y": 227.7151416313647,
+          "angle": 46.2218388205902,
+          "sourceSegment": "T06",
+          "localNumber": 7
+        }
+      ]
+    },
+    {
+      "id": "F15",
+      "sourceSegments": [
+        "T07"
+      ],
+      "name": "右上隅・短い壁沿い",
+      "count": 6,
+      "points": [
+        {
+          "x": 872,
+          "y": 195,
+          "angle": -29.744881296942225,
+          "sourceSegment": "T07",
+          "localNumber": 1
+        },
+        {
+          "x": 886,
+          "y": 187,
+          "angle": -24.145541960421657,
+          "sourceSegment": "T07",
+          "localNumber": 2
+        },
+        {
+          "x": 901,
+          "y": 182,
+          "angle": -13.134022306396323,
+          "sourceSegment": "T07",
+          "localNumber": 3
+        },
+        {
+          "x": 916,
+          "y": 180,
+          "angle": -3.8140748342903548,
+          "sourceSegment": "T07",
+          "localNumber": 4
+        },
+        {
+          "x": 931,
+          "y": 180,
+          "angle": 0,
+          "sourceSegment": "T07",
+          "localNumber": 5
+        },
+        {
+          "x": 946,
+          "y": 180,
+          "angle": 0,
+          "sourceSegment": "T07",
+          "localNumber": 6
+        }
+      ]
+    },
+    {
+      "id": "F16",
+      "sourceSegments": [
+        "C01-main-9",
+        "C01-end-2"
+      ],
+      "name": "中央上・波形外側主列9＋右端2",
+      "count": 11,
+      "points": [
+        {
+          "x": 483,
+          "y": 249,
+          "angle": -26.56505117707799,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 1
+        },
+        {
+          "x": 497,
+          "y": 242,
+          "angle": -20.772254682045833,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 2
+        },
+        {
+          "x": 512,
+          "y": 238,
+          "angle": -9.462322208025617,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 3
+        },
+        {
+          "x": 527,
+          "y": 237,
+          "angle": 3.8140748342903548,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 4
+        },
+        {
+          "x": 542,
+          "y": 240,
+          "angle": 17.241459398939977,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 5
+        },
+        {
+          "x": 556,
+          "y": 246,
+          "angle": 26.56505117707799,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 6
+        },
+        {
+          "x": 570,
+          "y": 254,
+          "angle": 26.56505117707799,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 7
+        },
+        {
+          "x": 584,
+          "y": 260,
+          "angle": 17.241459398939977,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 8
+        },
+        {
+          "x": 599,
+          "y": 263,
+          "angle": 3.8140748342903548,
+          "sourceSegment": "C01-main-9",
+          "localNumber": 9
+        },
+        {
+          "x": 644,
+          "y": 253,
+          "angle": -24.145541960421657,
+          "sourceSegment": "C01-end-2",
+          "localNumber": 10
+        },
+        {
+          "x": 658,
+          "y": 245,
+          "angle": -29.744881296942225,
+          "sourceSegment": "C01-end-2",
+          "localNumber": 11
+        }
+      ]
+    },
+    {
+      "id": "F17",
+      "sourceSegments": [
+        "C02",
+        "C03"
+      ],
+      "name": "中央上・波形下側左端＋中央上・波形下側主列",
+      "count": 11,
+      "points": [
+        {
+          "x": 487,
+          "y": 262,
+          "angle": -19.653824058053306,
+          "sourceSegment": "C02",
+          "localNumber": 1
+        },
+        {
+          "x": 501,
+          "y": 257,
+          "angle": -13.570434385161487,
+          "sourceSegment": "C02",
+          "localNumber": 2
+        },
+        {
+          "x": 545,
+          "y": 259,
+          "angle": 19.653824058053306,
+          "sourceSegment": "C03",
+          "localNumber": 3
+        },
+        {
+          "x": 559,
+          "y": 266,
+          "angle": 28.178590109959174,
+          "sourceSegment": "C03",
+          "localNumber": 4
+        },
+        {
+          "x": 573,
+          "y": 274,
+          "angle": 25.769327624338718,
+          "sourceSegment": "C03",
+          "localNumber": 5
+        },
+        {
+          "x": 588,
+          "y": 280,
+          "angle": 14.931417178137556,
+          "sourceSegment": "C03",
+          "localNumber": 6
+        },
+        {
+          "x": 603,
+          "y": 282,
+          "angle": 1.9091524329963763,
+          "sourceSegment": "C03",
+          "localNumber": 7
+        },
+        {
+          "x": 618,
+          "y": 281,
+          "angle": -7.594643368591445,
+          "sourceSegment": "C03",
+          "localNumber": 8
+        },
+        {
+          "x": 633,
+          "y": 278,
+          "angle": -16.69924423399362,
+          "sourceSegment": "C03",
+          "localNumber": 9
+        },
+        {
+          "x": 648,
+          "y": 272,
+          "angle": -24.145541960421657,
+          "sourceSegment": "C03",
+          "localNumber": 10
+        },
+        {
+          "x": 662,
+          "y": 265,
+          "angle": -26.56505117707799,
+          "sourceSegment": "C03",
+          "localNumber": 11
+        }
+      ]
+    },
+    {
+      "id": "F18",
+      "sourceSegments": [
+        "C04"
+      ],
+      "name": "中央直線・上列",
+      "count": 6,
+      "points": [
+        {
+          "x": 485,
+          "y": 308,
+          "angle": 0,
+          "sourceSegment": "C04",
+          "localNumber": 1
+        },
+        {
+          "x": 499,
+          "y": 308,
+          "angle": 0,
+          "sourceSegment": "C04",
+          "localNumber": 2
+        },
+        {
+          "x": 513,
+          "y": 308,
+          "angle": 0,
+          "sourceSegment": "C04",
+          "localNumber": 3
+        },
+        {
+          "x": 527,
+          "y": 308,
+          "angle": 0,
+          "sourceSegment": "C04",
+          "localNumber": 4
+        },
+        {
+          "x": 541,
+          "y": 308,
+          "angle": 0,
+          "sourceSegment": "C04",
+          "localNumber": 5
+        },
+        {
+          "x": 555,
+          "y": 308,
+          "angle": 0,
+          "sourceSegment": "C04",
+          "localNumber": 6
+        }
+      ]
+    },
+    {
+      "id": "F19",
+      "sourceSegments": [
+        "C05"
+      ],
+      "name": "中央直線・下列",
+      "count": 6,
+      "points": [
+        {
+          "x": 485,
+          "y": 321,
+          "angle": 0,
+          "sourceSegment": "C05",
+          "localNumber": 1
+        },
+        {
+          "x": 499,
+          "y": 321,
+          "angle": 0,
+          "sourceSegment": "C05",
+          "localNumber": 2
+        },
+        {
+          "x": 513,
+          "y": 321,
+          "angle": 0,
+          "sourceSegment": "C05",
+          "localNumber": 3
+        },
+        {
+          "x": 527,
+          "y": 321,
+          "angle": 0,
+          "sourceSegment": "C05",
+          "localNumber": 4
+        },
+        {
+          "x": 541,
+          "y": 321,
+          "angle": 0,
+          "sourceSegment": "C05",
+          "localNumber": 5
+        },
+        {
+          "x": 555,
+          "y": 321,
+          "angle": 0,
+          "sourceSegment": "C05",
+          "localNumber": 6
+        }
+      ]
+    },
+    {
+      "id": "F20",
+      "sourceSegments": [
+        "C06",
+        "C07"
+      ],
+      "name": "中央下・波形上側左端＋中央下・波形上側主列",
+      "count": 11,
+      "points": [
+        {
+          "x": 485,
+          "y": 360,
+          "angle": 26.56505117707799,
+          "sourceSegment": "C06",
+          "localNumber": 1
+        },
+        {
+          "x": 499,
+          "y": 367,
+          "angle": 19.02560603756868,
+          "sourceSegment": "C06",
+          "localNumber": 2
+        },
+        {
+          "x": 543,
+          "y": 365,
+          "angle": -19.653824058053306,
+          "sourceSegment": "C07",
+          "localNumber": 3
+        },
+        {
+          "x": 557,
+          "y": 359,
+          "angle": -24.904768808095184,
+          "sourceSegment": "C07",
+          "localNumber": 4
+        },
+        {
+          "x": 571,
+          "y": 352,
+          "angle": -24.904768808095184,
+          "sourceSegment": "C07",
+          "localNumber": 5
+        },
+        {
+          "x": 585,
+          "y": 346,
+          "angle": -17.241459398939977,
+          "sourceSegment": "C07",
+          "localNumber": 6
+        },
+        {
+          "x": 600,
+          "y": 343,
+          "angle": -3.8140748342903548,
+          "sourceSegment": "C07",
+          "localNumber": 7
+        },
+        {
+          "x": 615,
+          "y": 344,
+          "angle": 7.594643368591445,
+          "sourceSegment": "C07",
+          "localNumber": 8
+        },
+        {
+          "x": 630,
+          "y": 347,
+          "angle": 15.42216131873867,
+          "sourceSegment": "C07",
+          "localNumber": 9
+        },
+        {
+          "x": 644,
+          "y": 352,
+          "angle": 26.56505117707799,
+          "sourceSegment": "C07",
+          "localNumber": 10
+        },
+        {
+          "x": 658,
+          "y": 361,
+          "angle": 32.7352262721076,
+          "sourceSegment": "C07",
+          "localNumber": 11
+        }
+      ]
+    },
+    {
+      "id": "F21",
+      "sourceSegments": [
+        "C08",
+        "C09"
+      ],
+      "name": "中央下・波形下側主列＋中央下・波形下側右端",
+      "count": 11,
+      "points": [
+        {
+          "x": 483,
+          "y": 374,
+          "angle": 26.56505117707799,
+          "sourceSegment": "C08",
+          "localNumber": 1
+        },
+        {
+          "x": 497,
+          "y": 381,
+          "angle": 20.772254682045833,
+          "sourceSegment": "C08",
+          "localNumber": 2
+        },
+        {
+          "x": 512,
+          "y": 385,
+          "angle": 9.462322208025617,
+          "sourceSegment": "C08",
+          "localNumber": 3
+        },
+        {
+          "x": 527,
+          "y": 386,
+          "angle": -3.8140748342903548,
+          "sourceSegment": "C08",
+          "localNumber": 4
+        },
+        {
+          "x": 542,
+          "y": 383,
+          "angle": -17.241459398939977,
+          "sourceSegment": "C08",
+          "localNumber": 5
+        },
+        {
+          "x": 556,
+          "y": 377,
+          "angle": -26.56505117707799,
+          "sourceSegment": "C08",
+          "localNumber": 6
+        },
+        {
+          "x": 570,
+          "y": 369,
+          "angle": -26.56505117707799,
+          "sourceSegment": "C08",
+          "localNumber": 7
+        },
+        {
+          "x": 584,
+          "y": 363,
+          "angle": -17.241459398939977,
+          "sourceSegment": "C08",
+          "localNumber": 8
+        },
+        {
+          "x": 599,
+          "y": 360,
+          "angle": -3.8140748342903548,
+          "sourceSegment": "C08",
+          "localNumber": 9
+        },
+        {
+          "x": 644,
+          "y": 370,
+          "angle": 24.145541960421657,
+          "sourceSegment": "C09",
+          "localNumber": 10
+        },
+        {
+          "x": 658,
+          "y": 378,
+          "angle": 29.744881296942225,
+          "sourceSegment": "C09",
+          "localNumber": 11
+        }
+      ]
+    },
+    {
+      "id": "F22",
+      "sourceSegments": [
+        "R01",
+        "R02"
+      ],
+      "name": "右上の短い島・左端＋右上の短い島・内側直線",
+      "count": 5,
+      "points": [
+        {
+          "x": 723,
+          "y": 258,
+          "angle": 0,
+          "sourceSegment": "R01",
+          "localNumber": 1
+        },
+        {
+          "x": 772,
+          "y": 266,
+          "angle": 0,
+          "sourceSegment": "R02",
+          "localNumber": 2
+        },
+        {
+          "x": 787,
+          "y": 266,
+          "angle": 0,
+          "sourceSegment": "R02",
+          "localNumber": 3
+        },
+        {
+          "x": 802,
+          "y": 266,
+          "angle": -1.9091524329963763,
+          "sourceSegment": "R02",
+          "localNumber": 4
+        },
+        {
+          "x": 817,
+          "y": 265,
+          "angle": -3.8140748342903548,
+          "sourceSegment": "R02",
+          "localNumber": 5
+        }
+      ]
+    },
+    {
+      "id": "F23",
+      "sourceSegments": [
+        "R03"
+      ],
+      "name": "右上の短い島・下側",
+      "count": 9,
+      "points": [
+        {
+          "x": 723,
+          "y": 271,
+          "angle": 23.19859051364819,
+          "sourceSegment": "R03",
+          "localNumber": 1
+        },
+        {
+          "x": 737,
+          "y": 277,
+          "angle": 17.81888891452278,
+          "sourceSegment": "R03",
+          "localNumber": 2
+        },
+        {
+          "x": 751,
+          "y": 280,
+          "angle": 11.689369175439191,
+          "sourceSegment": "R03",
+          "localNumber": 3
+        },
+        {
+          "x": 766,
+          "y": 283,
+          "angle": 7.594643368591445,
+          "sourceSegment": "R03",
+          "localNumber": 4
+        },
+        {
+          "x": 781,
+          "y": 284,
+          "angle": 0,
+          "sourceSegment": "R03",
+          "localNumber": 5
+        },
+        {
+          "x": 796,
+          "y": 283,
+          "angle": -7.85331330197822,
+          "sourceSegment": "R03",
+          "localNumber": 6
+        },
+        {
+          "x": 810,
+          "y": 280,
+          "angle": -14.036243467926477,
+          "sourceSegment": "R03",
+          "localNumber": 7
+        },
+        {
+          "x": 824,
+          "y": 276,
+          "angle": -19.653824058053306,
+          "sourceSegment": "R03",
+          "localNumber": 8
+        },
+        {
+          "x": 838,
+          "y": 270,
+          "angle": -23.19859051364819,
+          "sourceSegment": "R03",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F24",
+      "sourceSegments": [
+        "R04"
+      ],
+      "name": "右下の短い島・上側",
+      "count": 9,
+      "points": [
+        {
+          "x": 725,
+          "y": 354,
+          "angle": -19.653824058053306,
+          "sourceSegment": "R04",
+          "localNumber": 1
+        },
+        {
+          "x": 739,
+          "y": 349,
+          "angle": -17.81888891452278,
+          "sourceSegment": "R04",
+          "localNumber": 2
+        },
+        {
+          "x": 753,
+          "y": 345,
+          "angle": -13.570434385161487,
+          "sourceSegment": "R04",
+          "localNumber": 3
+        },
+        {
+          "x": 768,
+          "y": 342,
+          "angle": -7.594643368591445,
+          "sourceSegment": "R04",
+          "localNumber": 4
+        },
+        {
+          "x": 783,
+          "y": 341,
+          "angle": 0,
+          "sourceSegment": "R04",
+          "localNumber": 5
+        },
+        {
+          "x": 798,
+          "y": 342,
+          "angle": 7.594643368591445,
+          "sourceSegment": "R04",
+          "localNumber": 6
+        },
+        {
+          "x": 813,
+          "y": 345,
+          "angle": 13.570434385161487,
+          "sourceSegment": "R04",
+          "localNumber": 7
+        },
+        {
+          "x": 827,
+          "y": 349,
+          "angle": 19.653824058053306,
+          "sourceSegment": "R04",
+          "localNumber": 8
+        },
+        {
+          "x": 841,
+          "y": 355,
+          "angle": 23.19859051364819,
+          "sourceSegment": "R04",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F25",
+      "sourceSegments": [
+        "R05",
+        "R06"
+      ],
+      "name": "右下の短い島・左端＋右下の短い島・内側直線",
+      "count": 5,
+      "points": [
+        {
+          "x": 731,
+          "y": 367,
+          "angle": 0,
+          "sourceSegment": "R05",
+          "localNumber": 1
+        },
+        {
+          "x": 771,
+          "y": 354,
+          "angle": 0,
+          "sourceSegment": "R06",
+          "localNumber": 2
+        },
+        {
+          "x": 786,
+          "y": 354,
+          "angle": 1.9091524329963763,
+          "sourceSegment": "R06",
+          "localNumber": 3
+        },
+        {
+          "x": 801,
+          "y": 355,
+          "angle": 5.710593137499642,
+          "sourceSegment": "R06",
+          "localNumber": 4
+        },
+        {
+          "x": 816,
+          "y": 357,
+          "angle": 7.594643368591445,
+          "sourceSegment": "R06",
+          "localNumber": 5
+        }
+      ]
+    },
+    {
+      "id": "F26",
+      "sourceSegments": [
+        "R07"
+      ],
+      "name": "右端の縦島・左列",
+      "count": 9,
+      "points": [
+        {
+          "x": 879,
+          "y": 263,
+          "angle": 77.9052429229879,
+          "sourceSegment": "R07",
+          "localNumber": 1
+        },
+        {
+          "x": 882,
+          "y": 277,
+          "angle": 77.9052429229879,
+          "sourceSegment": "R07",
+          "localNumber": 2
+        },
+        {
+          "x": 885,
+          "y": 291,
+          "angle": 79.8753283446022,
+          "sourceSegment": "R07",
+          "localNumber": 3
+        },
+        {
+          "x": 887,
+          "y": 305,
+          "angle": 85.91438322002512,
+          "sourceSegment": "R07",
+          "localNumber": 4
+        },
+        {
+          "x": 887,
+          "y": 319,
+          "angle": 92.04540848888723,
+          "sourceSegment": "R07",
+          "localNumber": 5
+        },
+        {
+          "x": 886,
+          "y": 333,
+          "angle": 98.130102354156,
+          "sourceSegment": "R07",
+          "localNumber": 6
+        },
+        {
+          "x": 883,
+          "y": 347,
+          "angle": 104.0362434679265,
+          "sourceSegment": "R07",
+          "localNumber": 7
+        },
+        {
+          "x": 879,
+          "y": 361,
+          "angle": 107.81888891452277,
+          "sourceSegment": "R07",
+          "localNumber": 8
+        },
+        {
+          "x": 874,
+          "y": 375,
+          "angle": 109.65382405805332,
+          "sourceSegment": "R07",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F27",
+      "sourceSegments": [
+        "R08"
+      ],
+      "name": "右端の縦島・右列",
+      "count": 9,
+      "points": [
+        {
+          "x": 893,
+          "y": 263,
+          "angle": 77.9052429229879,
+          "sourceSegment": "R08",
+          "localNumber": 1
+        },
+        {
+          "x": 896,
+          "y": 277,
+          "angle": 77.9052429229879,
+          "sourceSegment": "R08",
+          "localNumber": 2
+        },
+        {
+          "x": 899,
+          "y": 291,
+          "angle": 79.8753283446022,
+          "sourceSegment": "R08",
+          "localNumber": 3
+        },
+        {
+          "x": 901,
+          "y": 305,
+          "angle": 85.91438322002512,
+          "sourceSegment": "R08",
+          "localNumber": 4
+        },
+        {
+          "x": 901,
+          "y": 319,
+          "angle": 92.04540848888723,
+          "sourceSegment": "R08",
+          "localNumber": 5
+        },
+        {
+          "x": 900,
+          "y": 333,
+          "angle": 98.130102354156,
+          "sourceSegment": "R08",
+          "localNumber": 6
+        },
+        {
+          "x": 897,
+          "y": 347,
+          "angle": 104.0362434679265,
+          "sourceSegment": "R08",
+          "localNumber": 7
+        },
+        {
+          "x": 893,
+          "y": 361,
+          "angle": 107.81888891452277,
+          "sourceSegment": "R08",
+          "localNumber": 8
+        },
+        {
+          "x": 888,
+          "y": 375,
+          "angle": 109.65382405805332,
+          "sourceSegment": "R08",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F28",
+      "sourceSegments": [
+        "R09"
+      ],
+      "name": "右壁沿い・縦カーブ",
+      "count": 12,
+      "points": [
+        {
+          "x": 947,
+          "y": 230,
+          "angle": 105.94539590092285,
+          "sourceSegment": "R09",
+          "localNumber": 1
+        },
+        {
+          "x": 943,
+          "y": 244,
+          "angle": 102.09475707701212,
+          "sourceSegment": "R09",
+          "localNumber": 2
+        },
+        {
+          "x": 941,
+          "y": 258,
+          "angle": 92.04540848888723,
+          "sourceSegment": "R09",
+          "localNumber": 3
+        },
+        {
+          "x": 942,
+          "y": 272,
+          "angle": 77.9052429229879,
+          "sourceSegment": "R09",
+          "localNumber": 4
+        },
+        {
+          "x": 947,
+          "y": 286,
+          "angle": 74.05460409907715,
+          "sourceSegment": "R09",
+          "localNumber": 5
+        },
+        {
+          "x": 950,
+          "y": 300,
+          "angle": 85.91438322002512,
+          "sourceSegment": "R09",
+          "localNumber": 6
+        },
+        {
+          "x": 949,
+          "y": 314,
+          "angle": 102.09475707701212,
+          "sourceSegment": "R09",
+          "localNumber": 7
+        },
+        {
+          "x": 944,
+          "y": 328,
+          "angle": 105.94539590092285,
+          "sourceSegment": "R09",
+          "localNumber": 8
+        },
+        {
+          "x": 941,
+          "y": 342,
+          "angle": 94.08561677997488,
+          "sourceSegment": "R09",
+          "localNumber": 9
+        },
+        {
+          "x": 942,
+          "y": 356,
+          "angle": 81.86989764584403,
+          "sourceSegment": "R09",
+          "localNumber": 10
+        },
+        {
+          "x": 945,
+          "y": 370,
+          "angle": 70.3461759419467,
+          "sourceSegment": "R09",
+          "localNumber": 11
+        },
+        {
+          "x": 952,
+          "y": 384,
+          "angle": 63.43494882292201,
+          "sourceSegment": "R09",
+          "localNumber": 12
+        }
+      ]
+    },
+    {
+      "id": "F29",
+      "sourceSegments": [
+        "B01"
+      ],
+      "name": "下部上向き円弧・外側",
+      "count": 11,
+      "points": [
+        {
+          "x": 686,
+          "y": 439,
+          "angle": -42.27368900609373,
+          "sourceSegment": "B01",
+          "localNumber": 1
+        },
+        {
+          "x": 697,
+          "y": 429,
+          "angle": -36.86989764584402,
+          "sourceSegment": "B01",
+          "localNumber": 2
+        },
+        {
+          "x": 710,
+          "y": 421,
+          "angle": -25.709953780811265,
+          "sourceSegment": "B01",
+          "localNumber": 3
+        },
+        {
+          "x": 724,
+          "y": 416,
+          "angle": -17.241459398939977,
+          "sourceSegment": "B01",
+          "localNumber": 4
+        },
+        {
+          "x": 739,
+          "y": 412,
+          "angle": -9.462322208025617,
+          "sourceSegment": "B01",
+          "localNumber": 5
+        },
+        {
+          "x": 754,
+          "y": 411,
+          "angle": 1.9091524329963763,
+          "sourceSegment": "B01",
+          "localNumber": 6
+        },
+        {
+          "x": 769,
+          "y": 413,
+          "angle": 11.689369175439191,
+          "sourceSegment": "B01",
+          "localNumber": 7
+        },
+        {
+          "x": 783,
+          "y": 417,
+          "angle": 21.447736327105353,
+          "sourceSegment": "B01",
+          "localNumber": 8
+        },
+        {
+          "x": 797,
+          "y": 424,
+          "angle": 31.607502246248902,
+          "sourceSegment": "B01",
+          "localNumber": 9
+        },
+        {
+          "x": 809,
+          "y": 433,
+          "angle": 45,
+          "sourceSegment": "B01",
+          "localNumber": 10
+        },
+        {
+          "x": 818,
+          "y": 445,
+          "angle": 53.13010235415598,
+          "sourceSegment": "B01",
+          "localNumber": 11
+        }
+      ]
+    },
+    {
+      "id": "F30",
+      "sourceSegments": [
+        "B02"
+      ],
+      "name": "下部上向き円弧・内側",
+      "count": 9,
+      "points": [
+        {
+          "x": 694,
+          "y": 450,
+          "angle": -42.70938995736147,
+          "sourceSegment": "B02",
+          "localNumber": 1
+        },
+        {
+          "x": 707,
+          "y": 438,
+          "angle": -36.52885536698516,
+          "sourceSegment": "B02",
+          "localNumber": 2
+        },
+        {
+          "x": 721,
+          "y": 430,
+          "angle": -24.145541960421657,
+          "sourceSegment": "B02",
+          "localNumber": 3
+        },
+        {
+          "x": 736,
+          "y": 425,
+          "angle": -11.309932474020213,
+          "sourceSegment": "B02",
+          "localNumber": 4
+        },
+        {
+          "x": 751,
+          "y": 424,
+          "angle": 3.8140748342903548,
+          "sourceSegment": "B02",
+          "localNumber": 5
+        },
+        {
+          "x": 766,
+          "y": 427,
+          "angle": 19.02560603756868,
+          "sourceSegment": "B02",
+          "localNumber": 6
+        },
+        {
+          "x": 780,
+          "y": 434,
+          "angle": 32.19573393471325,
+          "sourceSegment": "B02",
+          "localNumber": 7
+        },
+        {
+          "x": 793,
+          "y": 444,
+          "angle": 42.397437797500196,
+          "sourceSegment": "B02",
+          "localNumber": 8
+        },
+        {
+          "x": 803,
+          "y": 455,
+          "angle": 47.72631099390627,
+          "sourceSegment": "B02",
+          "localNumber": 9
+        }
+      ]
+    },
+    {
+      "id": "F31",
+      "sourceSegments": [
+        "B03"
+      ],
+      "name": "下部U字・外周",
+      "count": 11,
+      "points": [
+        {
+          "x": 618,
+          "y": 450,
+          "angle": 66.80140948635182,
+          "sourceSegment": "B03",
+          "localNumber": 1
+        },
+        {
+          "x": 624,
+          "y": 464,
+          "angle": 59.34933204294713,
+          "sourceSegment": "B03",
+          "localNumber": 2
+        },
+        {
+          "x": 634,
+          "y": 477,
+          "angle": 45,
+          "sourceSegment": "B03",
+          "localNumber": 3
+        },
+        {
+          "x": 647,
+          "y": 487,
+          "angle": 32.19573393471325,
+          "sourceSegment": "B03",
+          "localNumber": 4
+        },
+        {
+          "x": 661,
+          "y": 494,
+          "angle": 20.772254682045833,
+          "sourceSegment": "B03",
+          "localNumber": 5
+        },
+        {
+          "x": 676,
+          "y": 498,
+          "angle": 7.594643368591445,
+          "sourceSegment": "B03",
+          "localNumber": 6
+        },
+        {
+          "x": 691,
+          "y": 498,
+          "angle": -5.710593137499642,
+          "sourceSegment": "B03",
+          "localNumber": 7
+        },
+        {
+          "x": 706,
+          "y": 495,
+          "angle": -15.42216131873867,
+          "sourceSegment": "B03",
+          "localNumber": 8
+        },
+        {
+          "x": 720,
+          "y": 490,
+          "angle": -24.904768808095184,
+          "sourceSegment": "B03",
+          "localNumber": 9
+        },
+        {
+          "x": 734,
+          "y": 482,
+          "angle": -33.690067525979785,
+          "sourceSegment": "B03",
+          "localNumber": 10
+        },
+        {
+          "x": 747,
+          "y": 472,
+          "angle": -37.568592028827496,
+          "sourceSegment": "B03",
+          "localNumber": 11
+        }
+      ]
+    },
+    {
+      "id": "F32",
+      "sourceSegments": [
+        "B04"
+      ],
+      "name": "右下壁沿い・短い円弧",
+      "count": 6,
+      "points": [
+        {
+          "x": 870,
+          "y": 428,
+          "angle": 34.69515353123397,
+          "sourceSegment": "B04",
+          "localNumber": 1
+        },
+        {
+          "x": 883,
+          "y": 437,
+          "angle": 27.407575437818405,
+          "sourceSegment": "B04",
+          "localNumber": 2
+        },
+        {
+          "x": 897,
+          "y": 442,
+          "angle": 15.945395900922856,
+          "sourceSegment": "B04",
+          "localNumber": 3
+        },
+        {
+          "x": 911,
+          "y": 445,
+          "angle": 8.13010235415598,
+          "sourceSegment": "B04",
+          "localNumber": 4
+        },
+        {
+          "x": 925,
+          "y": 446,
+          "angle": 0,
+          "sourceSegment": "B04",
+          "localNumber": 5
+        },
+        {
+          "x": 940,
+          "y": 445,
+          "angle": -3.8140748342903548,
+          "sourceSegment": "B04",
+          "localNumber": 6
+        }
+      ]
+    }
+  ],
+  "corrections": [
+    {
+      "island": "F03",
+      "from": 15,
+      "to": 16,
+      "detail": "左上の大円外側を16台に変更。元の円弧・両端を保って再配置。"
+    },
+    {
+      "island": "F06",
+      "from": 15,
+      "to": 16,
+      "detail": "左下の大円外側を16台に変更。元の円弧・両端を保って再配置。"
+    },
+    {
+      "island": "F05",
+      "from": 12,
+      "to": 11,
+      "detail": "右端x388,y312の1台のみ削除。右開口のC字。開口上端から反時計回りに1〜11。"
+    },
+    {
+      "island": "F16",
+      "from": 13,
+      "to": 11,
+      "detail": "下の波形外側9＋2を水平軸y311.5で鏡像反転。切れ目の位置と9＋2の構成を一致。"
+    },
+    {
+      "island": "F10",
+      "userLabel": "O",
+      "from": 9,
+      "to": 8,
+      "detail": "ユーザー指定によりOは8台。既存U字列の端点と輪郭を保って配置を再分割。"
+    },
+    {
+      "island": "F11",
+      "userLabel": "P",
+      "from": 9,
+      "to": 10,
+      "detail": "ユーザー指定によりPは10台。既存U字列の端点と輪郭を保って配置を再分割。"
+    }
+  ],
+  "verification": {
+    "mirrorAxisY": 311.5,
+    "leftSemicircle": 24,
+    "largeCircleOuter": [
+      16,
+      16
+    ],
+    "largeCircleInner": [
+      9,
+      9
+    ],
+    "smallC": 11,
+    "centerStraight": [
+      6,
+      6
+    ],
+    "waveInnerSegments": [
+      [
+        2,
+        9
+      ],
+      [
+        2,
+        9
+      ]
+    ],
+    "waveOuterSegments": [
+      [
+        9,
+        2
+      ],
+      [
+        9,
+        2
+      ]
+    ],
+    "total": 310,
+    "topU": {
+      "O": 8,
+      "P": 10,
+      "total": 18
+    }
+  },
+  "userIslandLabels": [
+    {
+      "name": "A",
+      "ids": [
+        "F01"
+      ],
+      "counts": [
+        24
+      ],
+      "total": 24
+    },
+    {
+      "name": "B",
+      "ids": [
+        "F03"
+      ],
+      "counts": [
+        16
+      ],
+      "total": 16
+    },
+    {
+      "name": "C",
+      "ids": [
+        "F04"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "D",
+      "ids": [
+        "F05"
+      ],
+      "counts": [
+        11
+      ],
+      "total": 11
+    },
+    {
+      "name": "E",
+      "ids": [
+        "F07"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "F",
+      "ids": [
+        "F06"
+      ],
+      "counts": [
+        16
+      ],
+      "total": 16
+    },
+    {
+      "name": "G",
+      "ids": [
+        "F02"
+      ],
+      "counts": [
+        7
+      ],
+      "total": 7
+    },
+    {
+      "name": "H",
+      "ids": [
+        "F08"
+      ],
+      "counts": [
+        8
+      ],
+      "total": 8
+    },
+    {
+      "name": "I",
+      "ids": [
+        "F16"
+      ],
+      "counts": [
+        11
+      ],
+      "total": 11
+    },
+    {
+      "name": "J",
+      "ids": [
+        "F17"
+      ],
+      "counts": [
+        11
+      ],
+      "total": 11
+    },
+    {
+      "name": "K",
+      "ids": [
+        "F18",
+        "F19"
+      ],
+      "counts": [
+        6,
+        6
+      ],
+      "total": 12
+    },
+    {
+      "name": "L",
+      "ids": [
+        "F20"
+      ],
+      "counts": [
+        11
+      ],
+      "total": 11
+    },
+    {
+      "name": "M",
+      "ids": [
+        "F21"
+      ],
+      "counts": [
+        11
+      ],
+      "total": 11
+    },
+    {
+      "name": "N",
+      "ids": [
+        "F09"
+      ],
+      "counts": [
+        15
+      ],
+      "total": 15
+    },
+    {
+      "name": "O",
+      "ids": [
+        "F10"
+      ],
+      "counts": [
+        8
+      ],
+      "total": 8
+    },
+    {
+      "name": "P",
+      "ids": [
+        "F11"
+      ],
+      "counts": [
+        10
+      ],
+      "total": 10
+    },
+    {
+      "name": "Q",
+      "ids": [
+        "F31"
+      ],
+      "counts": [
+        11
+      ],
+      "total": 11
+    },
+    {
+      "name": "R",
+      "ids": [
+        "F13"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "S",
+      "ids": [
+        "F14"
+      ],
+      "counts": [
+        7
+      ],
+      "total": 7
+    },
+    {
+      "name": "T",
+      "ids": [
+        "F22"
+      ],
+      "counts": [
+        5
+      ],
+      "total": 5
+    },
+    {
+      "name": "U",
+      "ids": [
+        "F23"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "V",
+      "ids": [
+        "F24"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "W",
+      "ids": [
+        "F25"
+      ],
+      "counts": [
+        5
+      ],
+      "total": 5
+    },
+    {
+      "name": "X",
+      "ids": [
+        "F29"
+      ],
+      "counts": [
+        11
+      ],
+      "total": 11
+    },
+    {
+      "name": "Y",
+      "ids": [
+        "F30"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "Z",
+      "ids": [
+        "F32"
+      ],
+      "counts": [
+        6
+      ],
+      "total": 6
+    },
+    {
+      "name": "ア",
+      "ids": [
+        "F12"
+      ],
+      "counts": [
+        4
+      ],
+      "total": 4
+    },
+    {
+      "name": "イ",
+      "ids": [
+        "F15"
+      ],
+      "counts": [
+        6
+      ],
+      "total": 6
+    },
+    {
+      "name": "ウ",
+      "ids": [
+        "F26"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "エ",
+      "ids": [
+        "F27"
+      ],
+      "counts": [
+        9
+      ],
+      "total": 9
+    },
+    {
+      "name": "オ",
+      "ids": [
+        "F28"
+      ],
+      "counts": [
+        12
+      ],
+      "total": 12
+    }
+  ]
+}

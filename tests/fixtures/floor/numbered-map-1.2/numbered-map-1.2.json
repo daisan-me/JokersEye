@@ -1,0 +1,2474 @@
+{
+  "source": "physical-skeleton-map.json",
+  "sourceSha256": "B6FFE470794DF59FD3BFAFBC822B309A739C0AF35C098F3769C7576140E825C0",
+  "annotationImage": "codex-clipboard-16e83249-1090-4025-a5fd-b297855364ca.png",
+  "totalTiles": 310,
+  "numberedTiles": 310,
+  "unnumberedTiles": 0,
+  "islandFaces": 32,
+  "islandLabels": 31,
+  "sourceCoordinatesUnchanged": true,
+  "userConfirmedCorrections": [
+    "Fは50~65。",
+    "Yは右168から左176。",
+    "Uは202~210。",
+    "Vは193~201。"
+  ],
+  "ranges": [],
+  "faces": [
+    {
+      "id": "F01",
+      "label": "A",
+      "count": 24,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 1,
+          "x": 279,
+          "y": 184,
+          "angle": 143.13010235415598
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 2,
+          "x": 267,
+          "y": 193,
+          "angle": 143.13010235415598
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 3,
+          "x": 255,
+          "y": 202,
+          "angle": 140.4403320310055
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 4,
+          "x": 244,
+          "y": 212,
+          "angle": 133.66778014613035
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 5,
+          "x": 234,
+          "y": 224,
+          "angle": 126.86989764584402
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 6,
+          "x": 226,
+          "y": 236,
+          "angle": 120.96375653207352
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 7,
+          "x": 219,
+          "y": 249,
+          "angle": 114.77514056883193
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 8,
+          "x": 214,
+          "y": 262,
+          "angle": 108.43494882292202
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 9,
+          "x": 210,
+          "y": 276,
+          "angle": 104.0362434679265
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 10,
+          "x": 207,
+          "y": 290,
+          "angle": 100.12467165539783
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 11,
+          "x": 205,
+          "y": 304,
+          "angle": 94.08561677997488
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 12,
+          "x": 205,
+          "y": 318,
+          "angle": 87.95459151111277
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 13,
+          "x": 206,
+          "y": 332,
+          "angle": 81.86989764584403
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 14,
+          "x": 209,
+          "y": 346,
+          "angle": 75.96375653207353
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 15,
+          "x": 213,
+          "y": 360,
+          "angle": 71.56505117707799
+        },
+        {
+          "sourceLocalNumber": 16,
+          "seatNumber": 16,
+          "x": 218,
+          "y": 373,
+          "angle": 64.3589941756947
+        },
+        {
+          "sourceLocalNumber": 17,
+          "seatNumber": 17,
+          "x": 225,
+          "y": 385,
+          "angle": 57.9946167919165
+        },
+        {
+          "sourceLocalNumber": 18,
+          "seatNumber": 18,
+          "x": 233,
+          "y": 397,
+          "angle": 53.53076560994813
+        },
+        {
+          "sourceLocalNumber": 19,
+          "seatNumber": 19,
+          "x": 242,
+          "y": 408,
+          "angle": 47.862405226111754
+        },
+        {
+          "sourceLocalNumber": 20,
+          "seatNumber": 20,
+          "x": 252,
+          "y": 418,
+          "angle": 42.13759477388826
+        },
+        {
+          "sourceLocalNumber": 21,
+          "seatNumber": 21,
+          "x": 263,
+          "y": 427,
+          "angle": 36.46923439005187
+        },
+        {
+          "sourceLocalNumber": 22,
+          "seatNumber": 22,
+          "x": 275,
+          "y": 435,
+          "angle": 33.690067525979785
+        },
+        {
+          "sourceLocalNumber": 23,
+          "seatNumber": 23,
+          "x": 287,
+          "y": 443,
+          "angle": 29.248826336546973
+        },
+        {
+          "sourceLocalNumber": 24,
+          "seatNumber": 24,
+          "x": 300,
+          "y": 449,
+          "angle": 24.775140568831922
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "label": "G",
+      "count": 7,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 86,
+          "x": 399,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 87,
+          "x": 414,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 88,
+          "x": 428,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 89,
+          "x": 442,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 90,
+          "x": 457,
+          "y": 181,
+          "angle": 5.710593137499642
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 91,
+          "x": 472,
+          "y": 184,
+          "angle": 17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 92,
+          "x": 486,
+          "y": 190,
+          "angle": 23.19859051364819
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "label": "B",
+      "count": 16,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 25,
+          "x": 273.8094128230469,
+          "y": 269.1408550234408,
+          "angle": -58.53333333333321
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 26,
+          "x": 281.126967080589,
+          "y": 257.1840831460209,
+          "angle": -54.06666666666669
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 27,
+          "x": 290.212466046496,
+          "y": 246.50865797503903,
+          "angle": -45.13333333333343
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 28,
+          "x": 300.8454899142067,
+          "y": 237.3735719070578,
+          "angle": -36.19999999999998
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 29,
+          "x": 312.76807496891837,
+          "y": 230.00044776230766,
+          "angle": -27.266666666666627
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 30,
+          "x": 325.69097194635475,
+          "y": 224.56816207842695,
+          "angle": -18.333333333333346
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 31,
+          "x": 339.30066339825396,
+          "y": 221.20850545537274,
+          "angle": -9.399999999999972
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 32,
+          "x": 353.2669698189617,
+          "y": 220.00298523421077,
+          "angle": -0.4666666666666234
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 33,
+          "x": 367.2510600038098,
+          "y": 220.98084807876774,
+          "angle": 8.466666666666667
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 34,
+          "x": 380.9136713030478,
+          "y": 224.1183704335351,
+          "angle": 17.399999999999977
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 35,
+          "x": 393.92334034289723,
+          "y": 229.3394340717523,
+          "angle": 26.333333333333318
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 36,
+          "x": 405.9644445313628,
+          "y": 236.51737277051862,
+          "angle": 35.26666666666669
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 37,
+          "x": 416.74485925691084,
+          "y": 245.47804531145658,
+          "angle": 44.19999999999998
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 38,
+          "x": 426.00304501165374,
+          "y": 256.00406025403606,
+          "angle": 53.13333333333336
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 39,
+          "x": 433.5143925010633,
+          "y": 267.8400499859541,
+          "angle": 62.066666666666656
+        },
+        {
+          "sourceLocalNumber": 16,
+          "seatNumber": 40,
+          "x": 439.09667180393853,
+          "y": 280.6988660988559,
+          "angle": 66.53333333333319
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "label": "C",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 49,
+          "x": 288.40352196454535,
+          "y": 274.12408810177106,
+          "angle": -55.34947545533033
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 48,
+          "x": 296.1976028027357,
+          "y": 262.84721261205766,
+          "angle": -50.038512867345396
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 47,
+          "x": 329.99535961822716,
+          "y": 239.89264845393961,
+          "angle": -18.434703852062867
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 46,
+          "x": 343.45400701709485,
+          "y": 236.73521942705898,
+          "angle": -7.976952074458678
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 45,
+          "x": 357.2714540524002,
+          "y": 236.0704316029425,
+          "angle": 2.4667081177103767
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 44,
+          "x": 370.97759847954654,
+          "y": 237.92090263646523,
+          "angle": 12.914775260844538
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 43,
+          "x": 384.1061248320442,
+          "y": 242.22367512426618,
+          "angle": 23.38519684933033
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 42,
+          "x": 415.747613456751,
+          "y": 267.9972832527363,
+          "angle": 55.05641742418987
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 41,
+          "x": 422.51590932319505,
+          "y": 279.9014884123908,
+          "angle": 60.37902266158941
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "label": "D",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 75,
+          "x": 383.5788383248865,
+          "y": 297,
+          "angle": 60
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 76,
+          "x": 371.5,
+          "y": 286.01923788646684,
+          "angle": 30
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 77,
+          "x": 355,
+          "y": 282,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 78,
+          "x": 338.5,
+          "y": 286.01923788646684,
+          "angle": 330
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 79,
+          "x": 326.4211616751135,
+          "y": 297,
+          "angle": 300
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 80,
+          "x": 322,
+          "y": 312,
+          "angle": 270
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 81,
+          "x": 326.4211616751135,
+          "y": 327,
+          "angle": 240
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 82,
+          "x": 338.5,
+          "y": 337.98076211353316,
+          "angle": 210
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 83,
+          "x": 355,
+          "y": 342,
+          "angle": 180
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 84,
+          "x": 371.5,
+          "y": 337.98076211353316,
+          "angle": 150
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 85,
+          "x": 383.5788383248865,
+          "y": 327,
+          "angle": 120
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "label": "F",
+      "count": 16,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 50,
+          "x": 269.42766412926824,
+          "y": 340.7818128993102,
+          "angle": 65.33333333333314
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 51,
+          "x": 275.53940276729145,
+          "y": 354.09007464142786,
+          "angle": 60.66666666666666
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 52,
+          "x": 283.72853759910066,
+          "y": 366.2309663089564,
+          "angle": 51.3333333333334
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 53,
+          "x": 293.77824542770276,
+          "y": 376.8830342929655,
+          "angle": 42
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 54,
+          "x": 305.42244078436386,
+          "y": 385.76424447357317,
+          "angle": 32.666666666666664
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 55,
+          "x": 318.3528210564759,
+          "y": 392.63944961922465,
+          "angle": 23.33333333333331
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 56,
+          "x": 332.2270293960299,
+          "y": 397.32661536483965,
+          "angle": 14.000000000000075
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 57,
+          "x": 346.67771927989276,
+          "y": 399.7016399240056,
+          "angle": 4.666666666666777
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 58,
+          "x": 361.32228072010724,
+          "y": 399.7016399240056,
+          "angle": -4.666666666666777
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 59,
+          "x": 375.7729706039701,
+          "y": 397.32661536483965,
+          "angle": -14.000000000000075
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 60,
+          "x": 389.6471789435241,
+          "y": 392.63944961922465,
+          "angle": -23.33333333333331
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 61,
+          "x": 402.57755921563614,
+          "y": 385.76424447357317,
+          "angle": -32.666666666666664
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 62,
+          "x": 414.22175457229724,
+          "y": 376.8830342929655,
+          "angle": -42
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 63,
+          "x": 424.27146240089934,
+          "y": 366.2309663089564,
+          "angle": -51.33333333333331
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 64,
+          "x": 432.4605972327086,
+          "y": 354.09007464142786,
+          "angle": -60.66666666666666
+        },
+        {
+          "sourceLocalNumber": 16,
+          "seatNumber": 65,
+          "x": 438.57233587073176,
+          "y": 340.7818128993102,
+          "angle": -65.33333333333334
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "label": "E",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 74,
+          "x": 284.962135991067,
+          "y": 339.6955657651848,
+          "angle": 61.73434953817195
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 73,
+          "x": 291.9444419143867,
+          "y": 352.68176011554544,
+          "angle": 56.18510251516472
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 72,
+          "x": 325.50042296416507,
+          "y": 380.2991490415444,
+          "angle": 22.601334383434896
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 71,
+          "x": 339.4752283645743,
+          "y": 384.56116726271586,
+          "angle": 11.31174096246398
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 70,
+          "x": 354,
+          "y": 386,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 69,
+          "x": 368.52477163542574,
+          "y": 384.56116726271586,
+          "angle": -11.31174096246398
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 68,
+          "x": 382.49957703583493,
+          "y": 380.2991490415444,
+          "angle": -22.601334383434942
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 67,
+          "x": 416.0555580856133,
+          "y": 352.68176011554544,
+          "angle": -56.18510251516475
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 66,
+          "x": 423.037864008933,
+          "y": 339.6955657651848,
+          "angle": -61.73434953817195
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "label": "H",
+      "count": 8,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 149,
+          "x": 400,
+          "y": 440,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 150,
+          "x": 414,
+          "y": 440,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 151,
+          "x": 429,
+          "y": 440,
+          "angle": -1.9749340108819768
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 152,
+          "x": 443,
+          "y": 439,
+          "angle": -7.85331330197822
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 153,
+          "x": 458,
+          "y": 436,
+          "angle": -15.42216131873867
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 154,
+          "x": 472,
+          "y": 431,
+          "angle": -23.962488974578186
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 155,
+          "x": 485,
+          "y": 424,
+          "angle": -29.98163936884934
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 156,
+          "x": 498,
+          "y": 416,
+          "angle": -31.607502246248902
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "label": "N",
+      "count": 15,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 268,
+          "x": 589,
+          "y": 128,
+          "angle": 24.775140568831922
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 267,
+          "x": 602,
+          "y": 134,
+          "angle": 18.43494882292201
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 266,
+          "x": 616,
+          "y": 137,
+          "angle": 2.0454084888872277
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 265,
+          "x": 630,
+          "y": 135,
+          "angle": -14.036243467926477
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 264,
+          "x": 644,
+          "y": 130,
+          "angle": -22.166345822082455
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 263,
+          "x": 657,
+          "y": 124,
+          "angle": -21.447736327105353
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 262,
+          "x": 672,
+          "y": 119,
+          "angle": -11.689369175439191
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 261,
+          "x": 686,
+          "y": 118,
+          "angle": 3.945186229037563
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 260,
+          "x": 701,
+          "y": 121,
+          "angle": 20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 259,
+          "x": 715,
+          "y": 129,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 258,
+          "x": 729,
+          "y": 135,
+          "angle": 17.81888891452278
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 257,
+          "x": 743,
+          "y": 138,
+          "angle": 5.9061411137704996
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 256,
+          "x": 758,
+          "y": 138,
+          "angle": -9.782407031807287
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 255,
+          "x": 772,
+          "y": 133,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 254,
+          "x": 786,
+          "y": 125,
+          "angle": -29.744881296942225
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "label": "O",
+      "count": 8,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 233,
+          "x": 553.6486020245096,
+          "y": 168.06760098906096,
+          "angle": 41.2080373487641
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 234,
+          "x": 566.6590728181504,
+          "y": 179.46063137229035,
+          "angle": 32.957047837333086
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 235,
+          "x": 582.3757498947208,
+          "y": 186.69262617164665,
+          "angle": 18.152512838754156
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 236,
+          "x": 599.338718127504,
+          "y": 190.17514723412899,
+          "angle": 5.7998738342530665
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 237,
+          "x": 616.6612818724961,
+          "y": 190.17514723412896,
+          "angle": -5.799873834253161
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 238,
+          "x": 633.6242501052793,
+          "y": 186.69262617164662,
+          "angle": -18.152512838754202
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 239,
+          "x": 649.3409271818497,
+          "y": 179.4606313722903,
+          "angle": -32.95704783733304
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 240,
+          "x": 662.3513979754905,
+          "y": 168.06760098906096,
+          "angle": -41.208037348763966
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "label": "P",
+      "count": 10,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 232,
+          "x": 546.7766205002423,
+          "y": 175.1797194933022,
+          "angle": 46.062216090845936
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 231,
+          "x": 557.5029938170362,
+          "y": 186.31136879927521,
+          "angle": 38.874979290647055
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 230,
+          "x": 570.6440519677401,
+          "y": 194.4211060850243,
+          "angle": 25.765251304078415
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 229,
+          "x": 585.1396720045329,
+          "y": 199.6507890689997,
+          "angle": 14.703171879019024
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 228,
+          "x": 600.311584805569,
+          "y": 202.205993073933,
+          "angle": 4.781290297641955
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 227,
+          "x": 615.688415194431,
+          "y": 202.205993073933,
+          "angle": -4.781290297642026
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 226,
+          "x": 630.860327995467,
+          "y": 199.65078906899967,
+          "angle": -14.70317187901913
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 225,
+          "x": 645.3559480322598,
+          "y": 194.42110608502426,
+          "angle": -25.765251304078276
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 224,
+          "x": 658.4970061829638,
+          "y": 186.31136879927521,
+          "angle": -38.874979290646884
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 223,
+          "x": 669.2233794997577,
+          "y": 175.1797194933022,
+          "angle": -46.062216090845936
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "label": "ア",
+      "count": 4,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 253,
+          "x": 827,
+          "y": 136,
+          "angle": 40.23635830927382
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 252,
+          "x": 840,
+          "y": 147,
+          "angle": 47.38594403038882
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 251,
+          "x": 850,
+          "y": 161,
+          "angle": 60.4612177404419
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 250,
+          "x": 857,
+          "y": 177,
+          "angle": 66.37062226934319
+        }
+      ]
+    },
+    {
+      "id": "F13",
+      "label": "R",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 241,
+          "x": 710.1735631757508,
+          "y": 220.5198138073352,
+          "angle": -49.98001237948798
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 242,
+          "x": 719.668165645879,
+          "y": 209.21260028841596,
+          "angle": -41.73715304076095
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 243,
+          "x": 732.6749248817745,
+          "y": 200.44564328833513,
+          "angle": -26.65409895265077
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 244,
+          "x": 748.186121295163,
+          "y": 194.89817689902236,
+          "angle": -12.971072208635514
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 245,
+          "x": 765,
+          "y": 193,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 246,
+          "x": 781.813878704837,
+          "y": 194.89817689902236,
+          "angle": 12.971072208635514
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 247,
+          "x": 797.3250751182255,
+          "y": 200.44564328833513,
+          "angle": 26.65409895265077
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 248,
+          "x": 810.331834354121,
+          "y": 209.21260028841596,
+          "angle": 41.73715304076095
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 249,
+          "x": 819.8264368242492,
+          "y": 220.5198138073352,
+          "angle": 49.98001237948798
+        }
+      ]
+    },
+    {
+      "id": "F14",
+      "label": "S",
+      "count": 7,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 222,
+          "x": 720.8157670342829,
+          "y": 227.71514163136467,
+          "angle": -46.2218388205902
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 221,
+          "x": 731.2569092435682,
+          "y": 216.8189085516553,
+          "angle": -34.99736798853288
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 220,
+          "x": 746.7602706970656,
+          "y": 209.55038069194066,
+          "angle": -16.224477936766995
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 219,
+          "x": 765,
+          "y": 207,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 218,
+          "x": 783.2397293029344,
+          "y": 209.55038069194066,
+          "angle": 16.224477936767038
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 217,
+          "x": 798.7430907564318,
+          "y": 216.81890855165534,
+          "angle": 34.99736798853293
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 216,
+          "x": 809.1842329657171,
+          "y": 227.7151416313647,
+          "angle": 46.2218388205902
+        }
+      ]
+    },
+    {
+      "id": "F15",
+      "label": "イ",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 292,
+          "x": 872,
+          "y": 195,
+          "angle": -29.744881296942225
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 291,
+          "x": 886,
+          "y": 187,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 290,
+          "x": 901,
+          "y": 182,
+          "angle": -13.134022306396323
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 289,
+          "x": 916,
+          "y": 180,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 288,
+          "x": 931,
+          "y": 180,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 287,
+          "x": 946,
+          "y": 180,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "F16",
+      "label": "I",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 93,
+          "x": 483,
+          "y": 249,
+          "angle": -26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 94,
+          "x": 497,
+          "y": 242,
+          "angle": -20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 95,
+          "x": 512,
+          "y": 238,
+          "angle": -9.462322208025617
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 96,
+          "x": 527,
+          "y": 237,
+          "angle": 3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 97,
+          "x": 542,
+          "y": 240,
+          "angle": 17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 98,
+          "x": 556,
+          "y": 246,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 99,
+          "x": 570,
+          "y": 254,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 100,
+          "x": 584,
+          "y": 260,
+          "angle": 17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 101,
+          "x": 599,
+          "y": 263,
+          "angle": 3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 102,
+          "x": 644,
+          "y": 253,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 103,
+          "x": 658,
+          "y": 245,
+          "angle": -29.744881296942225
+        }
+      ]
+    },
+    {
+      "id": "F17",
+      "label": "J",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 114,
+          "x": 487,
+          "y": 262,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 113,
+          "x": 501,
+          "y": 257,
+          "angle": -13.570434385161487
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 112,
+          "x": 545,
+          "y": 259,
+          "angle": 19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 111,
+          "x": 559,
+          "y": 266,
+          "angle": 28.178590109959174
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 110,
+          "x": 573,
+          "y": 274,
+          "angle": 25.769327624338718
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 109,
+          "x": 588,
+          "y": 280,
+          "angle": 14.931417178137556
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 108,
+          "x": 603,
+          "y": 282,
+          "angle": 1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 107,
+          "x": 618,
+          "y": 281,
+          "angle": -7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 106,
+          "x": 633,
+          "y": 278,
+          "angle": -16.69924423399362
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 105,
+          "x": 648,
+          "y": 272,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 104,
+          "x": 662,
+          "y": 265,
+          "angle": -26.56505117707799
+        }
+      ]
+    },
+    {
+      "id": "F18",
+      "label": "K",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 115,
+          "x": 485,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 116,
+          "x": 499,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 117,
+          "x": 513,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 118,
+          "x": 527,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 119,
+          "x": 541,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 120,
+          "x": 555,
+          "y": 308,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "F19",
+      "label": "K",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 126,
+          "x": 485,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 125,
+          "x": 499,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 124,
+          "x": 513,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 123,
+          "x": 527,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 122,
+          "x": 541,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 121,
+          "x": 555,
+          "y": 321,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "F20",
+      "label": "L",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 127,
+          "x": 485,
+          "y": 360,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 128,
+          "x": 499,
+          "y": 367,
+          "angle": 19.02560603756868
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 129,
+          "x": 543,
+          "y": 365,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 130,
+          "x": 557,
+          "y": 359,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 131,
+          "x": 571,
+          "y": 352,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 132,
+          "x": 585,
+          "y": 346,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 133,
+          "x": 600,
+          "y": 343,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 134,
+          "x": 615,
+          "y": 344,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 135,
+          "x": 630,
+          "y": 347,
+          "angle": 15.42216131873867
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 136,
+          "x": 644,
+          "y": 352,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 137,
+          "x": 658,
+          "y": 361,
+          "angle": 32.7352262721076
+        }
+      ]
+    },
+    {
+      "id": "F21",
+      "label": "M",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 148,
+          "x": 483,
+          "y": 374,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 147,
+          "x": 497,
+          "y": 381,
+          "angle": 20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 146,
+          "x": 512,
+          "y": 385,
+          "angle": 9.462322208025617
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 145,
+          "x": 527,
+          "y": 386,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 144,
+          "x": 542,
+          "y": 383,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 143,
+          "x": 556,
+          "y": 377,
+          "angle": -26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 142,
+          "x": 570,
+          "y": 369,
+          "angle": -26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 141,
+          "x": 584,
+          "y": 363,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 140,
+          "x": 599,
+          "y": 360,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 139,
+          "x": 644,
+          "y": 370,
+          "angle": 24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 138,
+          "x": 658,
+          "y": 378,
+          "angle": 29.744881296942225
+        }
+      ]
+    },
+    {
+      "id": "F22",
+      "label": "T",
+      "count": 5,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 211,
+          "x": 723,
+          "y": 258,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 212,
+          "x": 772,
+          "y": 266,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 213,
+          "x": 787,
+          "y": 266,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 214,
+          "x": 802,
+          "y": 266,
+          "angle": -1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 215,
+          "x": 817,
+          "y": 265,
+          "angle": -3.8140748342903548
+        }
+      ]
+    },
+    {
+      "id": "F23",
+      "label": "U",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 210,
+          "x": 723,
+          "y": 271,
+          "angle": 23.19859051364819
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 209,
+          "x": 737,
+          "y": 277,
+          "angle": 17.81888891452278
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 208,
+          "x": 751,
+          "y": 280,
+          "angle": 11.689369175439191
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 207,
+          "x": 766,
+          "y": 283,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 206,
+          "x": 781,
+          "y": 284,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 205,
+          "x": 796,
+          "y": 283,
+          "angle": -7.85331330197822
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 204,
+          "x": 810,
+          "y": 280,
+          "angle": -14.036243467926477
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 203,
+          "x": 824,
+          "y": 276,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 202,
+          "x": 838,
+          "y": 270,
+          "angle": -23.19859051364819
+        }
+      ]
+    },
+    {
+      "id": "F24",
+      "label": "V",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 193,
+          "x": 725,
+          "y": 354,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 194,
+          "x": 739,
+          "y": 349,
+          "angle": -17.81888891452278
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 195,
+          "x": 753,
+          "y": 345,
+          "angle": -13.570434385161487
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 196,
+          "x": 768,
+          "y": 342,
+          "angle": -7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 197,
+          "x": 783,
+          "y": 341,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 198,
+          "x": 798,
+          "y": 342,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 199,
+          "x": 813,
+          "y": 345,
+          "angle": 13.570434385161487
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 200,
+          "x": 827,
+          "y": 349,
+          "angle": 19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 201,
+          "x": 841,
+          "y": 355,
+          "angle": 23.19859051364819
+        }
+      ]
+    },
+    {
+      "id": "F25",
+      "label": "W",
+      "count": 5,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 192,
+          "x": 731,
+          "y": 367,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 191,
+          "x": 771,
+          "y": 354,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 190,
+          "x": 786,
+          "y": 354,
+          "angle": 1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 189,
+          "x": 801,
+          "y": 355,
+          "angle": 5.710593137499642
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 188,
+          "x": 816,
+          "y": 357,
+          "angle": 7.594643368591445
+        }
+      ]
+    },
+    {
+      "id": "F26",
+      "label": "ウ",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 293,
+          "x": 879,
+          "y": 263,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 294,
+          "x": 882,
+          "y": 277,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 295,
+          "x": 885,
+          "y": 291,
+          "angle": 79.8753283446022
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 296,
+          "x": 887,
+          "y": 305,
+          "angle": 85.91438322002512
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 297,
+          "x": 887,
+          "y": 319,
+          "angle": 92.04540848888723
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 298,
+          "x": 886,
+          "y": 333,
+          "angle": 98.130102354156
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 299,
+          "x": 883,
+          "y": 347,
+          "angle": 104.0362434679265
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 300,
+          "x": 879,
+          "y": 361,
+          "angle": 107.81888891452277
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 301,
+          "x": 874,
+          "y": 375,
+          "angle": 109.65382405805332
+        }
+      ]
+    },
+    {
+      "id": "F27",
+      "label": "エ",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 310,
+          "x": 893,
+          "y": 263,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 309,
+          "x": 896,
+          "y": 277,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 308,
+          "x": 899,
+          "y": 291,
+          "angle": 79.8753283446022
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 307,
+          "x": 901,
+          "y": 305,
+          "angle": 85.91438322002512
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 306,
+          "x": 901,
+          "y": 319,
+          "angle": 92.04540848888723
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 305,
+          "x": 900,
+          "y": 333,
+          "angle": 98.130102354156
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 304,
+          "x": 897,
+          "y": 347,
+          "angle": 104.0362434679265
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 303,
+          "x": 893,
+          "y": 361,
+          "angle": 107.81888891452277
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 302,
+          "x": 888,
+          "y": 375,
+          "angle": 109.65382405805332
+        }
+      ]
+    },
+    {
+      "id": "F28",
+      "label": "オ",
+      "count": 12,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 286,
+          "x": 947,
+          "y": 230,
+          "angle": 105.94539590092285
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 285,
+          "x": 943,
+          "y": 244,
+          "angle": 102.09475707701212
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 284,
+          "x": 941,
+          "y": 258,
+          "angle": 92.04540848888723
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 283,
+          "x": 942,
+          "y": 272,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 282,
+          "x": 947,
+          "y": 286,
+          "angle": 74.05460409907715
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 281,
+          "x": 950,
+          "y": 300,
+          "angle": 85.91438322002512
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 280,
+          "x": 949,
+          "y": 314,
+          "angle": 102.09475707701212
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 279,
+          "x": 944,
+          "y": 328,
+          "angle": 105.94539590092285
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 278,
+          "x": 941,
+          "y": 342,
+          "angle": 94.08561677997488
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 277,
+          "x": 942,
+          "y": 356,
+          "angle": 81.86989764584403
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 276,
+          "x": 945,
+          "y": 370,
+          "angle": 70.3461759419467
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 275,
+          "x": 952,
+          "y": 384,
+          "angle": 63.43494882292201
+        }
+      ]
+    },
+    {
+      "id": "F29",
+      "label": "X",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 177,
+          "x": 686,
+          "y": 439,
+          "angle": -42.27368900609373
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 178,
+          "x": 697,
+          "y": 429,
+          "angle": -36.86989764584402
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 179,
+          "x": 710,
+          "y": 421,
+          "angle": -25.709953780811265
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 180,
+          "x": 724,
+          "y": 416,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 181,
+          "x": 739,
+          "y": 412,
+          "angle": -9.462322208025617
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 182,
+          "x": 754,
+          "y": 411,
+          "angle": 1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 183,
+          "x": 769,
+          "y": 413,
+          "angle": 11.689369175439191
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 184,
+          "x": 783,
+          "y": 417,
+          "angle": 21.447736327105353
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 185,
+          "x": 797,
+          "y": 424,
+          "angle": 31.607502246248902
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 186,
+          "x": 809,
+          "y": 433,
+          "angle": 45
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 187,
+          "x": 818,
+          "y": 445,
+          "angle": 53.13010235415598
+        }
+      ]
+    },
+    {
+      "id": "F30",
+      "label": "Y",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 176,
+          "x": 694,
+          "y": 450,
+          "angle": -42.70938995736147
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 175,
+          "x": 707,
+          "y": 438,
+          "angle": -36.52885536698516
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 174,
+          "x": 721,
+          "y": 430,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 173,
+          "x": 736,
+          "y": 425,
+          "angle": -11.309932474020213
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 172,
+          "x": 751,
+          "y": 424,
+          "angle": 3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 171,
+          "x": 766,
+          "y": 427,
+          "angle": 19.02560603756868
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 170,
+          "x": 780,
+          "y": 434,
+          "angle": 32.19573393471325
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 169,
+          "x": 793,
+          "y": 444,
+          "angle": 42.397437797500196
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 168,
+          "x": 803,
+          "y": 455,
+          "angle": 47.72631099390627
+        }
+      ]
+    },
+    {
+      "id": "F31",
+      "label": "Q",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 157,
+          "x": 618,
+          "y": 450,
+          "angle": 66.80140948635182
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 158,
+          "x": 624,
+          "y": 464,
+          "angle": 59.34933204294713
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 159,
+          "x": 634,
+          "y": 477,
+          "angle": 45
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 160,
+          "x": 647,
+          "y": 487,
+          "angle": 32.19573393471325
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 161,
+          "x": 661,
+          "y": 494,
+          "angle": 20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 162,
+          "x": 676,
+          "y": 498,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 163,
+          "x": 691,
+          "y": 498,
+          "angle": -5.710593137499642
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 164,
+          "x": 706,
+          "y": 495,
+          "angle": -15.42216131873867
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 165,
+          "x": 720,
+          "y": 490,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 166,
+          "x": 734,
+          "y": 482,
+          "angle": -33.690067525979785
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 167,
+          "x": 747,
+          "y": 472,
+          "angle": -37.568592028827496
+        }
+      ]
+    },
+    {
+      "id": "F32",
+      "label": "Z",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 269,
+          "x": 870,
+          "y": 428,
+          "angle": 34.69515353123397
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 270,
+          "x": 883,
+          "y": 437,
+          "angle": 27.407575437818405
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 271,
+          "x": 897,
+          "y": 442,
+          "angle": 15.945395900922856
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 272,
+          "x": 911,
+          "y": 445,
+          "angle": 8.13010235415598
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 273,
+          "x": 925,
+          "y": 446,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 274,
+          "x": 940,
+          "y": 445,
+          "angle": -3.8140748342903548
+        }
+      ]
+    }
+  ],
+  "name": "Numbered map 1.2",
+  "version": "1.2",
+  "basedOn": "Numbered map 1.1",
+  "fieldVerification": {
+    "source": "user-store-visit",
+    "newlyNumberedTiles": 163,
+    "directions": [
+      "B左25から右40",
+      "D右上75から左回りに右下85",
+      "F左50から右65",
+      "G左86から右92",
+      "J右104から左114",
+      "K左上115から右上120",
+      "K右下121から左下126",
+      "L左127から右137",
+      "M右138から左148",
+      "H左149から右156",
+      "W右188から左192",
+      "V左193から右201",
+      "U右202から左210",
+      "T左211から右215",
+      "S右216から左222",
+      "ア左253から右250",
+      "イ左292から右287",
+      "ウ下301から上293",
+      "Z左269から右274"
+    ]
+  }
+}

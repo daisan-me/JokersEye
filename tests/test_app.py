@@ -7,6 +7,7 @@ import threading
 import unittest
 import urllib.request
 import urllib.error
+from unittest.mock import Mock
 from contextlib import closing
 
 spec=importlib.util.spec_from_file_location('server',Path(__file__).resolve().parents[1]/'app/server.py')
@@ -52,6 +53,21 @@ class StoreTests(unittest.TestCase):
         with closing(sqlite3.connect(path)) as db:
             self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM observations').fetchone()[0],1)
+    def test_base_sheet_columns_filters_and_delta_update(self):
+        row = {'date':'2024-03-01','seat':'1','model':'マイジャグラーV','games':7000,'bb':30,'rb':25,'combined':'1/127','net':1500,'rate':'unknown','payout_percent':108.2,'source_url':'https://min-repo.com/1/','published_at':'2024-03-02','fetched_at':'2026-10-03T00:00:00Z'}
+        self.store.collector.save_rows([row])
+        created = self.store.build_base_sheet('create')
+        self.assertEqual(created['status'],'created')
+        self.assertEqual(created['sheet']['columns'],server.BASE_SHEET_COLUMNS)
+        filtered = self.store.base_sheet_rows({'juggler':'juggler','games_min':'6000','combined_n_min':'120','payout_min':'108','offset':'0','limit':'100'})
+        self.assertEqual(filtered['total'],1)
+        self.assertEqual(filtered['rows'][0]['曜日'],'金曜日')
+        self.store.collector.save_rows([dict(row,date='2024-03-02',seat='2',model='SLOT TEST',combined=None,bb=None,rb=None,net=None,payout_percent=None)])
+        updated = self.store.build_base_sheet('update')
+        self.assertEqual(updated['addedRows'],1)
+        self.assertEqual(self.store.base_sheet_status()['rowCount'],2)
+        self.assertEqual(self.store.base_sheet_status()['firstDate'],'2024-03-01')
+        self.assertEqual([row['日付'] for row in self.store._read_base_sheet()], ['2024-03-01', '2024-03-02'])
     def test_untrusted_fields_remain_text(self):
         text=GOOD.replace('テスト機種','<script>alert(1)</script>')
         self.store.import_csv(text,'a.csv','test')
@@ -90,6 +106,54 @@ class ApiTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ex:
             urllib.request.urlopen(self.base+'/../app/server.py')
         self.assertEqual(ex.exception.code,404)
+
+    def post(self, path, payload):
+        req=urllib.request.Request(self.base+'/api/'+path,data=json.dumps(payload).encode(),headers={'X-Joker-Token':self.host.token,'Content-Type':'application/json'})
+        with urllib.request.urlopen(req) as response:return json.load(response)
+
+    def test_new_scraping_defaults_to_bonus_capture(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.post('scrape/start',{'start':'2026-10-03','end':'2026-10-03'})
+        start.assert_called_once_with('2026-10-03','2026-10-03',True,None,False)
+
+    def test_base_create_and_delta_enable_bonus_capture(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.post('base-sheet/create',{})
+        start.assert_called_once_with(server.BASE_SHEET_END,server.BASE_SHEET_START,True,sheet_mode='create')
+        self.host.store.build_base_sheet('create')
+        self.host.store.base_sheet_update_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03']})
+        start.reset_mock()
+        self.post('base-sheet/update',{})
+        start.assert_called_once_with('2026-10-03','2026-10-03',True,['2026-10-03'])
+
+    def test_bonus_action_targets_only_plan_dates(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.host.store.base_sheet_bonus_plan=Mock(return_value={'targetEnd':'2026-10-03','missingDates':['2026-10-03'],'missingRows':3})
+        self.post('base-sheet/bonuses',{'start':'2026-10-03','end':'2026-10-03'})
+        start.assert_called_once_with('2026-10-03','2026-10-03',True,['2026-10-03'],True)
+        self.host.store.base_sheet_bonus_plan.return_value={'missingDates':[],'missingRows':0}
+        start.reset_mock()
+        self.assertEqual(self.post('base-sheet/bonuses',{})['status'],'up-to-date')
+        start.assert_not_called()
+
+    def test_fixed_floor_assets_and_registration(self):
+        with urllib.request.urlopen(self.base+'/fixed-floor.json') as response:
+            floor = json.load(response)
+        self.assertEqual(floor['name'], 'Numbered map 1.4 ex.Is-ID')
+        self.assertEqual(len(floor['faces']), 32)
+        self.assertEqual(sorted(tile['seatNumber'] for face in floor['faces'] for tile in face['tiles']), list(range(1, 311)))
+        self.assertFalse(floor['islandLabelsDisplayed'])
+        self.assertTrue(self.host.store.state()['mapRegistered'])
+        with urllib.request.urlopen(self.base+'/fixed-floor.js') as response:
+            self.assertIn(b'const FixedFloor', response.read())
+        with urllib.request.urlopen(self.base+'/fixed-floor-display.json') as response:
+            display = json.load(response)
+        self.assertEqual(display['source'], floor['name'])
+        self.assertEqual(display['baseTileSize'] * display['tileScale'], 10.75)
+        self.assertEqual(len(display['radialOutward']), 5)
 
 if __name__=='__main__':
     unittest.main()

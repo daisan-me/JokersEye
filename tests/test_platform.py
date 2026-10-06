@@ -1,8 +1,10 @@
 import importlib.util
+import io
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 APP = Path(__file__).resolve().parents[1] / 'app'
 sys.path.insert(0, str(APP))
@@ -32,6 +34,14 @@ class DataDirTests(unittest.TestCase):
     def test_external_links_only_http_and_https(self):
         for bad in ('file:///etc/passwd', 'javascript:alert(1)', '', None, 'ftp://example.com'):
             self.assertFalse(platform_support.open_external(bad))
+
+
+    def test_error_dialog_survives_a_console_that_cannot_print_the_title(self):
+        # Japanese Windows consoles use cp932, which has no em dash; a windowed app may have no console.
+        with mock.patch.object(platform_support.sys, 'platform', 'linux'):
+            for stream in (io.TextIOWrapper(io.BytesIO(), encoding='cp932'), None):
+                with mock.patch.object(platform_support.sys, 'stderr', stream), mock.patch('builtins.print', side_effect=UnicodeEncodeError('cp932', '—', 0, 1, 'x')):
+                    platform_support.show_error("Joker's eye — 起動エラー", 'message')
 
 
 class SourceBrowserRuleTests(unittest.TestCase):

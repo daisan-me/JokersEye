@@ -1,0 +1,43 @@
+name: package
+# Windows / macOS のダブルクリック用パッケージを作り、起動して画面が出ることを確認する。
+# 結果は Actions の実行画面の Artifacts からダウンロードできる。
+# プルリクエストでは動かさない（同じコミットのパッケージが重複するため。push で作られる）。
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows
+          - os: macos-latest
+            label: macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - run: python -m pip install --disable-pip-version-check -r requirements.txt -r requirements-build.txt
+      - run: python tools/build_package.py
+      - name: ダウンロードした状態で.NETの設定がない場合の起動失敗を記録（失敗してもジョブは止めない）
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: python tools/smoke_test_package.py --without-dotnet-config
+        timeout-minutes: 5
+      - run: python tools/smoke_test_package.py
+        timeout-minutes: 5
+      - id: version
+        shell: python
+        run: |
+          import os
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("version=" + open("VERSION", encoding="utf-8").read().strip() + "\n")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JokersEye-${{ steps.version.outputs.version }}-${{ matrix.label }}
+          path: build/package/
+          retention-days: 30

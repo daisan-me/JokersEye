@@ -35,7 +35,8 @@ EXTERNAL_LINK_JS = """(()=>{if(window.__jokerExternal)return;window.__jokerExter
 const send=u=>{try{const x=new URL(u,location.href);if(x.origin!==location.origin&&/^https?:$/.test(x.protocol)){window.pywebview.api.open_external(x.href);return true;}}catch(e){}return false;};
 document.addEventListener('click',e=>{const a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(a&&send(a.href)){e.preventDefault();e.stopPropagation();}},true);
 window.open=u=>{send(String(u));return null;};})()"""
-READY_JS = "!!document.querySelector('h1') && !!document.querySelector('table') && document.readyState !== 'loading'"
+READINESS_JS = (ROOT / "web" / "source-readiness.js").read_text(encoding="utf-8")
+READY_JS = "(()=>{%s\nreturn sourceAccessRestricted(document)?'restricted':sourceDocumentReady(document,%s);})()"
 EMPTY_JS = "document.readyState === 'complete' && document.scripts.length === 0 && !!document.body && document.body.innerHTML.trim() === ''"
 STATUS_JS = "(()=>{const n=performance.getEntriesByType('navigation')[0];return n&&n.responseStatus?n.responseStatus:0;})()"
 FOLLOW_JS = ("(()=>{const target=new URL(%s,location.href).href;const link=Array.from(document.querySelectorAll('a[href]'))"
@@ -200,10 +201,10 @@ class SourceBrowser:
             return
         if "id" not in task or task["id"] == self.last_task:
             return
-        task_id, url, error = task["id"], task.get("url", ""), None
+        task_id, error = task["id"], None
         self.last_task = task_id
         try:
-            html = self.fetch(url)
+            html = self.fetch(task)
         except Exception as ex:
             html, error = None, str(ex)
         if self.disposed:
@@ -214,7 +215,8 @@ class SourceBrowser:
         except (OSError, ValueError):
             pass
 
-    def fetch(self, url):
+    def fetch(self, task):
+        url = task.get("url", "")
         if not source_url_allowed(url):
             raise RuntimeError("公開取得元のURLではありません。")
         self.ensure_window()
@@ -236,12 +238,19 @@ class SourceBrowser:
                 status_text = "HTTP %s" % status if status else "HTTP 不明"
             if status in (401, 403, 429):
                 raise RuntimeError("公開サイトが取得を制限しました（HTTP %s）。再試行せず停止します。" % status)
-            if truthy(self.evaluate(READY_JS)):
+            # Wait for the requested current-day table, not unrelated rankings (web/source-readiness.js).
+            ready = self.evaluate(READY_JS % (READINESS_JS, json.dumps(task, ensure_ascii=False)))
+            if ready == "restricted":
+                raise RuntimeError("公開サイトが取得を制限しました（認証・確認画面）。操作・再試行せず停止します。")
+            if truthy(ready):
                 html = self.evaluate("document.documentElement.outerHTML")
                 if isinstance(html, str):
                     return html
             # A successful but genuinely empty document is transient: reload once, normally.
-            if i == 12 and status in (0, 200) and truthy(self.evaluate(EMPTY_JS)):
+            # If it stays empty, give up on this page so the collector can revisit it later.
+            if (i == 12 or i >= 25) and status in (0, 200) and truthy(self.evaluate(EMPTY_JS)):
+                if i >= 25:
+                    break
                 self.log("empty-document ordinary-reload-once " + url)
                 time.sleep(3)
                 self.loaded.clear()
@@ -306,7 +315,11 @@ def bring_existing_to_front(folder):
 
 def run_diagnostics(window, client, path):
     """Same checks as the old `--diagnostics` mode (page/connection text, map grid)."""
-    time.sleep(1.5)
+    # Wait for the first /api/state round trip instead of a fixed delay (slow CI machines).
+    for _ in range(40):
+        time.sleep(0.5)
+        if run_script(window, "document.querySelector('#connection').textContent") not in (None, "接続中"):
+            break
     page = run_script(window, "JSON.stringify({connection:document.querySelector('#connection').textContent,version:document.querySelector('.rail-bottom small').textContent,title:document.title})")
     Path(path).write_text('{"page":%s}' % page, encoding="utf-8")
     run_script(window, "document.querySelector('[data-page=map]').click()")

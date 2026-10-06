@@ -1,0 +1,7012 @@
+{
+  "source": "physical-skeleton-map.json",
+  "sourceSha256": "B6FFE470794DF59FD3BFAFBC822B309A739C0AF35C098F3769C7576140E825C0",
+  "annotationImage": "codex-clipboard-16e83249-1090-4025-a5fd-b297855364ca.png",
+  "totalTiles": 310,
+  "numberedTiles": 310,
+  "unnumberedTiles": 0,
+  "islandFaces": 32,
+  "islandLabels": 32,
+  "sourceCoordinatesUnchanged": true,
+  "userConfirmedCorrections": [
+    "Fは50~65。",
+    "Yは右168から左176。",
+    "Uは202~210。",
+    "Vは193~201。"
+  ],
+  "ranges": [],
+  "faces": [
+    {
+      "id": "F01",
+      "label": "A",
+      "count": 24,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 1,
+          "x": 279,
+          "y": 184,
+          "angle": 143.13010235415598
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 2,
+          "x": 267,
+          "y": 193,
+          "angle": 143.13010235415598
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 3,
+          "x": 255,
+          "y": 202,
+          "angle": 140.4403320310055
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 4,
+          "x": 244,
+          "y": 212,
+          "angle": 133.66778014613035
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 5,
+          "x": 234,
+          "y": 224,
+          "angle": 126.86989764584402
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 6,
+          "x": 226,
+          "y": 236,
+          "angle": 120.96375653207352
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 7,
+          "x": 219,
+          "y": 249,
+          "angle": 114.77514056883193
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 8,
+          "x": 214,
+          "y": 262,
+          "angle": 108.43494882292202
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 9,
+          "x": 210,
+          "y": 276,
+          "angle": 104.0362434679265
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 10,
+          "x": 207,
+          "y": 290,
+          "angle": 100.12467165539783
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 11,
+          "x": 205,
+          "y": 304,
+          "angle": 94.08561677997488
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 12,
+          "x": 205,
+          "y": 318,
+          "angle": 87.95459151111277
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 13,
+          "x": 206,
+          "y": 332,
+          "angle": 81.86989764584403
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 14,
+          "x": 209,
+          "y": 346,
+          "angle": 75.96375653207353
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 15,
+          "x": 213,
+          "y": 360,
+          "angle": 71.56505117707799
+        },
+        {
+          "sourceLocalNumber": 16,
+          "seatNumber": 16,
+          "x": 218,
+          "y": 373,
+          "angle": 64.3589941756947
+        },
+        {
+          "sourceLocalNumber": 17,
+          "seatNumber": 17,
+          "x": 225,
+          "y": 385,
+          "angle": 57.9946167919165
+        },
+        {
+          "sourceLocalNumber": 18,
+          "seatNumber": 18,
+          "x": 233,
+          "y": 397,
+          "angle": 53.53076560994813
+        },
+        {
+          "sourceLocalNumber": 19,
+          "seatNumber": 19,
+          "x": 242,
+          "y": 408,
+          "angle": 47.862405226111754
+        },
+        {
+          "sourceLocalNumber": 20,
+          "seatNumber": 20,
+          "x": 252,
+          "y": 418,
+          "angle": 42.13759477388826
+        },
+        {
+          "sourceLocalNumber": 21,
+          "seatNumber": 21,
+          "x": 263,
+          "y": 427,
+          "angle": 36.46923439005187
+        },
+        {
+          "sourceLocalNumber": 22,
+          "seatNumber": 22,
+          "x": 275,
+          "y": 435,
+          "angle": 33.690067525979785
+        },
+        {
+          "sourceLocalNumber": 23,
+          "seatNumber": 23,
+          "x": 287,
+          "y": 443,
+          "angle": 29.248826336546973
+        },
+        {
+          "sourceLocalNumber": 24,
+          "seatNumber": 24,
+          "x": 300,
+          "y": 449,
+          "angle": 24.775140568831922
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "label": "G",
+      "count": 7,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 86,
+          "x": 399,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 87,
+          "x": 414,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 88,
+          "x": 428,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 89,
+          "x": 442,
+          "y": 181,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 90,
+          "x": 457,
+          "y": 181,
+          "angle": 5.710593137499642
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 91,
+          "x": 472,
+          "y": 184,
+          "angle": 17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 92,
+          "x": 486,
+          "y": 190,
+          "angle": 23.19859051364819
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "label": "B",
+      "count": 16,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 25,
+          "x": 273.8094128230469,
+          "y": 269.1408550234408,
+          "angle": -58.53333333333321
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 26,
+          "x": 281.126967080589,
+          "y": 257.1840831460209,
+          "angle": -54.06666666666669
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 27,
+          "x": 290.212466046496,
+          "y": 246.50865797503903,
+          "angle": -45.13333333333343
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 28,
+          "x": 300.8454899142067,
+          "y": 237.3735719070578,
+          "angle": -36.19999999999998
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 29,
+          "x": 312.76807496891837,
+          "y": 230.00044776230766,
+          "angle": -27.266666666666627
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 30,
+          "x": 325.69097194635475,
+          "y": 224.56816207842695,
+          "angle": -18.333333333333346
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 31,
+          "x": 339.30066339825396,
+          "y": 221.20850545537274,
+          "angle": -9.399999999999972
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 32,
+          "x": 353.2669698189617,
+          "y": 220.00298523421077,
+          "angle": -0.4666666666666234
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 33,
+          "x": 367.2510600038098,
+          "y": 220.98084807876774,
+          "angle": 8.466666666666667
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 34,
+          "x": 380.9136713030478,
+          "y": 224.1183704335351,
+          "angle": 17.399999999999977
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 35,
+          "x": 393.92334034289723,
+          "y": 229.3394340717523,
+          "angle": 26.333333333333318
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 36,
+          "x": 405.9644445313628,
+          "y": 236.51737277051862,
+          "angle": 35.26666666666669
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 37,
+          "x": 416.74485925691084,
+          "y": 245.47804531145658,
+          "angle": 44.19999999999998
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 38,
+          "x": 426.00304501165374,
+          "y": 256.00406025403606,
+          "angle": 53.13333333333336
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 39,
+          "x": 433.5143925010633,
+          "y": 267.8400499859541,
+          "angle": 62.066666666666656
+        },
+        {
+          "sourceLocalNumber": 16,
+          "seatNumber": 40,
+          "x": 439.09667180393853,
+          "y": 280.6988660988559,
+          "angle": 66.53333333333319
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "label": "C",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 49,
+          "x": 288.40352196454535,
+          "y": 274.12408810177106,
+          "angle": -55.34947545533033
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 48,
+          "x": 296.1976028027357,
+          "y": 262.84721261205766,
+          "angle": -50.038512867345396
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 47,
+          "x": 329.99535961822716,
+          "y": 239.89264845393961,
+          "angle": -18.434703852062867
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 46,
+          "x": 343.45400701709485,
+          "y": 236.73521942705898,
+          "angle": -7.976952074458678
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 45,
+          "x": 357.2714540524002,
+          "y": 236.0704316029425,
+          "angle": 2.4667081177103767
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 44,
+          "x": 370.97759847954654,
+          "y": 237.92090263646523,
+          "angle": 12.914775260844538
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 43,
+          "x": 384.1061248320442,
+          "y": 242.22367512426618,
+          "angle": 23.38519684933033
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 42,
+          "x": 415.747613456751,
+          "y": 267.9972832527363,
+          "angle": 55.05641742418987
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 41,
+          "x": 422.51590932319505,
+          "y": 279.9014884123908,
+          "angle": 60.37902266158941
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "label": "F",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 75,
+          "x": 383.5788383248865,
+          "y": 297,
+          "angle": 60
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 76,
+          "x": 371.5,
+          "y": 286.01923788646684,
+          "angle": 30
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 77,
+          "x": 355,
+          "y": 282,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 78,
+          "x": 338.5,
+          "y": 286.01923788646684,
+          "angle": 330
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 79,
+          "x": 326.4211616751135,
+          "y": 297,
+          "angle": 300
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 80,
+          "x": 322,
+          "y": 312,
+          "angle": 270
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 81,
+          "x": 326.4211616751135,
+          "y": 327,
+          "angle": 240
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 82,
+          "x": 338.5,
+          "y": 337.98076211353316,
+          "angle": 210
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 83,
+          "x": 355,
+          "y": 342,
+          "angle": 180
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 84,
+          "x": 371.5,
+          "y": 337.98076211353316,
+          "angle": 150
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 85,
+          "x": 383.5788383248865,
+          "y": 327,
+          "angle": 120
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "label": "D",
+      "count": 16,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 50,
+          "x": 269.42766412926824,
+          "y": 340.7818128993102,
+          "angle": 65.33333333333314
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 51,
+          "x": 275.53940276729145,
+          "y": 354.09007464142786,
+          "angle": 60.66666666666666
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 52,
+          "x": 283.72853759910066,
+          "y": 366.2309663089564,
+          "angle": 51.3333333333334
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 53,
+          "x": 293.77824542770276,
+          "y": 376.8830342929655,
+          "angle": 42
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 54,
+          "x": 305.42244078436386,
+          "y": 385.76424447357317,
+          "angle": 32.666666666666664
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 55,
+          "x": 318.3528210564759,
+          "y": 392.63944961922465,
+          "angle": 23.33333333333331
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 56,
+          "x": 332.2270293960299,
+          "y": 397.32661536483965,
+          "angle": 14.000000000000075
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 57,
+          "x": 346.67771927989276,
+          "y": 399.7016399240056,
+          "angle": 4.666666666666777
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 58,
+          "x": 361.32228072010724,
+          "y": 399.7016399240056,
+          "angle": -4.666666666666777
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 59,
+          "x": 375.7729706039701,
+          "y": 397.32661536483965,
+          "angle": -14.000000000000075
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 60,
+          "x": 389.6471789435241,
+          "y": 392.63944961922465,
+          "angle": -23.33333333333331
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 61,
+          "x": 402.57755921563614,
+          "y": 385.76424447357317,
+          "angle": -32.666666666666664
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 62,
+          "x": 414.22175457229724,
+          "y": 376.8830342929655,
+          "angle": -42
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 63,
+          "x": 424.27146240089934,
+          "y": 366.2309663089564,
+          "angle": -51.33333333333331
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 64,
+          "x": 432.4605972327086,
+          "y": 354.09007464142786,
+          "angle": -60.66666666666666
+        },
+        {
+          "sourceLocalNumber": 16,
+          "seatNumber": 65,
+          "x": 438.57233587073176,
+          "y": 340.7818128993102,
+          "angle": -65.33333333333334
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "label": "E",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 74,
+          "x": 284.962135991067,
+          "y": 339.6955657651848,
+          "angle": 61.73434953817195
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 73,
+          "x": 291.9444419143867,
+          "y": 352.68176011554544,
+          "angle": 56.18510251516472
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 72,
+          "x": 325.50042296416507,
+          "y": 380.2991490415444,
+          "angle": 22.601334383434896
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 71,
+          "x": 339.4752283645743,
+          "y": 384.56116726271586,
+          "angle": 11.31174096246398
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 70,
+          "x": 354,
+          "y": 386,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 69,
+          "x": 368.52477163542574,
+          "y": 384.56116726271586,
+          "angle": -11.31174096246398
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 68,
+          "x": 382.49957703583493,
+          "y": 380.2991490415444,
+          "angle": -22.601334383434942
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 67,
+          "x": 416.0555580856133,
+          "y": 352.68176011554544,
+          "angle": -56.18510251516475
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 66,
+          "x": 423.037864008933,
+          "y": 339.6955657651848,
+          "angle": -61.73434953817195
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "label": "N",
+      "count": 8,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 149,
+          "x": 400,
+          "y": 440,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 150,
+          "x": 414,
+          "y": 440,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 151,
+          "x": 429,
+          "y": 440,
+          "angle": -1.9749340108819768
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 152,
+          "x": 443,
+          "y": 439,
+          "angle": -7.85331330197822
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 153,
+          "x": 458,
+          "y": 436,
+          "angle": -15.42216131873867
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 154,
+          "x": 472,
+          "y": 431,
+          "angle": -23.962488974578186
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 155,
+          "x": 485,
+          "y": 424,
+          "angle": -29.98163936884934
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 156,
+          "x": 498,
+          "y": 416,
+          "angle": -31.607502246248902
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "label": "ア",
+      "count": 15,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 268,
+          "x": 589,
+          "y": 128,
+          "angle": 24.775140568831922
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 267,
+          "x": 602,
+          "y": 134,
+          "angle": 18.43494882292201
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 266,
+          "x": 616,
+          "y": 137,
+          "angle": 2.0454084888872277
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 265,
+          "x": 630,
+          "y": 135,
+          "angle": -14.036243467926477
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 264,
+          "x": 644,
+          "y": 130,
+          "angle": -22.166345822082455
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 263,
+          "x": 657,
+          "y": 124,
+          "angle": -21.447736327105353
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 262,
+          "x": 672,
+          "y": 119,
+          "angle": -11.689369175439191
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 261,
+          "x": 686,
+          "y": 118,
+          "angle": 3.945186229037563
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 260,
+          "x": 701,
+          "y": 121,
+          "angle": 20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 259,
+          "x": 715,
+          "y": 129,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 258,
+          "x": 729,
+          "y": 135,
+          "angle": 17.81888891452278
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 257,
+          "x": 743,
+          "y": 138,
+          "angle": 5.9061411137704996
+        },
+        {
+          "sourceLocalNumber": 13,
+          "seatNumber": 256,
+          "x": 758,
+          "y": 138,
+          "angle": -9.782407031807287
+        },
+        {
+          "sourceLocalNumber": 14,
+          "seatNumber": 255,
+          "x": 772,
+          "y": 133,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 15,
+          "seatNumber": 254,
+          "x": 786,
+          "y": 125,
+          "angle": -29.744881296942225
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "label": "X",
+      "count": 8,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 233,
+          "x": 553.6486020245096,
+          "y": 168.06760098906096,
+          "angle": 41.2080373487641
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 234,
+          "x": 566.6590728181504,
+          "y": 179.46063137229035,
+          "angle": 32.957047837333086
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 235,
+          "x": 582.3757498947208,
+          "y": 186.69262617164665,
+          "angle": 18.152512838754156
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 236,
+          "x": 599.338718127504,
+          "y": 190.17514723412899,
+          "angle": 5.7998738342530665
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 237,
+          "x": 616.6612818724961,
+          "y": 190.17514723412896,
+          "angle": -5.799873834253161
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 238,
+          "x": 633.6242501052793,
+          "y": 186.69262617164662,
+          "angle": -18.152512838754202
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 239,
+          "x": 649.3409271818497,
+          "y": 179.4606313722903,
+          "angle": -32.95704783733304
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 240,
+          "x": 662.3513979754905,
+          "y": 168.06760098906096,
+          "angle": -41.208037348763966
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "label": "W",
+      "count": 10,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 232,
+          "x": 546.7766205002423,
+          "y": 175.1797194933022,
+          "angle": 46.062216090845936
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 231,
+          "x": 557.5029938170362,
+          "y": 186.31136879927521,
+          "angle": 38.874979290647055
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 230,
+          "x": 570.6440519677401,
+          "y": 194.4211060850243,
+          "angle": 25.765251304078415
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 229,
+          "x": 585.1396720045329,
+          "y": 199.6507890689997,
+          "angle": 14.703171879019024
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 228,
+          "x": 600.311584805569,
+          "y": 202.205993073933,
+          "angle": 4.781290297641955
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 227,
+          "x": 615.688415194431,
+          "y": 202.205993073933,
+          "angle": -4.781290297642026
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 226,
+          "x": 630.860327995467,
+          "y": 199.65078906899967,
+          "angle": -14.70317187901913
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 225,
+          "x": 645.3559480322598,
+          "y": 194.42110608502426,
+          "angle": -25.765251304078276
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 224,
+          "x": 658.4970061829638,
+          "y": 186.31136879927521,
+          "angle": -38.874979290646884
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 223,
+          "x": 669.2233794997577,
+          "y": 175.1797194933022,
+          "angle": -46.062216090845936
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "label": "Z",
+      "count": 4,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 253,
+          "x": 827,
+          "y": 136,
+          "angle": 40.23635830927382
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 252,
+          "x": 840,
+          "y": 147,
+          "angle": 47.38594403038882
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 251,
+          "x": 850,
+          "y": 161,
+          "angle": 60.4612177404419
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 250,
+          "x": 857,
+          "y": 177,
+          "angle": 66.37062226934319
+        }
+      ]
+    },
+    {
+      "id": "F13",
+      "label": "Y",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 241,
+          "x": 710.1735631757508,
+          "y": 220.5198138073352,
+          "angle": -49.98001237948798
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 242,
+          "x": 719.668165645879,
+          "y": 209.21260028841596,
+          "angle": -41.73715304076095
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 243,
+          "x": 732.6749248817745,
+          "y": 200.44564328833513,
+          "angle": -26.65409895265077
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 244,
+          "x": 748.186121295163,
+          "y": 194.89817689902236,
+          "angle": -12.971072208635514
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 245,
+          "x": 765,
+          "y": 193,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 246,
+          "x": 781.813878704837,
+          "y": 194.89817689902236,
+          "angle": 12.971072208635514
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 247,
+          "x": 797.3250751182255,
+          "y": 200.44564328833513,
+          "angle": 26.65409895265077
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 248,
+          "x": 810.331834354121,
+          "y": 209.21260028841596,
+          "angle": 41.73715304076095
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 249,
+          "x": 819.8264368242492,
+          "y": 220.5198138073352,
+          "angle": 49.98001237948798
+        }
+      ]
+    },
+    {
+      "id": "F14",
+      "label": "V",
+      "count": 7,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 222,
+          "x": 720.8157670342829,
+          "y": 227.71514163136467,
+          "angle": -46.2218388205902
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 221,
+          "x": 731.2569092435682,
+          "y": 216.8189085516553,
+          "angle": -34.99736798853288
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 220,
+          "x": 746.7602706970656,
+          "y": 209.55038069194066,
+          "angle": -16.224477936766995
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 219,
+          "x": 765,
+          "y": 207,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 218,
+          "x": 783.2397293029344,
+          "y": 209.55038069194066,
+          "angle": 16.224477936767038
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 217,
+          "x": 798.7430907564318,
+          "y": 216.81890855165534,
+          "angle": 34.99736798853293
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 216,
+          "x": 809.1842329657171,
+          "y": 227.7151416313647,
+          "angle": 46.2218388205902
+        }
+      ]
+    },
+    {
+      "id": "F15",
+      "label": "エ",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 292,
+          "x": 872,
+          "y": 195,
+          "angle": -29.744881296942225
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 291,
+          "x": 886,
+          "y": 187,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 290,
+          "x": 901,
+          "y": 182,
+          "angle": -13.134022306396323
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 289,
+          "x": 916,
+          "y": 180,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 288,
+          "x": 931,
+          "y": 180,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 287,
+          "x": 946,
+          "y": 180,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "F16",
+      "label": "H",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 93,
+          "x": 483,
+          "y": 249,
+          "angle": -26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 94,
+          "x": 497,
+          "y": 242,
+          "angle": -20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 95,
+          "x": 512,
+          "y": 238,
+          "angle": -9.462322208025617
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 96,
+          "x": 527,
+          "y": 237,
+          "angle": 3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 97,
+          "x": 542,
+          "y": 240,
+          "angle": 17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 98,
+          "x": 556,
+          "y": 246,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 99,
+          "x": 570,
+          "y": 254,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 100,
+          "x": 584,
+          "y": 260,
+          "angle": 17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 101,
+          "x": 599,
+          "y": 263,
+          "angle": 3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 102,
+          "x": 644,
+          "y": 253,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 103,
+          "x": 658,
+          "y": 245,
+          "angle": -29.744881296942225
+        }
+      ]
+    },
+    {
+      "id": "F17",
+      "label": "I",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 114,
+          "x": 487,
+          "y": 262,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 113,
+          "x": 501,
+          "y": 257,
+          "angle": -13.570434385161487
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 112,
+          "x": 545,
+          "y": 259,
+          "angle": 19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 111,
+          "x": 559,
+          "y": 266,
+          "angle": 28.178590109959174
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 110,
+          "x": 573,
+          "y": 274,
+          "angle": 25.769327624338718
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 109,
+          "x": 588,
+          "y": 280,
+          "angle": 14.931417178137556
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 108,
+          "x": 603,
+          "y": 282,
+          "angle": 1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 107,
+          "x": 618,
+          "y": 281,
+          "angle": -7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 106,
+          "x": 633,
+          "y": 278,
+          "angle": -16.69924423399362
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 105,
+          "x": 648,
+          "y": 272,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 104,
+          "x": 662,
+          "y": 265,
+          "angle": -26.56505117707799
+        }
+      ]
+    },
+    {
+      "id": "F18",
+      "label": "J",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 115,
+          "x": 485,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 116,
+          "x": 499,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 117,
+          "x": 513,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 118,
+          "x": 527,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 119,
+          "x": 541,
+          "y": 308,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 120,
+          "x": 555,
+          "y": 308,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "F19",
+      "label": "K",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 126,
+          "x": 485,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 125,
+          "x": 499,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 124,
+          "x": 513,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 123,
+          "x": 527,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 122,
+          "x": 541,
+          "y": 321,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 121,
+          "x": 555,
+          "y": 321,
+          "angle": 0
+        }
+      ]
+    },
+    {
+      "id": "F20",
+      "label": "L",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 127,
+          "x": 485,
+          "y": 360,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 128,
+          "x": 499,
+          "y": 367,
+          "angle": 19.02560603756868
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 129,
+          "x": 543,
+          "y": 365,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 130,
+          "x": 557,
+          "y": 359,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 131,
+          "x": 571,
+          "y": 352,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 132,
+          "x": 585,
+          "y": 346,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 133,
+          "x": 600,
+          "y": 343,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 134,
+          "x": 615,
+          "y": 344,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 135,
+          "x": 630,
+          "y": 347,
+          "angle": 15.42216131873867
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 136,
+          "x": 644,
+          "y": 352,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 137,
+          "x": 658,
+          "y": 361,
+          "angle": 32.7352262721076
+        }
+      ]
+    },
+    {
+      "id": "F21",
+      "label": "M",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 148,
+          "x": 483,
+          "y": 374,
+          "angle": 26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 147,
+          "x": 497,
+          "y": 381,
+          "angle": 20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 146,
+          "x": 512,
+          "y": 385,
+          "angle": 9.462322208025617
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 145,
+          "x": 527,
+          "y": 386,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 144,
+          "x": 542,
+          "y": 383,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 143,
+          "x": 556,
+          "y": 377,
+          "angle": -26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 142,
+          "x": 570,
+          "y": 369,
+          "angle": -26.56505117707799
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 141,
+          "x": 584,
+          "y": 363,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 140,
+          "x": 599,
+          "y": 360,
+          "angle": -3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 139,
+          "x": 644,
+          "y": 370,
+          "angle": 24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 138,
+          "x": 658,
+          "y": 378,
+          "angle": 29.744881296942225
+        }
+      ]
+    },
+    {
+      "id": "F22",
+      "label": "U",
+      "count": 5,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 211,
+          "x": 723,
+          "y": 258,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 212,
+          "x": 772,
+          "y": 266,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 213,
+          "x": 787,
+          "y": 266,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 214,
+          "x": 802,
+          "y": 266,
+          "angle": -1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 215,
+          "x": 817,
+          "y": 265,
+          "angle": -3.8140748342903548
+        }
+      ]
+    },
+    {
+      "id": "F23",
+      "label": "T",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 210,
+          "x": 723,
+          "y": 271,
+          "angle": 23.19859051364819
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 209,
+          "x": 737,
+          "y": 277,
+          "angle": 17.81888891452278
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 208,
+          "x": 751,
+          "y": 280,
+          "angle": 11.689369175439191
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 207,
+          "x": 766,
+          "y": 283,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 206,
+          "x": 781,
+          "y": 284,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 205,
+          "x": 796,
+          "y": 283,
+          "angle": -7.85331330197822
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 204,
+          "x": 810,
+          "y": 280,
+          "angle": -14.036243467926477
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 203,
+          "x": 824,
+          "y": 276,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 202,
+          "x": 838,
+          "y": 270,
+          "angle": -23.19859051364819
+        }
+      ]
+    },
+    {
+      "id": "F24",
+      "label": "S",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 193,
+          "x": 725,
+          "y": 354,
+          "angle": -19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 194,
+          "x": 739,
+          "y": 349,
+          "angle": -17.81888891452278
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 195,
+          "x": 753,
+          "y": 345,
+          "angle": -13.570434385161487
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 196,
+          "x": 768,
+          "y": 342,
+          "angle": -7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 197,
+          "x": 783,
+          "y": 341,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 198,
+          "x": 798,
+          "y": 342,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 199,
+          "x": 813,
+          "y": 345,
+          "angle": 13.570434385161487
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 200,
+          "x": 827,
+          "y": 349,
+          "angle": 19.653824058053306
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 201,
+          "x": 841,
+          "y": 355,
+          "angle": 23.19859051364819
+        }
+      ]
+    },
+    {
+      "id": "F25",
+      "label": "R",
+      "count": 5,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 192,
+          "x": 731,
+          "y": 367,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 191,
+          "x": 771,
+          "y": 354,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 190,
+          "x": 786,
+          "y": 354,
+          "angle": 1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 189,
+          "x": 801,
+          "y": 355,
+          "angle": 5.710593137499642
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 188,
+          "x": 816,
+          "y": 357,
+          "angle": 7.594643368591445
+        }
+      ]
+    },
+    {
+      "id": "F26",
+      "label": "オ",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 293,
+          "x": 879,
+          "y": 263,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 294,
+          "x": 882,
+          "y": 277,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 295,
+          "x": 885,
+          "y": 291,
+          "angle": 79.8753283446022
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 296,
+          "x": 887,
+          "y": 305,
+          "angle": 85.91438322002512
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 297,
+          "x": 887,
+          "y": 319,
+          "angle": 92.04540848888723
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 298,
+          "x": 886,
+          "y": 333,
+          "angle": 98.130102354156
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 299,
+          "x": 883,
+          "y": 347,
+          "angle": 104.0362434679265
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 300,
+          "x": 879,
+          "y": 361,
+          "angle": 107.81888891452277
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 301,
+          "x": 874,
+          "y": 375,
+          "angle": 109.65382405805332
+        }
+      ]
+    },
+    {
+      "id": "F27",
+      "label": "カ",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 310,
+          "x": 893,
+          "y": 263,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 309,
+          "x": 896,
+          "y": 277,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 308,
+          "x": 899,
+          "y": 291,
+          "angle": 79.8753283446022
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 307,
+          "x": 901,
+          "y": 305,
+          "angle": 85.91438322002512
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 306,
+          "x": 901,
+          "y": 319,
+          "angle": 92.04540848888723
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 305,
+          "x": 900,
+          "y": 333,
+          "angle": 98.130102354156
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 304,
+          "x": 897,
+          "y": 347,
+          "angle": 104.0362434679265
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 303,
+          "x": 893,
+          "y": 361,
+          "angle": 107.81888891452277
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 302,
+          "x": 888,
+          "y": 375,
+          "angle": 109.65382405805332
+        }
+      ]
+    },
+    {
+      "id": "F28",
+      "label": "ウ",
+      "count": 12,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 286,
+          "x": 947,
+          "y": 230,
+          "angle": 105.94539590092285
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 285,
+          "x": 943,
+          "y": 244,
+          "angle": 102.09475707701212
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 284,
+          "x": 941,
+          "y": 258,
+          "angle": 92.04540848888723
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 283,
+          "x": 942,
+          "y": 272,
+          "angle": 77.9052429229879
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 282,
+          "x": 947,
+          "y": 286,
+          "angle": 74.05460409907715
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 281,
+          "x": 950,
+          "y": 300,
+          "angle": 85.91438322002512
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 280,
+          "x": 949,
+          "y": 314,
+          "angle": 102.09475707701212
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 279,
+          "x": 944,
+          "y": 328,
+          "angle": 105.94539590092285
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 278,
+          "x": 941,
+          "y": 342,
+          "angle": 94.08561677997488
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 277,
+          "x": 942,
+          "y": 356,
+          "angle": 81.86989764584403
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 276,
+          "x": 945,
+          "y": 370,
+          "angle": 70.3461759419467
+        },
+        {
+          "sourceLocalNumber": 12,
+          "seatNumber": 275,
+          "x": 952,
+          "y": 384,
+          "angle": 63.43494882292201
+        }
+      ]
+    },
+    {
+      "id": "F29",
+      "label": "Q",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 177,
+          "x": 686,
+          "y": 439,
+          "angle": -42.27368900609373
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 178,
+          "x": 697,
+          "y": 429,
+          "angle": -36.86989764584402
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 179,
+          "x": 710,
+          "y": 421,
+          "angle": -25.709953780811265
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 180,
+          "x": 724,
+          "y": 416,
+          "angle": -17.241459398939977
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 181,
+          "x": 739,
+          "y": 412,
+          "angle": -9.462322208025617
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 182,
+          "x": 754,
+          "y": 411,
+          "angle": 1.9091524329963763
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 183,
+          "x": 769,
+          "y": 413,
+          "angle": 11.689369175439191
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 184,
+          "x": 783,
+          "y": 417,
+          "angle": 21.447736327105353
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 185,
+          "x": 797,
+          "y": 424,
+          "angle": 31.607502246248902
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 186,
+          "x": 809,
+          "y": 433,
+          "angle": 45
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 187,
+          "x": 818,
+          "y": 445,
+          "angle": 53.13010235415598
+        }
+      ]
+    },
+    {
+      "id": "F30",
+      "label": "P",
+      "count": 9,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 176,
+          "x": 694,
+          "y": 450,
+          "angle": -42.70938995736147
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 175,
+          "x": 707,
+          "y": 438,
+          "angle": -36.52885536698516
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 174,
+          "x": 721,
+          "y": 430,
+          "angle": -24.145541960421657
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 173,
+          "x": 736,
+          "y": 425,
+          "angle": -11.309932474020213
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 172,
+          "x": 751,
+          "y": 424,
+          "angle": 3.8140748342903548
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 171,
+          "x": 766,
+          "y": 427,
+          "angle": 19.02560603756868
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 170,
+          "x": 780,
+          "y": 434,
+          "angle": 32.19573393471325
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 169,
+          "x": 793,
+          "y": 444,
+          "angle": 42.397437797500196
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 168,
+          "x": 803,
+          "y": 455,
+          "angle": 47.72631099390627
+        }
+      ]
+    },
+    {
+      "id": "F31",
+      "label": "O",
+      "count": 11,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 157,
+          "x": 618,
+          "y": 450,
+          "angle": 66.80140948635182
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 158,
+          "x": 624,
+          "y": 464,
+          "angle": 59.34933204294713
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 159,
+          "x": 634,
+          "y": 477,
+          "angle": 45
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 160,
+          "x": 647,
+          "y": 487,
+          "angle": 32.19573393471325
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 161,
+          "x": 661,
+          "y": 494,
+          "angle": 20.772254682045833
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 162,
+          "x": 676,
+          "y": 498,
+          "angle": 7.594643368591445
+        },
+        {
+          "sourceLocalNumber": 7,
+          "seatNumber": 163,
+          "x": 691,
+          "y": 498,
+          "angle": -5.710593137499642
+        },
+        {
+          "sourceLocalNumber": 8,
+          "seatNumber": 164,
+          "x": 706,
+          "y": 495,
+          "angle": -15.42216131873867
+        },
+        {
+          "sourceLocalNumber": 9,
+          "seatNumber": 165,
+          "x": 720,
+          "y": 490,
+          "angle": -24.904768808095184
+        },
+        {
+          "sourceLocalNumber": 10,
+          "seatNumber": 166,
+          "x": 734,
+          "y": 482,
+          "angle": -33.690067525979785
+        },
+        {
+          "sourceLocalNumber": 11,
+          "seatNumber": 167,
+          "x": 747,
+          "y": 472,
+          "angle": -37.568592028827496
+        }
+      ]
+    },
+    {
+      "id": "F32",
+      "label": "イ",
+      "count": 6,
+      "directionKnown": true,
+      "tiles": [
+        {
+          "sourceLocalNumber": 1,
+          "seatNumber": 269,
+          "x": 870,
+          "y": 428,
+          "angle": 34.69515353123397
+        },
+        {
+          "sourceLocalNumber": 2,
+          "seatNumber": 270,
+          "x": 883,
+          "y": 437,
+          "angle": 27.407575437818405
+        },
+        {
+          "sourceLocalNumber": 3,
+          "seatNumber": 271,
+          "x": 897,
+          "y": 442,
+          "angle": 15.945395900922856
+        },
+        {
+          "sourceLocalNumber": 4,
+          "seatNumber": 272,
+          "x": 911,
+          "y": 445,
+          "angle": 8.13010235415598
+        },
+        {
+          "sourceLocalNumber": 5,
+          "seatNumber": 273,
+          "x": 925,
+          "y": 446,
+          "angle": 0
+        },
+        {
+          "sourceLocalNumber": 6,
+          "seatNumber": 274,
+          "x": 940,
+          "y": 445,
+          "angle": -3.8140748342903548
+        }
+      ]
+    }
+  ],
+  "name": "Numbered map 1.4 ex.Is-ID",
+  "version": "1.4",
+  "basedOn": "Numbered map 1.4",
+  "fieldVerification": {
+    "source": "user-store-visit",
+    "newlyNumberedTiles": 163,
+    "directions": [
+      "B左25から右40",
+      "D右上75から左回りに右下85",
+      "F左50から右65",
+      "G左86から右92",
+      "J右104から左114",
+      "K左上115から右上120",
+      "K右下121から左下126",
+      "L左127から右137",
+      "M右138から左148",
+      "H左149から右156",
+      "W右188から左192",
+      "V左193から右201",
+      "U右202から左210",
+      "T左211から右215",
+      "S右216から左222",
+      "ア左253から右250",
+      "イ左292から右287",
+      "ウ下301から上293",
+      "Z左269から右274"
+    ]
+  },
+  "islandOrder": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "ア",
+    "イ",
+    "ウ",
+    "エ",
+    "オ",
+    "カ"
+  ],
+  "islandLabelChanges": [
+    {
+      "faceId": "F01",
+      "oldLabel": "A",
+      "newLabel": "A",
+      "startSeat": 1,
+      "endSeat": 24,
+      "count": 24
+    },
+    {
+      "faceId": "F03",
+      "oldLabel": "B",
+      "newLabel": "B",
+      "startSeat": 25,
+      "endSeat": 40,
+      "count": 16
+    },
+    {
+      "faceId": "F04",
+      "oldLabel": "C",
+      "newLabel": "C",
+      "startSeat": 41,
+      "endSeat": 49,
+      "count": 9
+    },
+    {
+      "faceId": "F06",
+      "oldLabel": "F",
+      "newLabel": "D",
+      "startSeat": 50,
+      "endSeat": 65,
+      "count": 16
+    },
+    {
+      "faceId": "F07",
+      "oldLabel": "E",
+      "newLabel": "E",
+      "startSeat": 66,
+      "endSeat": 74,
+      "count": 9
+    },
+    {
+      "faceId": "F05",
+      "oldLabel": "D",
+      "newLabel": "F",
+      "startSeat": 75,
+      "endSeat": 85,
+      "count": 11
+    },
+    {
+      "faceId": "F02",
+      "oldLabel": "G",
+      "newLabel": "G",
+      "startSeat": 86,
+      "endSeat": 92,
+      "count": 7
+    },
+    {
+      "faceId": "F16",
+      "oldLabel": "I",
+      "newLabel": "H",
+      "startSeat": 93,
+      "endSeat": 103,
+      "count": 11
+    },
+    {
+      "faceId": "F17",
+      "oldLabel": "J",
+      "newLabel": "I",
+      "startSeat": 104,
+      "endSeat": 114,
+      "count": 11
+    },
+    {
+      "faceId": "F18",
+      "oldLabel": "K",
+      "newLabel": "J",
+      "startSeat": 115,
+      "endSeat": 120,
+      "count": 6
+    },
+    {
+      "faceId": "F19",
+      "oldLabel": "K",
+      "newLabel": "K",
+      "startSeat": 121,
+      "endSeat": 126,
+      "count": 6
+    },
+    {
+      "faceId": "F20",
+      "oldLabel": "L",
+      "newLabel": "L",
+      "startSeat": 127,
+      "endSeat": 137,
+      "count": 11
+    },
+    {
+      "faceId": "F21",
+      "oldLabel": "M",
+      "newLabel": "M",
+      "startSeat": 138,
+      "endSeat": 148,
+      "count": 11
+    },
+    {
+      "faceId": "F08",
+      "oldLabel": "H",
+      "newLabel": "N",
+      "startSeat": 149,
+      "endSeat": 156,
+      "count": 8
+    },
+    {
+      "faceId": "F31",
+      "oldLabel": "Q",
+      "newLabel": "O",
+      "startSeat": 157,
+      "endSeat": 167,
+      "count": 11
+    },
+    {
+      "faceId": "F30",
+      "oldLabel": "Y",
+      "newLabel": "P",
+      "startSeat": 168,
+      "endSeat": 176,
+      "count": 9
+    },
+    {
+      "faceId": "F29",
+      "oldLabel": "X",
+      "newLabel": "Q",
+      "startSeat": 177,
+      "endSeat": 187,
+      "count": 11
+    },
+    {
+      "faceId": "F25",
+      "oldLabel": "W",
+      "newLabel": "R",
+      "startSeat": 188,
+      "endSeat": 192,
+      "count": 5
+    },
+    {
+      "faceId": "F24",
+      "oldLabel": "V",
+      "newLabel": "S",
+      "startSeat": 193,
+      "endSeat": 201,
+      "count": 9
+    },
+    {
+      "faceId": "F23",
+      "oldLabel": "U",
+      "newLabel": "T",
+      "startSeat": 202,
+      "endSeat": 210,
+      "count": 9
+    },
+    {
+      "faceId": "F22",
+      "oldLabel": "T",
+      "newLabel": "U",
+      "startSeat": 211,
+      "endSeat": 215,
+      "count": 5
+    },
+    {
+      "faceId": "F14",
+      "oldLabel": "S",
+      "newLabel": "V",
+      "startSeat": 216,
+      "endSeat": 222,
+      "count": 7
+    },
+    {
+      "faceId": "F11",
+      "oldLabel": "P",
+      "newLabel": "W",
+      "startSeat": 223,
+      "endSeat": 232,
+      "count": 10
+    },
+    {
+      "faceId": "F10",
+      "oldLabel": "O",
+      "newLabel": "X",
+      "startSeat": 233,
+      "endSeat": 240,
+      "count": 8
+    },
+    {
+      "faceId": "F13",
+      "oldLabel": "R",
+      "newLabel": "Y",
+      "startSeat": 241,
+      "endSeat": 249,
+      "count": 9
+    },
+    {
+      "faceId": "F12",
+      "oldLabel": "ア",
+      "newLabel": "Z",
+      "startSeat": 250,
+      "endSeat": 253,
+      "count": 4
+    },
+    {
+      "faceId": "F09",
+      "oldLabel": "N",
+      "newLabel": "ア",
+      "startSeat": 254,
+      "endSeat": 268,
+      "count": 15
+    },
+    {
+      "faceId": "F32",
+      "oldLabel": "Z",
+      "newLabel": "イ",
+      "startSeat": 269,
+      "endSeat": 274,
+      "count": 6
+    },
+    {
+      "faceId": "F28",
+      "oldLabel": "オ",
+      "newLabel": "ウ",
+      "startSeat": 275,
+      "endSeat": 286,
+      "count": 12
+    },
+    {
+      "faceId": "F15",
+      "oldLabel": "イ",
+      "newLabel": "エ",
+      "startSeat": 287,
+      "endSeat": 292,
+      "count": 6
+    },
+    {
+      "faceId": "F26",
+      "oldLabel": "ウ",
+      "newLabel": "オ",
+      "startSeat": 293,
+      "endSeat": 301,
+      "count": 9
+    },
+    {
+      "faceId": "F27",
+      "oldLabel": "エ",
+      "newLabel": "カ",
+      "startSeat": 302,
+      "endSeat": 310,
+      "count": 9
+    }
+  ],
+  "seatNumbersLocked": true,
+  "lockedSeatNumberBaseline": "../numbered-map-1.2/numbered-map-1.2.json",
+  "historicalAnnotationLabelScheme": "Numbered map 1.0–1.2; fieldVerification.directions and userConfirmedCorrections preserve the historical names.",
+  "islandLabelsLocked": true,
+  "lockedIslandLabelBaseline": "../numbered-map-1.3/numbered-map-1.3.json",
+  "wallGeometry": {
+    "version": "1.4",
+    "source": "numbered-map-1.4-wall-design.json",
+    "sourceSha256": "21C017DEECED6A16D563348442104856690D9974F6B706CC345AA3AFD4BD2630",
+    "method": "Wall-only outward offset and sampled smooth curves; machine coordinates are immutable.",
+    "outline": [
+      [
+        307.0,
+        12.0
+      ],
+      [
+        401.0,
+        12.0
+      ],
+      [
+        401.0,
+        110.0
+      ],
+      [
+        546.0,
+        110.0
+      ],
+      [
+        546.0,
+        91.0
+      ],
+      [
+        625.0,
+        91.0
+      ],
+      [
+        625.0,
+        108.0
+      ],
+      [
+        627.0168118120531,
+        123.06724724821242
+      ],
+      [
+        627.6106712418868,
+        122.85690979396601
+      ],
+      [
+        628.350354772659,
+        122.60072180030757
+      ],
+      [
+        629.2158248255241,
+        122.30364691168607
+      ],
+      [
+        630.1870438216372,
+        121.9706487725505
+      ],
+      [
+        631.243974182153,
+        121.60669102734978
+      ],
+      [
+        632.3665783282264,
+        121.21673732053291
+      ],
+      [
+        633.5348186810119,
+        120.80575129654886
+      ],
+      [
+        634.7286576616647,
+        120.37869659984656
+      ],
+      [
+        635.9280576913394,
+        119.94053687487505
+      ],
+      [
+        637.1129811911908,
+        119.49623576608322
+      ],
+      [
+        638.2633905823739,
+        119.05075691792007
+      ],
+      [
+        639.3592482860437,
+        118.60906397483456
+      ],
+      [
+        640.4141872578294,
+        118.15881003223018
+      ],
+      [
+        641.4587421918723,
+        117.68672308414662
+      ],
+      [
+        642.4982281170938,
+        117.19637912298722
+      ],
+      [
+        643.5379600624158,
+        116.69135414115526
+      ],
+      [
+        644.5832530567599,
+        116.17522413105402
+      ],
+      [
+        645.6394221290475,
+        115.65156508508684
+      ],
+      [
+        646.7117823082001,
+        115.12395299565702
+      ],
+      [
+        647.8056486231396,
+        114.59596385516784
+      ],
+      [
+        648.9263361027874,
+        114.07117365602262
+      ],
+      [
+        650.0791597760651,
+        113.55315839062466
+      ],
+      [
+        651.2694346718947,
+        113.04549405137728
+      ],
+      [
+        652.5024758191972,
+        112.55175663068373
+      ],
+      [
+        653.7833160000412,
+        112.05532891578312
+      ],
+      [
+        655.1093596805551,
+        111.54173523411488
+      ],
+      [
+        656.4744794157522,
+        111.01776388838287
+      ],
+      [
+        657.8725477606446,
+        110.49020318129095
+      ],
+      [
+        659.2974372702456,
+        109.96584141554298
+      ],
+      [
+        660.7430204995677,
+        109.45146689384285
+      ],
+      [
+        662.2031700036237,
+        108.95386791889437
+      ],
+      [
+        663.6717583374262,
+        108.47983279340147
+      ],
+      [
+        665.1426580559881,
+        108.03614982006798
+      ],
+      [
+        666.6097417143224,
+        107.62960730159776
+      ],
+      [
+        668.0668818674412,
+        107.26699354069468
+      ],
+      [
+        669.5079510703578,
+        106.95509684006264
+      ],
+      [
+        670.937409033138,
+        106.68400623492074
+      ],
+      [
+        672.3647782385373,
+        106.44000932654968
+      ],
+      [
+        673.7915254006023,
+        106.22419226674569
+      ],
+      [
+        675.2191172333801,
+        106.0376412073049
+      ],
+      [
+        676.649020450917,
+        105.88144230002355
+      ],
+      [
+        678.0827017672602,
+        105.75668169669777
+      ],
+      [
+        679.5216278964564,
+        105.6644455491238
+      ],
+      [
+        680.9672655525524,
+        105.60582000909781
+      ],
+      [
+        682.4210814495948,
+        105.58189122841598
+      ],
+      [
+        683.8845423016305,
+        105.59374535887449
+      ],
+      [
+        685.3591148227065,
+        105.64246855226955
+      ],
+      [
+        686.8462657268692,
+        105.7291469603973
+      ],
+      [
+        688.3587823566852,
+        105.85336546593003
+      ],
+      [
+        689.9032020602818,
+        106.01367501042694
+      ],
+      [
+        691.4716165600477,
+        106.20961083401468
+      ],
+      [
+        693.0561175783715,
+        106.44070817681994
+      ],
+      [
+        694.648796837642,
+        106.70650227896935
+      ],
+      [
+        696.2417460602475,
+        107.0065283805896
+      ],
+      [
+        697.8270569685768,
+        107.34032172180731
+      ],
+      [
+        699.3968212850185,
+        107.70741754274917
+      ],
+      [
+        700.9431307319614,
+        108.10735108354184
+      ],
+      [
+        702.458077031794,
+        108.53965758431197
+      ],
+      [
+        703.9337519069048,
+        109.00387228518623
+      ],
+      [
+        705.3622470796827,
+        109.49953042629126
+      ],
+      [
+        706.7511904149998,
+        110.0524339439179
+      ],
+      [
+        708.1140632206235,
+        110.67950926284034
+      ],
+      [
+        709.4517373832855,
+        111.36697835591023
+      ],
+      [
+        710.7650847897171,
+        112.10106319597926
+      ],
+      [
+        712.0549773266498,
+        112.86798575589908
+      ],
+      [
+        713.3222868808149,
+        113.65396800852139
+      ],
+      [
+        714.567885338944,
+        114.44523192669783
+      ],
+      [
+        715.7926445877686,
+        115.22799948328012
+      ],
+      [
+        716.9974365140199,
+        115.9884926511199
+      ],
+      [
+        718.1831330044296,
+        116.71293340306886
+      ],
+      [
+        719.3506059457288,
+        117.38754371197867
+      ],
+      [
+        720.5007272246495,
+        117.99854555070104
+      ],
+      [
+        721.6257515122993,
+        118.56076798279412
+      ],
+      [
+        722.7197988138585,
+        119.09867826013861
+      ],
+      [
+        723.7865390171661,
+        119.61295563806983
+      ],
+      [
+        724.8296420100613,
+        120.10427937192323
+      ],
+      [
+        725.8527776803834,
+        120.57332871703412
+      ],
+      [
+        726.8596159159715,
+        121.02078292873787
+      ],
+      [
+        727.8538266046647,
+        121.44732126236985
+      ],
+      [
+        728.8390796343025,
+        121.85362297326547
+      ],
+      [
+        729.8190448927239,
+        122.24036731676004
+      ],
+      [
+        730.7973922677679,
+        122.60823354818896
+      ],
+      [
+        731.7777916472741,
+        122.95790092288757
+      ],
+      [
+        732.7639129190813,
+        123.29004869619125
+      ],
+      [
+        733.7485966666976,
+        123.60243757154828
+      ],
+      [
+        734.7232833838032,
+        123.8929015362417
+      ],
+      [
+        735.6895428234961,
+        124.16222977135902
+      ],
+      [
+        736.6489447388747,
+        124.4112114579878
+      ],
+      [
+        737.603058883037,
+        124.64063577721554
+      ],
+      [
+        738.5534550090808,
+        124.85129191012976
+      ],
+      [
+        739.5017028701044,
+        125.04396903781804
+      ],
+      [
+        740.4493722192059,
+        125.21945634136787
+      ],
+      [
+        741.3980328094832,
+        125.3785430018668
+      ],
+      [
+        742.3492543940346,
+        125.52201820040234
+      ],
+      [
+        743.3046067259581,
+        125.65067111806204
+      ],
+      [
+        744.2656595583517,
+        125.76529093593342
+      ],
+      [
+        745.2333730111651,
+        125.87064443902317
+      ],
+      [
+        746.2066456118955,
+        125.96890411114912
+      ],
+      [
+        747.1839547249625,
+        126.0569676816156
+      ],
+      [
+        748.1637777147857,
+        126.13173287972688
+      ],
+      [
+        749.1445919457851,
+        126.19009743478723
+      ],
+      [
+        750.12487478238,
+        126.22895907610099
+      ],
+      [
+        751.1031035889899,
+        126.2452155329724
+      ],
+      [
+        752.0777557300349,
+        126.23576453470577
+      ],
+      [
+        753.0473085699343,
+        126.19750381060538
+      ],
+      [
+        754.0102394731078,
+        126.12733108997551
+      ],
+      [
+        754.9650258039751,
+        126.02214410212045
+      ],
+      [
+        755.9101449269559,
+        125.87884057634452
+      ],
+      [
+        756.838138872803,
+        125.69893763470826
+      ],
+      [
+        757.7459227180832,
+        125.48678501382737
+      ],
+      [
+        758.638533395937,
+        125.24352936483882
+      ],
+      [
+        759.5210078395049,
+        124.97031733887954
+      ],
+      [
+        760.3983829819273,
+        124.6682955870865
+      ],
+      [
+        761.2756957563446,
+        124.33861076059667
+      ],
+      [
+        762.1579830958973,
+        123.98240951054699
+      ],
+      [
+        763.0502819337258,
+        123.60083848807442
+      ],
+      [
+        763.9576292029708,
+        123.1950443443159
+      ],
+      [
+        764.8850618367725,
+        122.76617373040841
+      ],
+      [
+        765.8376167682713,
+        122.31537329748889
+      ],
+      [
+        766.8203309306081,
+        121.84378969669429
+      ],
+      [
+        767.8758480050165,
+        121.31503759663164
+      ],
+      [
+        769.0258100434012,
+        120.70471180335595
+      ],
+      [
+        770.2437515349093,
+        120.03192917417628
+      ],
+      [
+        771.5032069686868,
+        119.31580656640165
+      ],
+      [
+        772.7777108338807,
+        118.57546083734107
+      ],
+      [
+        774.0407976196377,
+        117.83000884430358
+      ],
+      [
+        775.2660018151041,
+        117.09856744459822
+      ],
+      [
+        776.4268579094268,
+        116.400253495534
+      ],
+      [
+        777.496900391752,
+        115.75418385441996
+      ],
+      [
+        778.4496637512268,
+        115.17947537856512
+      ],
+      [
+        779.2586824769975,
+        114.69524492527852
+      ],
+      [
+        779.8974910582109,
+        114.32060935186915
+      ],
+      [
+        833.0,
+        108.0
+      ],
+      [
+        834.9450895700339,
+        126.61034868995989
+      ],
+      [
+        835.6345799860732,
+        127.17982473653885
+      ],
+      [
+        836.5083076493736,
+        127.87400102222931
+      ],
+      [
+        837.5375149170397,
+        128.67923176357965
+      ],
+      [
+        838.6934441461756,
+        129.5818711771382
+      ],
+      [
+        839.9473376938852,
+        130.56827347945327
+      ],
+      [
+        841.270437917273,
+        131.62479288707328
+      ],
+      [
+        842.6339871734427,
+        132.73778361654647
+      ],
+      [
+        844.009227819499,
+        133.8935998844213
+      ],
+      [
+        845.3674022125458,
+        135.078595907246
+      ],
+      [
+        846.6797527096871,
+        136.27912590156902
+      ],
+      [
+        847.9175216680272,
+        137.48154408393862
+      ],
+      [
+        849.0519514446705,
+        138.67220467090314
+      ],
+      [
+        850.1217626187763,
+        139.87763192913008
+      ],
+      [
+        851.1829675329692,
+        141.12959124662774
+      ],
+      [
+        852.2327461895503,
+        142.42229852195592
+      ],
+      [
+        853.2682785908206,
+        143.74996965367424
+      ],
+      [
+        854.2867447390815,
+        145.1068205403425
+      ],
+      [
+        855.285324636634,
+        146.48706708052043
+      ],
+      [
+        856.2611982857793,
+        147.88492517276774
+      ],
+      [
+        857.2115456888187,
+        149.29461071564413
+      ],
+      [
+        858.133546848053,
+        150.7103396077093
+      ],
+      [
+        859.0243817657836,
+        152.12632774752308
+      ],
+      [
+        859.8812304443114,
+        153.5367910336451
+      ],
+      [
+        860.7012728859379,
+        154.93594536463516
+      ],
+      [
+        861.4988933112074,
+        156.38784397396205
+      ],
+      [
+        862.2863216761377,
+        157.93955793904087
+      ],
+      [
+        863.0575065862406,
+        159.55982992435057
+      ],
+      [
+        863.806396647027,
+        161.21740259437013
+      ],
+      [
+        864.5269404640086,
+        162.88101861357845
+      ],
+      [
+        865.2130866426967,
+        164.51942064645465
+      ],
+      [
+        865.8587837886023,
+        166.10135135747757
+      ],
+      [
+        866.4579805072374,
+        167.5955534111262
+      ],
+      [
+        867.004625404113,
+        168.97076947187958
+      ],
+      [
+        867.4926670847404,
+        170.1957422042166
+      ],
+      [
+        867.9160541546313,
+        171.2392142726163
+      ],
+      [
+        868.2687352192969,
+        172.06992834155758
+      ],
+      [
+        866.8897689349246,
+        186.05709563611808
+      ],
+      [
+        867.6033271283661,
+        185.63950052147732
+      ],
+      [
+        868.4876337944032,
+        185.10443273056444
+      ],
+      [
+        869.5202564682187,
+        184.47147588306598
+      ],
+      [
+        870.6787626849963,
+        183.76021359866843
+      ],
+      [
+        871.9407199799191,
+        182.99022949705824
+      ],
+      [
+        873.2836958881707,
+        182.18110719792185
+      ],
+      [
+        874.6852579449338,
+        181.35243032094567
+      ],
+      [
+        876.1229736853923,
+        180.52378248581635
+      ],
+      [
+        877.574410644729,
+        179.71474731222023
+      ],
+      [
+        879.0171363581275,
+        178.94490841984378
+      ],
+      [
+        880.428718360771,
+        178.23384942837356
+      ],
+      [
+        881.786724187843,
+        177.601153957496
+      ],
+      [
+        883.1243061876575,
+        177.02218926647552
+      ],
+      [
+        884.4870330889414,
+        176.45991602609521
+      ],
+      [
+        885.8710969974985,
+        175.91530797331941
+      ],
+      [
+        887.2726900191309,
+        175.38933884511255
+      ],
+      [
+        888.6880042596417,
+        174.88298237843887
+      ],
+      [
+        890.113231824834,
+        174.3972123102628
+      ],
+      [
+        891.5445648205101,
+        173.9330023775487
+      ],
+      [
+        892.9781953524734,
+        173.49132631726084
+      ],
+      [
+        894.4103155265267,
+        173.0731578663637
+      ],
+      [
+        895.8371174484724,
+        172.67947076182153
+      ],
+      [
+        897.254793224114,
+        172.3112387405987
+      ],
+      [
+        898.6595349592538,
+        171.96943553965954
+      ],
+      [
+        900.0581808859919,
+        171.65662135522174
+      ],
+      [
+        901.4592366729705,
+        171.37336314455348
+      ],
+      [
+        902.8613955808057,
+        171.11764478619511
+      ],
+      [
+        904.2633508701144,
+        170.88745015868707
+      ],
+      [
+        905.663795801513,
+        170.68076314056967
+      ],
+      [
+        907.061423635618,
+        170.4955676103833
+      ],
+      [
+        908.4549276330458,
+        170.32984744666823
+      ],
+      [
+        909.843001054413,
+        170.181586527965
+      ],
+      [
+        911.224337160336,
+        170.0487687328139
+      ],
+      [
+        912.5976292114314,
+        169.92937793975523
+      ],
+      [
+        913.9615704683156,
+        169.82139802732945
+      ],
+      [
+        915.3148541916051,
+        169.72281287407694
+      ],
+      [
+        916.6580977046285,
+        169.64298010957427
+      ],
+      [
+        917.9931193833767,
+        169.59005399423538
+      ],
+      [
+        919.3204140674601,
+        169.5602133528563
+      ],
+      [
+        920.640476596489,
+        169.5496370102332
+      ],
+      [
+        921.9538018100736,
+        169.55450379116223
+      ],
+      [
+        923.2608845478246,
+        169.57099252043957
+      ],
+      [
+        924.5622196493521,
+        169.59528202286123
+      ],
+      [
+        925.8583019542665,
+        169.62355112322342
+      ],
+      [
+        927.1496263021783,
+        169.6519786463223
+      ],
+      [
+        928.4366875326974,
+        169.6767434169539
+      ],
+      [
+        929.7199804854347,
+        169.69402425991444
+      ],
+      [
+        931.0,
+        169.7
+      ],
+      [
+        932.3217310887777,
+        169.69920128536938
+      ],
+      [
+        933.7132607528006,
+        169.69867981052795
+      ],
+      [
+        935.1497368146528,
+        169.69839596979145
+      ],
+      [
+        936.6063070969182,
+        169.69831015747576
+      ],
+      [
+        938.0581194221808,
+        169.6983827678967
+      ],
+      [
+        939.4803216130247,
+        169.69857419537018
+      ],
+      [
+        940.8480614920339,
+        169.6988448342119
+      ],
+      [
+        942.1364868817925,
+        169.69915507873787
+      ],
+      [
+        943.3207456048842,
+        169.69946532326378
+      ],
+      [
+        944.3759854838935,
+        169.69973596210556
+      ],
+      [
+        945.2773543414041,
+        169.69992738957896
+      ],
+      [
+        946.0,
+        169.7
+      ],
+      [
+        972.0,
+        172.0
+      ],
+      [
+        972.0,
+        208.0
+      ],
+      [
+        961.0,
+        210.0
+      ],
+      [
+        958.8267445559821,
+        233.37906987313775
+      ],
+      [
+        958.6365602234728,
+        234.02108051291663
+      ],
+      [
+        958.3894430283345,
+        234.83044529346077
+      ],
+      [
+        958.0955748162982,
+        235.78193074636286
+      ],
+      [
+        957.7651374330947,
+        236.85030340321563
+      ],
+      [
+        957.4083127244548,
+        238.01032979561182
+      ],
+      [
+        957.0352825361095,
+        239.23677645514417
+      ],
+      [
+        956.6562287137897,
+        240.5044099134054
+      ],
+      [
+        956.2813331032261,
+        241.78799670198816
+      ],
+      [
+        955.9207775501499,
+        243.06230335248532
+      ],
+      [
+        955.5847439002915,
+        244.30209639648945
+      ],
+      [
+        955.2834139993821,
+        245.48214236559335
+      ],
+      [
+        955.0269696931522,
+        246.57720779138975
+      ],
+      [
+        954.8022442293482,
+        247.61527292099873
+      ],
+      [
+        954.5897512975564,
+        248.64167078630462
+      ],
+      [
+        954.3901934062684,
+        249.65719709604664
+      ],
+      [
+        954.2042730639761,
+        250.6626475589638
+      ],
+      [
+        954.0326927791708,
+        251.6588178837953
+      ],
+      [
+        953.8761550603443,
+        252.64650377928024
+      ],
+      [
+        953.7353624159883,
+        253.6265009541577
+      ],
+      [
+        953.6110173545945,
+        254.59960511716687
+      ],
+      [
+        953.5038223846545,
+        255.5666119770468
+      ],
+      [
+        953.4144800146602,
+        256.5283172425366
+      ],
+      [
+        953.343692753103,
+        257.4855166223756
+      ],
+      [
+        953.2921631084748,
+        258.4390058253027
+      ],
+      [
+        953.2539936790291,
+        259.37801393329784
+      ],
+      [
+        953.2246651998454,
+        260.2948186799058
+      ],
+      [
+        953.2069473846548,
+        261.19478875121246
+      ],
+      [
+        953.2036099471873,
+        262.083292833304
+      ],
+      [
+        953.2174226011737,
+        262.9656996122662
+      ],
+      [
+        953.2511550603444,
+        263.84737777418525
+      ],
+      [
+        953.3075770384302,
+        264.7336960051472
+      ],
+      [
+        953.3894582491613,
+        265.6300229912379
+      ],
+      [
+        953.4995684062686,
+        266.54172741854364
+      ],
+      [
+        953.6406772234826,
+        267.4741779731502
+      ],
+      [
+        953.8155544145336,
+        268.4327433411437
+      ],
+      [
+        954.0269696931522,
+        269.42279220861025
+      ],
+      [
+        954.2889516232327,
+        270.43459101042964
+      ],
+      [
+        954.6074059668199,
+        271.45608891124994
+      ],
+      [
+        954.9729182348699,
+        272.4891786918092
+      ],
+      [
+        955.3760739383395,
+        273.5357531328453
+      ],
+      [
+        955.8074585881851,
+        274.5977050150962
+      ],
+      [
+        956.2576576953634,
+        275.6769271193001
+      ],
+      [
+        956.7172567708308,
+        276.77531222619484
+      ],
+      [
+        957.1768413255438,
+        277.8947531165186
+      ],
+      [
+        957.6269968704589,
+        279.03714257100916
+      ],
+      [
+        958.0583089165326,
+        280.2043733704046
+      ],
+      [
+        958.4613629747216,
+        281.39833829544295
+      ],
+      [
+        958.8267445559821,
+        282.6209301268623
+      ],
+      [
+        959.1760234333865,
+        283.8774323903793
+      ],
+      [
+        959.5331961778461,
+        285.16914247791783
+      ],
+      [
+        959.8924884970767,
+        286.49197396952627
+      ],
+      [
+        960.2481260987938,
+        287.84184044525324
+      ],
+      [
+        960.594334690713,
+        289.21465548514703
+      ],
+      [
+        960.92533998055,
+        290.6063326692562
+      ],
+      [
+        961.2353676760202,
+        292.0127855776292
+      ],
+      [
+        961.5186434848393,
+        293.42992779031465
+      ],
+      [
+        961.7693931147232,
+        294.8536728873608
+      ],
+      [
+        961.9818422733873,
+        296.2799344488162
+      ],
+      [
+        962.1502166685472,
+        297.7046260547294
+      ],
+      [
+        962.268742007918,
+        299.1236612851487
+      ],
+      [
+        962.3418463760212,
+        300.55327391980273
+      ],
+      [
+        962.3786468727709,
+        302.0082524584658
+      ],
+      [
+        962.380402728973,
+        303.482342561255
+      ],
+      [
+        962.3483731754334,
+        304.96928988828773
+      ],
+      [
+        962.2838174429585,
+        306.4628400996812
+      ],
+      [
+        962.1879947623543,
+        307.9567388555529
+      ],
+      [
+        962.0621643644266,
+        309.4447318160199
+      ],
+      [
+        961.9075854799819,
+        310.92056464119946
+      ],
+      [
+        961.7255173398258,
+        312.377982991209
+      ],
+      [
+        961.517219174765,
+        313.8107325261657
+      ],
+      [
+        961.283950215605,
+        315.21255890618687
+      ],
+      [
+        961.0269696931522,
+        316.57720779138975
+      ],
+      [
+        960.7237994106075,
+        317.9140540357612
+      ],
+      [
+        960.3587613545835,
+        319.23588637171
+      ],
+      [
+        959.9433150310027,
+        320.54157127698716
+      ],
+      [
+        959.4889199457882,
+        321.8299752293435
+      ],
+      [
+        959.0070356048625,
+        323.09996470652976
+      ],
+      [
+        958.5091215141482,
+        324.3504061862967
+      ],
+      [
+        958.0066371795685,
+        325.5801661463951
+      ],
+      [
+        957.5110421070459,
+        326.78811106457584
+      ],
+      [
+        957.0337958025032,
+        327.9731074185897
+      ],
+      [
+        956.5863577718632,
+        329.13402168618734
+      ],
+      [
+        956.1801875210485,
+        330.26972034511977
+      ],
+      [
+        955.8267445559821,
+        331.3790698731377
+      ],
+      [
+        955.510038624397,
+        332.4532345725239
+      ],
+      [
+        955.2073928320258,
+        333.48782829627584
+      ],
+      [
+        954.9202367217904,
+        334.4883918482158
+      ],
+      [
+        954.649999836613,
+        335.46046603216644
+      ],
+      [
+        954.3981117194154,
+        336.40959165195005
+      ],
+      [
+        954.16600191312,
+        337.3413095113894
+      ],
+      [
+        953.9550999606482,
+        338.2611604143067
+      ],
+      [
+        953.7668354049224,
+        339.1746851645246
+      ],
+      [
+        953.6026377888645,
+        340.0874245658655
+      ],
+      [
+        953.4639366553967,
+        341.00491942215194
+      ],
+      [
+        953.3521615474405,
+        341.9327105372064
+      ],
+      [
+        953.268742007918,
+        342.8763387148513
+      ],
+      [
+        953.2182684898481,
+        343.82828470046263
+      ],
+      [
+        953.2021026892362,
+        344.77771900056416
+      ],
+      [
+        953.2168310134856,
+        345.7252170607003
+      ],
+      [
+        953.2590398699995,
+        346.6713543264151
+      ],
+      [
+        953.3253156661815,
+        347.616706243253
+      ],
+      [
+        953.4122448094346,
+        348.56184825675814
+      ],
+      [
+        953.5164137071622,
+        349.5073558124749
+      ],
+      [
+        953.6344087667676,
+        350.45380435594745
+      ],
+      [
+        953.7628163956539,
+        351.40176933272005
+      ],
+      [
+        953.8982230012247,
+        352.35182618833704
+      ],
+      [
+        954.037214990883,
+        353.3045503683426
+      ],
+      [
+        954.1763787720323,
+        354.2605173182811
+      ],
+      [
+        954.3117028605677,
+        355.2164606937818
+      ],
+      [
+        954.4443584130735,
+        356.169674153288
+      ],
+      [
+        954.5787057979868,
+        357.1215731465644
+      ],
+      [
+        954.7191053837441,
+        358.07357312337604
+      ],
+      [
+        954.8699175387826,
+        359.02708953348775
+      ],
+      [
+        955.0355026315389,
+        359.98353782666453
+      ],
+      [
+        955.2202210304499,
+        360.94433345267106
+      ],
+      [
+        955.4284331039526,
+        361.9108918612724
+      ],
+      [
+        955.6644992204837,
+        362.8846285022333
+      ],
+      [
+        955.9327797484801,
+        363.86695882531876
+      ],
+      [
+        956.2376350563787,
+        364.85929828029356
+      ],
+      [
+        956.5834255126165,
+        365.86306231692265
+      ],
+      [
+        956.9982582112103,
+        366.9201090201738
+      ],
+      [
+        957.4952627191491,
+        368.0555312261918
+      ],
+      [
+        958.0563331143275,
+        369.24559651150787
+      ],
+      [
+        958.6633634746397,
+        370.4665724526525
+      ],
+      [
+        959.2982478779805,
+        371.69472662615686
+      ],
+      [
+        959.9428804022443,
+        372.9063266085517
+      ],
+      [
+        960.5791551253254,
+        374.07763997636795
+      ],
+      [
+        961.1889661251183,
+        375.1849343061364
+      ],
+      [
+        961.7542074795178,
+        376.2044771743881
+      ],
+      [
+        962.256773266418,
+        377.1125361576537
+      ],
+      [
+        962.6785575637136,
+        377.8853788324643
+      ],
+      [
+        963.001454449299,
+        378.4992727753505
+      ],
+      [
+        972.0,
+        409.0
+      ],
+      [
+        972.0,
+        456.0
+      ],
+      [
+        940.8181838294424,
+        457.27275744163626
+      ],
+      [
+        940.0535708629661,
+        457.3292415298586
+      ],
+      [
+        939.0963131217517,
+        457.40941188417037
+      ],
+      [
+        937.9740093644398,
+        457.5077509588344
+      ],
+      [
+        936.7142583496714,
+        457.6187412081132
+      ],
+      [
+        935.3446588360873,
+        457.7368650862696
+      ],
+      [
+        933.8928095823287,
+        457.8566050475661
+      ],
+      [
+        932.3863093470362,
+        457.97244354626554
+      ],
+      [
+        930.852756888851,
+        458.0788630366306
+      ],
+      [
+        929.319750966414,
+        458.1703459729238
+      ],
+      [
+        927.8148903383658,
+        458.241374809408
+      ],
+      [
+        926.3657737633476,
+        458.2864320003458
+      ],
+      [
+        925.0,
+        458.3
+      ],
+      [
+        923.6853030377306,
+        458.28875513523155
+      ],
+      [
+        922.3710422240085,
+        458.2629651184839
+      ],
+      [
+        921.0572543545671,
+        458.2224994823927
+      ],
+      [
+        919.74397622514,
+        458.16722775959397
+      ],
+      [
+        918.4312446314611,
+        458.09701948272345
+      ],
+      [
+        917.1190963692642,
+        458.0117441844171
+      ],
+      [
+        915.8075682342823,
+        457.9112713973106
+      ],
+      [
+        914.4966970222495,
+        457.79547065404
+      ],
+      [
+        913.1865195288993,
+        457.664211487241
+      ],
+      [
+        911.8770725499655,
+        457.51736342954956
+      ],
+      [
+        910.5683928811815,
+        457.3547960136014
+      ],
+      [
+        909.2605173182811,
+        457.17637877203236
+      ],
+      [
+        907.9557682497585,
+        456.9833197277528
+      ],
+      [
+        906.6555834184004,
+        456.7765299506481
+      ],
+      [
+        905.3586726513797,
+        456.55543354381723
+      ],
+      [
+        904.0637457758689,
+        456.3194546103592
+      ],
+      [
+        902.7695126190408,
+        456.0680172533727
+      ],
+      [
+        901.4746830080679,
+        455.8005455759568
+      ],
+      [
+        900.177966770123,
+        455.5164636812104
+      ],
+      [
+        898.8780737323788,
+        455.21519567223237
+      ],
+      [
+        897.573713722008,
+        454.8961656521216
+      ],
+      [
+        896.2635965661832,
+        454.558797723977
+      ],
+      [
+        894.946432092077,
+        454.20251599089767
+      ],
+      [
+        893.6209301268623,
+        453.82674455598215
+      ],
+      [
+        892.2803627614642,
+        453.4364245573198
+      ],
+      [
+        890.9218560604648,
+        453.03532860667764
+      ],
+      [
+        889.5499008115228,
+        452.62112801767114
+      ],
+      [
+        888.1689878022959,
+        452.1914941039162
+      ],
+      [
+        886.7836078204423,
+        451.74409817902864
+      ],
+      [
+        885.3982516536202,
+        451.27661155662406
+      ],
+      [
+        884.0174100894875,
+        450.78670555031823
+      ],
+      [
+        882.6455739157028,
+        450.272051473727
+      ],
+      [
+        881.2872339199237,
+        449.73032064046595
+      ],
+      [
+        879.9468808898088,
+        449.1591843641509
+      ],
+      [
+        878.6290056130158,
+        448.5563139583976
+      ],
+      [
+        877.3380988772035,
+        447.91938073682184
+      ],
+      [
+        876.0294667854783,
+        447.2074787666576
+      ],
+      [
+        874.6697687260092,
+        446.3971173849274
+      ],
+      [
+        873.2805254140461,
+        445.5120908099302
+      ],
+      [
+        871.8832575648388,
+        444.5761932599645
+      ],
+      [
+        870.4994858936374,
+        443.61321895332907
+      ],
+      [
+        869.1507311156918,
+        442.6469621083226
+      ],
+      [
+        867.8585139462518,
+        441.70121694324376
+      ],
+      [
+        866.6443551005677,
+        440.7997776763913
+      ],
+      [
+        865.5297752938893,
+        439.96643852606377
+      ],
+      [
+        864.5362952414665,
+        439.22499371056
+      ],
+      [
+        863.6854356585493,
+        438.5992374481786
+      ],
+      [
+        862.9987172603873,
+        438.1129639572185
+      ],
+      [
+        825.0,
+        478.0
+      ],
+      [
+        754.4994423584512,
+        481.7492750659866
+      ],
+      [
+        753.8448226960084,
+        482.26090065746956
+      ],
+      [
+        753.0342362463844,
+        482.90808781231163
+      ],
+      [
+        752.0880130730264,
+        483.6699200453986
+      ],
+      [
+        751.0264832393821,
+        484.52548087161625
+      ],
+      [
+        749.8699768088981,
+        485.4538538058503
+      ],
+      [
+        748.638823845022,
+        486.43412236298656
+      ],
+      [
+        747.3533544112007,
+        487.44537005791096
+      ],
+      [
+        746.0338985708815,
+        488.46668040550907
+      ],
+      [
+        744.7007863875118,
+        489.47713692066685
+      ],
+      [
+        743.3743479245385,
+        490.4558231182699
+      ],
+      [
+        742.0749132454089,
+        491.38182251320416
+      ],
+      [
+        740.8228124135703,
+        492.2342186203555
+      ],
+      [
+        739.5889132317772,
+        493.0426916532654
+      ],
+      [
+        738.3324987780214,
+        493.84894700431266
+      ],
+      [
+        737.0565220286076,
+        494.6501059566378
+      ],
+      [
+        735.763935959839,
+        495.44328979338184
+      ],
+      [
+        734.45769354802,
+        496.22561979768534
+      ],
+      [
+        733.1407477694538,
+        496.99421725268934
+      ],
+      [
+        731.8160516004449,
+        497.7462034415345
+      ],
+      [
+        730.4865580172969,
+        498.47869964736157
+      ],
+      [
+        729.1552199963137,
+        499.1888271533115
+      ],
+      [
+        727.8249905137993,
+        499.8737072425249
+      ],
+      [
+        726.4988225460573,
+        500.53046119814275
+      ],
+      [
+        725.1796690693919,
+        501.1562103033057
+      ],
+      [
+        723.8668626023093,
+        501.7514419778882
+      ],
+      [
+        722.5567569551637,
+        502.31960681656545
+      ],
+      [
+        721.247837042031,
+        502.8622708646804
+      ],
+      [
+        719.9385877769874,
+        503.3810001675755
+      ],
+      [
+        718.6274940741087,
+        503.8773607705934
+      ],
+      [
+        717.3130408474705,
+        504.35291871907657
+      ],
+      [
+        715.9937130111489,
+        504.8092400583678
+      ],
+      [
+        714.66799547922,
+        505.2478908338096
+      ],
+      [
+        713.3343731657594,
+        505.67043709074454
+      ],
+      [
+        711.9913309848432,
+        506.0784448745153
+      ],
+      [
+        710.6373538505474,
+        506.47348023046453
+      ],
+      [
+        709.2709266769475,
+        506.8571092039347
+      ],
+      [
+        707.8927482246772,
+        507.2310366199633
+      ],
+      [
+        706.5049159806023,
+        507.59463895410914
+      ],
+      [
+        705.1080129481469,
+        507.9459897274978
+      ],
+      [
+        703.7026221307356,
+        508.28316246125434
+      ],
+      [
+        702.2893265317925,
+        508.604230676504
+      ],
+      [
+        700.8687091547426,
+        508.9072678943722
+      ],
+      [
+        699.4413530030097,
+        509.1903476359841
+      ],
+      [
+        698.0078410800186,
+        509.4515434224649
+      ],
+      [
+        696.5687563891935,
+        509.68892877493994
+      ],
+      [
+        695.124681933959,
+        509.90057721453445
+      ],
+      [
+        693.6762007177391,
+        510.0845622623736
+      ],
+      [
+        692.2238957439583,
+        510.23895743958286
+      ],
+      [
+        690.7641733864539,
+        510.36988091981254
+      ],
+      [
+        689.2941107884769,
+        510.4833276996128
+      ],
+      [
+        687.8152971075737,
+        510.57718653445824
+      ],
+      [
+        686.3293215012902,
+        510.64934617982334
+      ],
+      [
+        684.837773127173,
+        510.6976953911826
+      ],
+      [
+        683.3422411427678,
+        510.72012292401064
+      ],
+      [
+        681.8443147056211,
+        510.71451753378193
+      ],
+      [
+        680.3455829732791,
+        510.67876797597097
+      ],
+      [
+        678.8476351032876,
+        510.6107630060525
+      ],
+      [
+        677.3520602531933,
+        510.5083913795009
+      ],
+      [
+        675.8604475805422,
+        510.36954185179064
+      ],
+      [
+        674.3743862428805,
+        510.1921031783964
+      ],
+      [
+        672.8874630763485,
+        509.9745770542091
+      ],
+      [
+        671.393863350258,
+        509.71831318818715
+      ],
+      [
+        669.896073871912,
+        509.42547235690625
+      ],
+      [
+        668.3965814486137,
+        509.09821533694196
+      ],
+      [
+        666.8978728876662,
+        508.73870290487014
+      ],
+      [
+        665.4024349963726,
+        508.34909583726625
+      ],
+      [
+        663.9127545820361,
+        507.93155491070604
+      ],
+      [
+        662.4313184519597,
+        507.4882409017652
+      ],
+      [
+        660.9606134134465,
+        507.02131458701945
+      ],
+      [
+        659.5031262737996,
+        506.5329367430443
+      ],
+      [
+        658.0613438403223,
+        506.0252681464155
+      ],
+      [
+        656.6377529203173,
+        505.50046957370876
+      ],
+      [
+        655.2310364526114,
+        504.95671803597
+      ],
+      [
+        653.8376434266726,
+        504.39049623850946
+      ],
+      [
+        652.4567097257659,
+        503.8014234992995
+      ],
+      [
+        651.087371233157,
+        503.18911913631223
+      ],
+      [
+        649.7287638321116,
+        502.55320246752007
+      ],
+      [
+        648.3800234058947,
+        501.89329281089516
+      ],
+      [
+        647.040285837772,
+        501.20900948440976
+      ],
+      [
+        645.7086870110087,
+        500.4999718060361
+      ],
+      [
+        644.3843628088705,
+        499.7657990937464
+      ],
+      [
+        643.0664491146229,
+        499.006110665513
+      ],
+      [
+        641.754081811531,
+        498.22052583930804
+      ],
+      [
+        640.4463967828605,
+        497.4086639331039
+      ],
+      [
+        639.1373613633856,
+        496.5712751044612
+      ],
+      [
+        637.8240792571278,
+        495.7092520158581
+      ],
+      [
+        636.5103909012228,
+        494.8224277426427
+      ],
+      [
+        635.2001367328068,
+        493.91063536016316
+      ],
+      [
+        633.8971571890158,
+        492.9737079437676
+      ],
+      [
+        632.605292706986,
+        492.01147856880414
+      ],
+      [
+        631.3283837238532,
+        491.023780310621
+      ],
+      [
+        630.0702706767534,
+        490.01044624456625
+      ],
+      [
+        628.8347940028226,
+        488.97130944598814
+      ],
+      [
+        627.6257941391972,
+        487.90620299023465
+      ],
+      [
+        626.4471115230126,
+        486.81495995265414
+      ],
+      [
+        625.3025865914054,
+        485.6974134085945
+      ],
+      [
+        624.1816893541038,
+        484.54192713412726
+      ],
+      [
+        623.0735293404234,
+        483.3412783590998
+      ],
+      [
+        621.9814062668798,
+        482.1019203395243
+      ],
+      [
+        620.9086198499893,
+        480.8303063314131
+      ],
+      [
+        619.858469806268,
+        479.53288959077855
+      ],
+      [
+        618.8342558522318,
+        478.2161233736328
+      ],
+      [
+        617.8392777043967,
+        476.88646093598817
+      ],
+      [
+        616.8768350792787,
+        475.55035553385693
+      ],
+      [
+        615.9502276933939,
+        474.21426042325135
+      ],
+      [
+        615.0627552632585,
+        472.8846288601837
+      ],
+      [
+        614.2177175053884,
+        471.56791410066626
+      ],
+      [
+        613.4184141362997,
+        470.27056940071134
+      ],
+      [
+        612.6560186756369,
+        468.9359737508354
+      ],
+      [
+        611.9213145815202,
+        467.5210556838992
+      ],
+      [
+        611.2170164781785,
+        466.05259276943144
+      ],
+      [
+        610.5458389898408,
+        464.5573625769607
+      ],
+      [
+        609.9104967407366,
+        463.06214267601564
+      ],
+      [
+        609.3137043550947,
+        461.5937106361248
+      ],
+      [
+        608.7581764571439,
+        460.178844026817
+      ],
+      [
+        608.2466276711136,
+        458.84432041762074
+      ],
+      [
+        607.7817726212329,
+        457.6169173780646
+      ],
+      [
+        607.3663259317306,
+        456.5234124776773
+      ],
+      [
+        607.0030022268357,
+        455.59058328598746
+      ],
+      [
+        606.6945161307779,
+        454.84520737252376
+      ],
+      [
+        523.0,
+        448.0
+      ],
+      [
+        504.4463983356713,
+        426.4753972954659
+      ],
+      [
+        503.8064374992768,
+        426.8724928425625
+      ],
+      [
+        503.0092807037832,
+        427.3720700842953
+      ],
+      [
+        502.07654000000656,
+        427.95890059794505
+      ],
+      [
+        501.0298274387627,
+        428.6177559607927
+      ],
+      [
+        499.8907550708679,
+        429.333407750119
+      ],
+      [
+        498.68093494713804,
+        430.09062754320485
+      ],
+      [
+        497.4219791183893,
+        430.8741869173311
+      ],
+      [
+        496.13549963543755,
+        431.66885744977856
+      ],
+      [
+        494.84310854909893,
+        432.45941071782806
+      ],
+      [
+        493.5664179101894,
+        433.2306182987606
+      ],
+      [
+        492.3270397695251,
+        433.9672517698569
+      ],
+      [
+        491.1465861779218,
+        434.65408270839777
+      ],
+      [
+        490.0021418167616,
+        435.31325623811546
+      ],
+      [
+        488.8555474278516,
+        435.9754775352602
+      ],
+      [
+        487.70554915264614,
+        436.63835825589064
+      ],
+      [
+        486.55089313259947,
+        437.2995100560648
+      ],
+      [
+        485.3903255091659,
+        437.956544591841
+      ],
+      [
+        484.2225924237997,
+        438.60707351927755
+      ],
+      [
+        483.0464400179552,
+        439.2487084944329
+      ],
+      [
+        481.8606144330866,
+        439.8790611733651
+      ],
+      [
+        480.6638618106483,
+        440.4957432121325
+      ],
+      [
+        479.4549282920945,
+        441.09636626679344
+      ],
+      [
+        478.23256001887955,
+        441.67854199340627
+      ],
+      [
+        476.99550313245743,
+        442.2398820480292
+      ],
+      [
+        475.7429676857074,
+        442.78419492890396
+      ],
+      [
+        474.47581883069284,
+        443.31650969193913
+      ],
+      [
+        473.1952853576453,
+        443.8362688296928
+      ],
+      [
+        471.9025960567965,
+        444.3429148347235
+      ],
+      [
+        470.5989797183778,
+        444.83589019958947
+      ],
+      [
+        469.28566513262103,
+        445.3146374168489
+      ],
+      [
+        467.9638810897577,
+        445.7785989790602
+      ],
+      [
+        466.6348563800193,
+        446.2272173787817
+      ],
+      [
+        465.2998197936375,
+        446.6599351085715
+      ],
+      [
+        463.96000012084386,
+        447.0761946609881
+      ],
+      [
+        462.6166261518699,
+        447.4754385285898
+      ],
+      [
+        461.2709266769475,
+        447.8571092039347
+      ],
+      [
+        459.91446820229186,
+        448.22163361221135
+      ],
+      [
+        458.5405434606966,
+        448.56989162302125
+      ],
+      [
+        457.1529705822605,
+        448.90200514554294
+      ],
+      [
+        455.7555676970823,
+        449.21809608895455
+      ],
+      [
+        454.35215293526073,
+        449.5182863624347
+      ],
+      [
+        452.94654442689443,
+        449.8026978751616
+      ],
+      [
+        451.54256030208205,
+        450.0714525363137
+      ],
+      [
+        450.1440186909225,
+        450.32467225506934
+      ],
+      [
+        448.7547377235143,
+        450.56247894060687
+      ],
+      [
+        447.37853552995625,
+        450.7849945021047
+      ],
+      [
+        446.01923024034716,
+        450.99234084874115
+      ],
+      [
+        444.6806399847855,
+        451.1846398896947
+      ],
+      [
+        443.3630866993692,
+        451.3581886279206
+      ],
+      [
+        442.0626100196892,
+        451.5104976189231
+      ],
+      [
+        440.7766046250837,
+        451.64350910070414
+      ],
+      [
+        439.5024651948912,
+        451.7591653112653
+      ],
+      [
+        438.2375864084503,
+        451.8594084886083
+      ],
+      [
+        436.9793629450991,
+        451.94618087073496
+      ],
+      [
+        435.72518948417627,
+        452.02142469564706
+      ],
+      [
+        434.47246070501996,
+        452.08708220134633
+      ],
+      [
+        433.2185712869687,
+        452.1450956258344
+      ],
+      [
+        431.96091590936095,
+        452.1974072071131
+      ],
+      [
+        430.6968892515351,
+        452.24595918318414
+      ],
+      [
+        429.4238859928293,
+        452.29269379204914
+      ],
+      [
+        428.1398816699849,
+        452.33186480686396
+      ],
+      [
+        426.8464301561949,
+        452.3576967327258
+      ],
+      [
+        425.54629363547645,
+        452.3720879055484
+      ],
+      [
+        424.2422342918461,
+        452.37693666124596
+      ],
+      [
+        422.9370143093208,
+        452.3741413357324
+      ],
+      [
+        421.6333958719174,
+        452.3656002649217
+      ],
+      [
+        420.3341411636527,
+        452.3532117847278
+      ],
+      [
+        419.0420123685436,
+        452.33887423106466
+      ],
+      [
+        417.75977167060694,
+        452.32448593984634
+      ],
+      [
+        416.49018125385953,
+        452.31194524698674
+      ],
+      [
+        415.2360033023183,
+        452.3031504884
+      ],
+      [
+        414.0,
+        452.3
+      ],
+      [
+        412.7389206582372,
+        452.3002558018409
+      ],
+      [
+        411.42222881985947,
+        452.3004228129601
+      ],
+      [
+        410.0717580161292,
+        452.3005137177466
+      ],
+      [
+        408.70934177830895,
+        452.300541200589
+      ],
+      [
+        407.3568136376611,
+        452.30051794587615
+      ],
+      [
+        406.0360071254482,
+        452.30045663799694
+      ],
+      [
+        404.76875577293254,
+        452.3003699613401
+      ],
+      [
+        403.5768931113767,
+        452.3002706002945
+      ],
+      [
+        402.4822526720431,
+        452.3001712392489
+      ],
+      [
+        401.50666798619415,
+        452.300084562592
+      ],
+      [
+        400.6719725850923,
+        452.3000232547128
+      ],
+      [
+        400.0,
+        452.3
+      ],
+      [
+        399.0,
+        612.0
+      ],
+      [
+        307.0,
+        612.0
+      ],
+      [
+        307.0,
+        462.0
+      ],
+      [
+        294.8455844172205,
+        460.16790042935554
+      ],
+      [
+        294.17274895961873,
+        459.86345947276675
+      ],
+      [
+        293.32610258947574,
+        459.4915394394344
+      ],
+      [
+        292.3315095789001,
+        459.059735029863
+      ],
+      [
+        291.2148342000002,
+        458.57564094455677
+      ],
+      [
+        290.0019407248844,
+        458.0468518840202
+      ],
+      [
+        288.7186934256612,
+        457.48096254875765
+      ],
+      [
+        287.39095657443903,
+        456.8855676392735
+      ],
+      [
+        286.0445944433263,
+        456.2682618560721
+      ],
+      [
+        284.70547130443146,
+        455.6366398996578
+      ],
+      [
+        283.39945142986295,
+        454.998296470535
+      ],
+      [
+        282.1523990917291,
+        454.36082626920813
+      ],
+      [
+        280.99017856213834,
+        453.73182399618156
+      ],
+      [
+        279.8848989533057,
+        453.0953750284653
+      ],
+      [
+        278.79059594888577,
+        452.433066750879
+      ],
+      [
+        277.7060236781471,
+        451.7487468756418
+      ],
+      [
+        276.62993627035786,
+        451.0462631149728
+      ],
+      [
+        275.56108785478654,
+        450.3294631810909
+      ],
+      [
+        274.4982325607014,
+        449.60219478621514
+      ],
+      [
+        273.4401245173709,
+        448.8683056425646
+      ],
+      [
+        272.3855178540634,
+        448.1316434623582
+      ],
+      [
+        271.3331667000471,
+        447.3960559578152
+      ],
+      [
+        270.2818251845905,
+        446.66539084115436
+      ],
+      [
+        269.23024743696186,
+        445.9434958245948
+      ],
+      [
+        268.1771875864297,
+        445.2342186203555
+      ],
+      [
+        267.1233919772243,
+        444.53810673385465
+      ],
+      [
+        266.07069468738155,
+        443.851311073392
+      ],
+      [
+        265.0194814468775,
+        443.17108445550934
+      ],
+      [
+        263.9701379856885,
+        442.49467969674816
+      ],
+      [
+        262.9230500337908,
+        441.81934961365033
+      ],
+      [
+        261.87860332116077,
+        441.14234702275735
+      ],
+      [
+        260.8371835777744,
+        440.46092474061095
+      ],
+      [
+        259.7991765336082,
+        439.77233558375275
+      ],
+      [
+        258.7649679186384,
+        439.0738323687245
+      ],
+      [
+        257.734943462841,
+        438.36266791206776
+      ],
+      [
+        256.7094888961925,
+        437.6360950303243
+      ],
+      [
+        255.6889899486692,
+        436.8913665400358
+      ],
+      [
+        254.6713237049343,
+        436.1306389090031
+      ],
+      [
+        253.65471842252694,
+        435.3582813623268
+      ],
+      [
+        252.64008659073664,
+        434.57486585249814
+      ],
+      [
+        251.62834069885312,
+        433.78096433200824
+      ],
+      [
+        250.62039323616588,
+        432.9771487533482
+      ],
+      [
+        249.6171566919646,
+        432.16399106900917
+      ],
+      [
+        248.61954355553885,
+        431.3420632314825
+      ],
+      [
+        247.62846631617825,
+        430.5119371932591
+      ],
+      [
+        246.64483746317245,
+        429.67418490683025
+      ],
+      [
+        245.66956948581105,
+        428.82937832468707
+      ],
+      [
+        244.70357487338362,
+        427.97808939932077
+      ],
+      [
+        243.74776611517976,
+        427.1208900832224
+      ],
+      [
+        242.80099712034675,
+        426.25703157847073
+      ],
+      [
+        241.8615431154805,
+        425.38541342912566
+      ],
+      [
+        240.92944856604367,
+        424.5060801006497
+      ],
+      [
+        240.00475793749894,
+        423.6190760585055
+      ],
+      [
+        239.08751569530892,
+        422.724445768156
+      ],
+      [
+        238.17776630493643,
+        421.8222336950636
+      ],
+      [
+        237.27555423184404,
+        420.9124843046911
+      ],
+      [
+        236.38092394149444,
+        419.99524206250106
+      ],
+      [
+        235.49391989935032,
+        419.0705514339564
+      ],
+      [
+        234.61458657087437,
+        418.13845688451954
+      ],
+      [
+        233.74296842152927,
+        417.1990028796533
+      ],
+      [
+        232.87910991677762,
+        416.25223388482027
+      ],
+      [
+        232.02253495418276,
+        415.2973921636439
+      ],
+      [
+        231.17289205168916,
+        414.3339470124707
+      ],
+      [
+        230.33041260533162,
+        413.3622834458478
+      ],
+      [
+        229.49532801114484,
+        412.38278647832294
+      ],
+      [
+        228.66786966516355,
+        411.3958411244433
+      ],
+      [
+        227.84826896342244,
+        410.4018323987561
+      ],
+      [
+        227.03675730195627,
+        409.40114531580895
+      ],
+      [
+        226.2335660767997,
+        408.39416489014917
+      ],
+      [
+        225.43892668398752,
+        407.3812761363242
+      ],
+      [
+        224.65307051955435,
+        406.3628640688811
+      ],
+      [
+        223.87622897953503,
+        405.3393137023675
+      ],
+      [
+        223.1086334599642,
+        404.3110100513308
+      ],
+      [
+        222.35113056795225,
+        403.2760830112244
+      ],
+      [
+        221.60400662144073,
+        402.2329224996487
+      ],
+      [
+        220.86665258271088,
+        401.1823035643718
+      ],
+      [
+        220.13845941404406,
+        400.1250012531617
+      ],
+      [
+        219.41881807772157,
+        399.06179061378623
+      ],
+      [
+        218.70711953602478,
+        397.9934466940135
+      ],
+      [
+        218.002754751235,
+        396.9207445416113
+      ],
+      [
+        217.3051146856335,
+        395.8444592043478
+      ],
+      [
+        216.61359030150166,
+        394.76536572999083
+      ],
+      [
+        215.92757256112083,
+        393.6842391663084
+      ],
+      [
+        215.2464524267723,
+        392.6018545610685
+      ],
+      [
+        214.56962086073742,
+        391.5189869620391
+      ],
+      [
+        213.89397652069462,
+        390.43738100805325
+      ],
+      [
+        213.21821022995056,
+        389.3573014171672
+      ],
+      [
+        212.54440119922893,
+        388.27730335598307
+      ],
+      [
+        211.8746286392534,
+        387.1959419911032
+      ],
+      [
+        211.21097176074744,
+        386.11177248913
+      ],
+      [
+        210.55550977443477,
+        385.0233500166656
+      ],
+      [
+        209.91032189103902,
+        383.9292297403123
+      ],
+      [
+        209.27748732128373,
+        382.82796682667237
+      ],
+      [
+        208.6590852758926,
+        381.71811644234833
+      ],
+      [
+        208.05719496558928,
+        380.5982337539421
+      ],
+      [
+        207.4738956010973,
+        379.4668739280562
+      ],
+      [
+        206.91126639314024,
+        378.3225921312927
+      ],
+      [
+        206.36930745469505,
+        377.16464492171565
+      ],
+      [
+        205.84575062777566,
+        375.99413538179914
+      ],
+      [
+        205.3392727166615,
+        374.81238846476174
+      ],
+      [
+        204.84855052563208,
+        373.62072912382166
+      ],
+      [
+        204.37226085896677,
+        372.42048231219735
+      ],
+      [
+        203.909080520945,
+        371.212972983107
+      ],
+      [
+        203.4576863158463,
+        369.99952608976906
+      ],
+      [
+        203.01675504795006,
+        368.78146658540186
+      ],
+      [
+        202.5849635215357,
+        367.5601194232237
+      ],
+      [
+        202.16098854088276,
+        366.3368095564529
+      ],
+      [
+        201.74350691027055,
+        365.1128619383079
+      ],
+      [
+        201.33119543397868,
+        363.8896015220071
+      ],
+      [
+        200.926539335338,
+        362.66504924289313
+      ],
+      [
+        200.53256360634518,
+        361.4365002926735
+      ],
+      [
+        200.14875470427833,
+        360.204191009113
+      ],
+      [
+        199.7745990864154,
+        358.96835772997656
+      ],
+      [
+        199.40958321003436,
+        357.7292367930292
+      ],
+      [
+        199.05319353241325,
+        356.4870645360359
+      ],
+      [
+        198.70491651083003,
+        355.2420772967616
+      ],
+      [
+        198.36423860256272,
+        353.99451141297106
+      ],
+      [
+        198.03064626488933,
+        352.74460322242936
+      ],
+      [
+        197.7036259550878,
+        351.4925890629016
+      ],
+      [
+        197.38266413043618,
+        350.2387052721524
+      ],
+      [
+        197.06724724821242,
+        348.9831881879469
+      ],
+      [
+        196.7544493505329,
+        347.72486922148005
+      ],
+      [
+        196.4429686926229,
+        346.4627469023143
+      ],
+      [
+        196.1347280514239,
+        345.1973082457655
+      ],
+      [
+        195.8316502038773,
+        343.9290402671496
+      ],
+      [
+        195.53565792692464,
+        342.65842998178255
+      ],
+      [
+        195.24867399750732,
+        341.3859644049802
+      ],
+      [
+        194.9726211925668,
+        340.1121305520586
+      ],
+      [
+        194.7094222890446,
+        338.8374154383336
+      ],
+      [
+        194.46100006388212,
+        337.5623060791213
+      ],
+      [
+        194.2292772940208,
+        336.2872894897374
+      ],
+      [
+        194.01617675640222,
+        335.0128526854981
+      ],
+      [
+        193.82362122796766,
+        333.7394826817189
+      ],
+      [
+        193.65251416996924,
+        332.46647791992666
+      ],
+      [
+        193.50133293744938,
+        331.1928606643843
+      ],
+      [
+        193.36836114803504,
+        329.9187036645126
+      ],
+      [
+        193.25188241935334,
+        328.6440796697325
+      ],
+      [
+        193.15018036903143,
+        327.3690614294651
+      ],
+      [
+        193.06153861469633,
+        326.09372169313116
+      ],
+      [
+        192.98424077397507,
+        324.8181332101517
+      ],
+      [
+        192.91657046449484,
+        323.5423687299475
+      ],
+      [
+        192.85681130388267,
+        322.2665010019395
+      ],
+      [
+        192.80324690976556,
+        320.99060277554884
+      ],
+      [
+        192.7541608997707,
+        319.7147468001962
+      ],
+      [
+        192.70783689152515,
+        318.4390058253027
+      ],
+      [
+        192.66310192048022,
+        317.1631538923599
+      ],
+      [
+        192.62108197178458,
+        315.88696784658526
+      ],
+      [
+        192.58350908761113,
+        314.6105246429882
+      ],
+      [
+        192.55211531013276,
+        313.33390123657796
+      ],
+      [
+        192.52863268152248,
+        312.0571745823641
+      ],
+      [
+        192.51479324395316,
+        310.78042163535576
+      ],
+      [
+        192.51232903959772,
+        309.50371935056245
+      ],
+      [
+        192.52297211062918,
+        308.2271446829935
+      ],
+      [
+        192.54845449922038,
+        306.9507745876583
+      ],
+      [
+        192.59050824754428,
+        305.67468601956614
+      ],
+      [
+        192.6508653977738,
+        304.39895593372654
+      ],
+      [
+        192.73125799208196,
+        303.1236612851487
+      ],
+      [
+        192.83323470679895,
+        301.8473262662452
+      ],
+      [
+        192.95589156267363,
+        300.5689277758137
+      ],
+      [
+        193.0972816185067,
+        299.2892218284415
+      ],
+      [
+        193.25545793309885,
+        298.00896443871574
+      ],
+      [
+        193.4284735652508,
+        296.7289116212237
+      ],
+      [
+        193.61438157376324,
+        295.44981939055265
+      ],
+      [
+        193.81123501743676,
+        294.17244376128974
+      ],
+      [
+        194.01708695507213,
+        292.8975407480222
+      ],
+      [
+        194.22999044547,
+        291.6258663653374
+      ],
+      [
+        194.4479985474311,
+        290.35817662782244
+      ],
+      [
+        194.66916431975613,
+        289.0952275500646
+      ],
+      [
+        194.89154082124568,
+        287.83777514665104
+      ],
+      [
+        195.11716771253197,
+        286.5866891658519
+      ],
+      [
+        195.3494668953256,
+        285.3416983406528
+      ],
+      [
+        195.58856479004498,
+        284.1018471627147
+      ],
+      [
+        195.83458781710848,
+        282.8661801236985
+      ],
+      [
+        196.08766239693446,
+        281.6337417152649
+      ],
+      [
+        196.3479149499414,
+        280.4035764290748
+      ],
+      [
+        196.61547189654763,
+        279.17472875678885
+      ],
+      [
+        196.8904596571716,
+        277.9462431900682
+      ],
+      [
+        197.17300465223164,
+        276.7171642205734
+      ],
+      [
+        197.4632333021462,
+        275.48653633996537
+      ],
+      [
+        197.76127202733363,
+        274.25340403990504
+      ],
+      [
+        198.06724724821242,
+        273.0168118120531
+      ],
+      [
+        198.38053813629867,
+        271.7755603125506
+      ],
+      [
+        198.70061170573715,
+        270.52992869531187
+      ],
+      [
+        199.02772614088917,
+        269.2811791986575
+      ],
+      [
+        199.36213962611606,
+        268.03057406090846
+      ],
+      [
+        199.70411034577901,
+        266.7793755203853
+      ],
+      [
+        200.05389648423935,
+        265.5288458154089
+      ],
+      [
+        200.4117562258584,
+        264.28024718429987
+      ],
+      [
+        200.7779477549974,
+        263.03484186537906
+      ],
+      [
+        201.15272925601764,
+        261.7938920969672
+      ],
+      [
+        201.5363589132804,
+        260.5586601173851
+      ],
+      [
+        201.92909491114702,
+        259.3304081649533
+      ],
+      [
+        202.33119543397868,
+        258.1103984779929
+      ],
+      [
+        202.73954918251172,
+        256.8989111481491
+      ],
+      [
+        203.151894583366,
+        255.6947474283013
+      ],
+      [
+        203.56976440972815,
+        254.4969512986203
+      ],
+      [
+        203.99469143478487,
+        253.3045667392773
+      ],
+      [
+        204.42820843172282,
+        252.11663773044324
+      ],
+      [
+        204.87184817372875,
+        250.93220825228912
+      ],
+      [
+        205.32714343398925,
+        249.75032228498597
+      ],
+      [
+        205.79562698569103,
+        248.57002380870483
+      ],
+      [
+        206.27883160202074,
+        247.39035680361667
+      ],
+      [
+        206.7782900561651,
+        246.21036524989256
+      ],
+      [
+        207.29553512131076,
+        245.02909312770345
+      ],
+      [
+        207.83209957064443,
+        243.84558441722052
+      ],
+      [
+        208.38948437173178,
+        242.65767214573293
+      ],
+      [
+        208.96697256954738,
+        241.46502026132927
+      ],
+      [
+        209.5627700533911,
+        240.26941912537924
+      ],
+      [
+        210.17508271256284,
+        239.07265909925252
+      ],
+      [
+        210.80211643636258,
+        237.8765305443188
+      ],
+      [
+        211.44207711409018,
+        236.6828238219478
+      ],
+      [
+        212.09317063504554,
+        235.4933292935092
+      ],
+      [
+        212.75360288852858,
+        234.30983732037265
+      ],
+      [
+        213.42157976383922,
+        233.13413826390794
+      ],
+      [
+        214.09530715027736,
+        231.96802248548468
+      ],
+      [
+        214.7729909371429,
+        230.81328034647262
+      ],
+      [
+        215.45283701373572,
+        229.6717022082414
+      ],
+      [
+        216.1332809510308,
+        228.54496570018952
+      ],
+      [
+        216.8152844149576,
+        227.43218528316723
+      ],
+      [
+        217.50084243724814,
+        226.33130656572186
+      ],
+      [
+        218.19195004963436,
+        225.24027515640086
+      ],
+      [
+        218.89060228384812,
+        224.15703666375165
+      ],
+      [
+        219.59879417162142,
+        223.07953669632167
+      ],
+      [
+        220.3185207446862,
+        222.0057208626583
+      ],
+      [
+        221.05177703477437,
+        220.93353477130893
+      ],
+      [
+        221.8005580736179,
+        219.86092403082105
+      ],
+      [
+        222.56685889294874,
+        218.78583424974195
+      ],
+      [
+        223.35267452449875,
+        217.70621103661912
+      ],
+      [
+        224.16,
+        216.62
+      ],
+      [
+        224.99005559827722,
+        215.52264646686493
+      ],
+      [
+        225.84144146214774,
+        214.41349316324056
+      ],
+      [
+        226.71222241933228,
+        213.2963317962439
+      ],
+      [
+        227.60046329755147,
+        212.17495407299177
+      ],
+      [
+        228.50422892452602,
+        211.0531517006011
+      ],
+      [
+        229.4215841279766,
+        209.93471638618868
+      ],
+      [
+        230.35059373562385,
+        208.82343983687153
+      ],
+      [
+        231.28932257518846,
+        207.7231137597665
+      ],
+      [
+        232.23583547439114,
+        206.6375298619905
+      ],
+      [
+        233.1881972609525,
+        205.57047985066032
+      ],
+      [
+        234.14447276259324,
+        204.52575543289294
+      ],
+      [
+        235.10272680703406,
+        203.50714831580524
+      ],
+      [
+        236.06754343671196,
+        202.51179465897408
+      ],
+      [
+        237.04395086657334,
+        201.53373561073002
+      ],
+      [
+        238.03068018310316,
+        200.5721203613203
+      ],
+      [
+        239.02646247278614,
+        199.62609810099224
+      ],
+      [
+        240.03002882210714,
+        198.69481801999322
+      ],
+      [
+        241.0401103175511,
+        197.7774293085705
+      ],
+      [
+        242.05543804560267,
+        196.87308115697144
+      ],
+      [
+        243.07474309274684,
+        195.98092275544337
+      ],
+      [
+        244.09675654546837,
+        195.1001032942335
+      ],
+      [
+        245.12020949025214,
+        194.22977196358926
+      ],
+      [
+        246.1438330135829,
+        193.3690779537579
+      ],
+      [
+        247.16635820194563,
+        192.5171704549868
+      ],
+      [
+        248.19195069003533,
+        191.67910226570822
+      ],
+      [
+        249.22464560558362,
+        190.85901695920026
+      ],
+      [
+        250.26297827463014,
+        190.05469988797879
+      ],
+      [
+        251.30548402321446,
+        189.2639364045597
+      ],
+      [
+        252.35069817737613,
+        188.48451186145888
+      ],
+      [
+        253.3971560631548,
+        187.71421161119224
+      ],
+      [
+        254.44339300659001,
+        186.95082100627565
+      ],
+      [
+        255.48794433372137,
+        186.192125399225
+      ],
+      [
+        256.5293453705885,
+        185.43591014255622
+      ],
+      [
+        257.5661314432309,
+        184.67996058878518
+      ],
+      [
+        258.5968378776882,
+        183.9220620904278
+      ],
+      [
+        259.62,
+        183.16
+      ],
+      [
+        260.6740771578601,
+        182.36884906682482
+      ],
+      [
+        261.7851413077578,
+        181.5351637468179
+      ],
+      [
+        262.9331466889257,
+        180.67394895238374
+      ],
+      [
+        264.0980475405966,
+        179.8002095959269
+      ],
+      [
+        265.25979810200334,
+        178.92895058985192
+      ],
+      [
+        266.3983526123784,
+        178.07517684656332
+      ],
+      [
+        267.4936653109547,
+        177.25389327846568
+      ],
+      [
+        268.525690436965,
+        176.48010479796343
+      ],
+      [
+        269.47438222964195,
+        175.76881631746127
+      ],
+      [
+        270.3196949282182,
+        175.1350327493636
+      ],
+      [
+        271.04158277192676,
+        174.59375900607498
+      ],
+      [
+        271.62,
+        174.16
+      ],
+      [
+        307.0,
+        158.0
+      ]
+    ],
+    "sections": [
+      {
+        "kind": "line",
+        "points": [
+          [
+            307,
+            12
+          ],
+          [
+            401,
+            12
+          ],
+          [
+            401,
+            110
+          ],
+          [
+            546,
+            110
+          ],
+          [
+            546,
+            91
+          ],
+          [
+            625,
+            91
+          ],
+          [
+            625,
+            108
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F09",
+        "label": "ア",
+        "clearance": 8,
+        "subdivisions": 12,
+        "points": [
+          [
+            627.0168118120531,
+            123.06724724821242
+          ],
+          [
+            639.3592482860437,
+            118.60906397483456
+          ],
+          [
+            652.5024758191972,
+            112.55175663068373
+          ],
+          [
+            669.5079510703578,
+            106.95509684006264
+          ],
+          [
+            686.8462657268692,
+            105.7291469603973
+          ],
+          [
+            705.3622470796827,
+            109.49953042629126
+          ],
+          [
+            720.5007272246495,
+            117.99854555070104
+          ],
+          [
+            732.7639129190813,
+            123.29004869619125
+          ],
+          [
+            744.2656595583517,
+            125.76529093593342
+          ],
+          [
+            755.9101449269559,
+            125.87884057634452
+          ],
+          [
+            766.8203309306081,
+            121.84378969669429
+          ],
+          [
+            779.8974910582109,
+            114.32060935186915
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "points": [
+          [
+            833,
+            108
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F12",
+        "label": "Z",
+        "clearance": 8,
+        "subdivisions": 12,
+        "points": [
+          [
+            834.9450895700339,
+            126.61034868995989
+          ],
+          [
+            849.0519514446705,
+            138.67220467090314
+          ],
+          [
+            860.7012728859379,
+            154.93594536463516
+          ],
+          [
+            868.2687352192969,
+            172.06992834155758
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F15",
+        "label": "エ",
+        "clearance": 6,
+        "subdivisions": 12,
+        "points": [
+          [
+            866.8897689349246,
+            186.05709563611808
+          ],
+          [
+            881.786724187843,
+            177.601153957496
+          ],
+          [
+            898.6595349592538,
+            171.96943553965954
+          ],
+          [
+            915.3148541916051,
+            169.72281287407694
+          ],
+          [
+            931,
+            169.7
+          ],
+          [
+            946,
+            169.7
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "points": [
+          [
+            972,
+            172
+          ],
+          [
+            972,
+            208
+          ],
+          [
+            961,
+            210
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F28",
+        "label": "ウ",
+        "clearance": 8,
+        "subdivisions": 12,
+        "points": [
+          [
+            958.8267445559821,
+            233.37906987313775
+          ],
+          [
+            955.0269696931522,
+            246.57720779138975
+          ],
+          [
+            953.2921631084748,
+            258.4390058253027
+          ],
+          [
+            954.0269696931522,
+            269.42279220861025
+          ],
+          [
+            958.8267445559821,
+            282.6209301268623
+          ],
+          [
+            962.268742007918,
+            299.1236612851487
+          ],
+          [
+            961.0269696931522,
+            316.57720779138975
+          ],
+          [
+            955.8267445559821,
+            331.3790698731377
+          ],
+          [
+            953.268742007918,
+            342.8763387148513
+          ],
+          [
+            954.1763787720323,
+            354.2605173182811
+          ],
+          [
+            956.5834255126165,
+            365.86306231692265
+          ],
+          [
+            963.001454449299,
+            378.4992727753505
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "points": [
+          [
+            972,
+            409
+          ],
+          [
+            972,
+            456
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F32",
+        "label": "イ",
+        "clearance": 8,
+        "subdivisions": 12,
+        "points": [
+          [
+            940.8181838294424,
+            457.27275744163626
+          ],
+          [
+            925,
+            458.3
+          ],
+          [
+            909.2605173182811,
+            457.17637877203236
+          ],
+          [
+            893.6209301268623,
+            453.82674455598215
+          ],
+          [
+            877.3380988772035,
+            447.91938073682184
+          ],
+          [
+            862.9987172603873,
+            438.1129639572185
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "points": [
+          [
+            825,
+            478
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F31",
+        "label": "O",
+        "clearance": 8,
+        "subdivisions": 12,
+        "points": [
+          [
+            754.4994423584512,
+            481.7492750659866
+          ],
+          [
+            740.8228124135703,
+            492.2342186203555
+          ],
+          [
+            725.1796690693919,
+            501.1562103033057
+          ],
+          [
+            709.2709266769475,
+            506.8571092039347
+          ],
+          [
+            692.2238957439583,
+            510.23895743958286
+          ],
+          [
+            674.3743862428805,
+            510.1921031783964
+          ],
+          [
+            656.6377529203173,
+            505.50046957370876
+          ],
+          [
+            640.4463967828605,
+            497.4086639331039
+          ],
+          [
+            625.3025865914054,
+            485.6974134085945
+          ],
+          [
+            613.4184141362997,
+            470.27056940071134
+          ],
+          [
+            606.6945161307779,
+            454.84520737252376
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "points": [
+          [
+            523,
+            448
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F08",
+        "label": "N",
+        "clearance": 8,
+        "subdivisions": 12,
+        "points": [
+          [
+            504.4463983356713,
+            426.4753972954659
+          ],
+          [
+            491.1465861779218,
+            434.65408270839777
+          ],
+          [
+            476.99550313245743,
+            442.2398820480292
+          ],
+          [
+            461.2709266769475,
+            447.8571092039347
+          ],
+          [
+            444.6806399847855,
+            451.1846398896947
+          ],
+          [
+            429.4238859928293,
+            452.29269379204914
+          ],
+          [
+            414,
+            452.3
+          ],
+          [
+            400,
+            452.3
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "points": [
+          [
+            399,
+            612
+          ],
+          [
+            307,
+            612
+          ],
+          [
+            307,
+            462
+          ]
+        ]
+      },
+      {
+        "kind": "curve",
+        "faceId": "F01",
+        "label": "A",
+        "clearance": 8,
+        "subdivisions": 12,
+        "points": [
+          [
+            294.8455844172205,
+            460.16790042935554
+          ],
+          [
+            280.99017856213834,
+            453.73182399618156
+          ],
+          [
+            268.1771875864297,
+            445.2342186203555
+          ],
+          [
+            255.6889899486692,
+            436.8913665400358
+          ],
+          [
+            243.74776611517976,
+            427.1208900832224
+          ],
+          [
+            232.87910991677762,
+            416.25223388482027
+          ],
+          [
+            223.1086334599642,
+            404.3110100513308
+          ],
+          [
+            214.56962086073742,
+            391.5189869620391
+          ],
+          [
+            206.91126639314024,
+            378.3225921312927
+          ],
+          [
+            201.33119543397868,
+            363.8896015220071
+          ],
+          [
+            197.06724724821242,
+            348.9831881879469
+          ],
+          [
+            193.82362122796766,
+            333.7394826817189
+          ],
+          [
+            192.70783689152515,
+            318.4390058253027
+          ],
+          [
+            192.73125799208196,
+            303.1236612851487
+          ],
+          [
+            194.89154082124568,
+            287.83777514665104
+          ],
+          [
+            198.06724724821242,
+            273.0168118120531
+          ],
+          [
+            202.33119543397868,
+            258.1103984779929
+          ],
+          [
+            207.83209957064443,
+            243.84558441722052
+          ],
+          [
+            215.45283701373572,
+            229.6717022082414
+          ],
+          [
+            224.16,
+            216.62
+          ],
+          [
+            235.10272680703406,
+            203.50714831580524
+          ],
+          [
+            247.16635820194563,
+            192.5171704549868
+          ],
+          [
+            259.62,
+            183.16
+          ],
+          [
+            271.62,
+            174.16
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "points": [
+          [
+            307,
+            158
+          ]
+        ]
+      }
+    ]
+  },
+  "variant": "ex.Is-ID",
+  "islandLabelsDisplayed": false,
+  "visibleIslandLabelCount": 0
+}

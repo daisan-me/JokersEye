@@ -1,0 +1,14 @@
+{
+  "name": "Uniform 1.25x floor display",
+  "source": "Numbered map 1.4 ex.Is-ID",
+  "baseTileSize": 8.6,
+  "tileScale": 1.25,
+  "centerMethod": "mean-of-island-tile-centers",
+  "radialOutward": [
+    {"seatNumber": 232, "faceId": "F11", "distance": 2.75},
+    {"seatNumber": 231, "faceId": "F11", "distance": 0.6},
+    {"seatNumber": 224, "faceId": "F11", "distance": 0.6},
+    {"seatNumber": 223, "faceId": "F11", "distance": 2.75},
+    {"seatNumber": 200, "faceId": "F24", "distance": 2.1}
+  ]
+}

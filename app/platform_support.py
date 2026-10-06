@@ -49,8 +49,11 @@ def launch_browser(url):
 
 
 def show_error(title, message):
-    """Best-effort native error dialog; always also printed to stderr."""
-    print("%s: %s" % (title, message), file=sys.stderr)
+    """Best-effort native error dialog; also printed to stderr when there is one."""
+    try:
+        print("%s: %s" % (title, message), file=sys.stderr)
+    except Exception:  # packaged windowed app: no console, or one whose code page (cp932) lacks a character
+        pass
     try:
         if sys.platform.startswith("win"):
             import ctypes
