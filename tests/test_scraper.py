@@ -252,7 +252,7 @@ class ScraperTests(unittest.TestCase):
             return FIXTURE+'<a href="?kishu=all">全台データ一覧</a>' if target==url else FIXTURE
         collector=self.start_run(fetch)
         run=self.last_run()
-        self.assertEqual((run['state'],run['stop_reason'],run['days_done']),('complete',None,1))
+        self.assertEqual((run['state'],run['stop_reason'],run['stop_code'],run['days_done']),('complete',None,None,1))
         self.assertGreater(run['elapsed_seconds'],0.09)
         self.assertAlmostEqual(run['seconds_per_day'],run['elapsed_seconds'],delta=0.11)
         status=collector.status()
@@ -263,13 +263,15 @@ class ScraperTests(unittest.TestCase):
             collector.stop('window')
             raise RuntimeError('取得を停止しました。')
         self.start_run(stopped_by_window)
-        self.assertEqual((self.last_run()['state'],self.last_run()['stop_reason']),('stopped','取得用ブラウザーを閉じた'))
+        self.assertEqual((self.last_run()['state'],self.last_run()['stop_reason'],self.last_run()['stop_code']),('stopped','取得用ブラウザーを閉じた',2))
         def restricted(target):
             raise RuntimeError(scraper.RESTRICTED+'（HTTP 429）。再試行せず停止します。')
         self.start_run(restricted)
         run=self.last_run()
         self.assertEqual(run['state'],'failed')
         self.assertTrue(run['stop_reason'].startswith('アクセス制限'),run)
+        self.assertEqual(run['stop_code'],3)
+        self.assertEqual(collector.status()['stopCode'],3)
         self.assertIn('HTTP 429',run['message'])
         self.assertIsNotNone(run['elapsed_seconds'])
         with self.assertRaises(ValueError):collector.stop('unknown')
@@ -278,6 +280,11 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(scraper.stop_reason(scraper.VALUES_HIDDEN+'（全台表で191台が「-」）'),'差枚・出率が伏せられた表')
         self.assertEqual(scraper.stop_reason('予期しないこと'),'エラー')
         self.assertEqual(scraper.stop_reason('取得を停止しました。','button'),'「取得を停止」ボタン')
+        # every reason the code can produce has its own fixed number, 1 to 7
+        self.assertEqual(sorted(scraper.STOP_REASON_CODES.values()),list(range(1,8)))
+        produced={scraper.stop_reason(m) for m in (scraper.RESTRICTED,scraper.SITE_TROUBLE,scraper.VALUES_HIDDEN,'x')}|set(scraper.STOP_REASONS.values())|{'アプリの終了で中断'}
+        self.assertEqual(produced,set(scraper.STOP_REASON_CODES))
+        self.assertEqual(scraper.STOP_REASON_CODES['差枚・出率が伏せられた表'],5)
     def test_a_running_status_shows_time_so_far_and_left(self):
         collector=self.store.collector
         collector.active=True;collector.run_started=time.monotonic()-100
@@ -295,7 +302,7 @@ class ScraperTests(unittest.TestCase):
                 db.execute('CREATE TABLE scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT)')
                 db.execute("INSERT INTO scrape_runs VALUES('old','running','2026-09-01','2026-09-02','2026-10-01T00:00:00+00:00',NULL,'')");db.commit()
             store=server.Store(folder)
-            self.assertEqual(store.state()['runs'][0]['stop_reason'],'アプリの終了で中断')
+            self.assertEqual((store.state()['runs'][0]['stop_reason'],store.state()['runs'][0]['stop_code']),('アプリの終了で中断',6))
             self.assertEqual(store.collector.status()['stopReason'],'アプリの終了で中断')
             with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
                 db.execute("INSERT INTO scrape_runs(id,state,start_day,end_day,started_at,finished_at,message) VALUES('older','complete','2026-08-01','2026-08-02','2026-09-01T00:00:00+00:00','2026-09-01T01:30:00+00:00','')");db.commit()

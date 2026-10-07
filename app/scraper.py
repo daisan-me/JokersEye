@@ -49,8 +49,18 @@ VALUES_HIDDEN = '公開サイトが差枚・出率を伏せています'
 
 
 # Why a run stopped (user decision, 2026-10-07: always record the reason, the time taken and the time per day).
+# Each reason has a fixed number shown with it (user decision, 2026-10-08); never renumber.
+STOP_REASON_CODES = {
+    '「取得を停止」ボタン': 1,
+    '取得用ブラウザーを閉じた': 2,
+    'アクセス制限（HTTP 401/403/429・認証・確認画面）': 3,
+    'サイトのエラー（HTTP 500番台・Database Error）': 4,
+    '差枚・出率が伏せられた表': 5,
+    'アプリの終了で中断': 6,
+    'エラー': 7,
+}
 STOP_REASONS = {'button': '「取得を停止」ボタン', 'window': '取得用ブラウザーを閉じた'}
-RUN_COLUMNS = (('stop_reason', 'TEXT'), ('elapsed_seconds', 'REAL'), ('days_done', 'INTEGER'), ('seconds_per_day', 'REAL'))
+RUN_COLUMNS = (('stop_reason', 'TEXT'), ('elapsed_seconds', 'REAL'), ('days_done', 'INTEGER'), ('seconds_per_day', 'REAL'), ('stop_code', 'INTEGER'))
 
 
 def stop_reason(message, cancelled_by=None):
@@ -73,7 +83,7 @@ TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
 CREATE TABLE IF NOT EXISTS scrape_days(day TEXT PRIMARY KEY,url TEXT,status TEXT NOT NULL,rows INTEGER NOT NULL DEFAULT 0,message TEXT NOT NULL DEFAULT '',checked_at TEXT);
-CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT,stop_reason TEXT,elapsed_seconds REAL,days_done INTEGER,seconds_per_day REAL);
+CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT,stop_reason TEXT,elapsed_seconds REAL,days_done INTEGER,seconds_per_day REAL,stop_code INTEGER);
 CREATE TABLE IF NOT EXISTS scrape_bonus_days(day TEXT PRIMARY KEY,status TEXT NOT NULL,rows INTEGER NOT NULL,message TEXT NOT NULL,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_report_index(day TEXT PRIMARY KEY,url TEXT NOT NULL UNIQUE,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_value_days(day TEXT PRIMARY KEY,missing INTEGER NOT NULL,checked_at TEXT NOT NULL);
@@ -272,11 +282,12 @@ class Collector:
             for name,kind in RUN_COLUMNS:
                 if name not in columns:db.execute('ALTER TABLE scrape_runs ADD COLUMN %s %s'%(name,kind))
             db.execute("UPDATE scrape_runs SET state='interrupted',finished_at=?,message='アプリ終了で中断。次回再開できます。',stop_reason='アプリの終了で中断' WHERE state='running'",(now(),))
+            db.executemany('UPDATE scrape_runs SET stop_code=? WHERE stop_reason=? AND stop_code IS NULL',[(code,reason) for reason,code in STOP_REASON_CODES.items()])
             # Runs recorded before the time was kept: their start and end still give the time taken.
             db.execute("UPDATE scrape_runs SET elapsed_seconds=ROUND((julianday(finished_at)-julianday(started_at))*86400,1) WHERE elapsed_seconds IS NULL AND finished_at IS NOT NULL AND started_at IS NOT NULL AND state!='interrupted'")
             previous=db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone()
             if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'],
-                stopReason=previous['stop_reason'],elapsedSeconds=previous['elapsed_seconds'],daysDone=previous['days_done'],secondsPerDay=previous['seconds_per_day'])
+                stopReason=previous['stop_reason'],stopCode=previous['stop_code'],elapsedSeconds=previous['elapsed_seconds'],daysDone=previous['days_done'],secondsPerDay=previous['seconds_per_day'])
         self.cancelled_by=None; self.run_started=None
 
     def fetch(self,url):
@@ -537,9 +548,10 @@ class Collector:
             with self.lock:
                 self.progress.update(elapsedSeconds=round(elapsed,1) if elapsed is not None else None,daysDone=done,secondsPerDay=per_day,remainingSeconds=None)
                 self.progress.setdefault('stopReason',None)
+                self.progress['stopCode']=STOP_REASON_CODES.get(self.progress['stopReason'])
             with self.store.connect() as db:
-                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=?,stop_reason=?,elapsed_seconds=?,days_done=?,seconds_per_day=? WHERE id=?',
-                           (self.progress['state'],now(),self.progress['message'],self.progress['stopReason'],self.progress['elapsedSeconds'],done,per_day,run_id))
+                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=?,stop_reason=?,stop_code=?,elapsed_seconds=?,days_done=?,seconds_per_day=? WHERE id=?',
+                           (self.progress['state'],now(),self.progress['message'],self.progress['stopReason'],self.progress['stopCode'],self.progress['elapsedSeconds'],done,per_day,run_id))
             with self.lock: self.active=False; self.queue.clear(); self.tasks.clear(); self.ready.notify_all()
 
     def expected_count(self,day):
