@@ -218,7 +218,7 @@ class ScraperTests(unittest.TestCase):
     def test_missing_values_counts_only_played_seats(self):
         self.assertEqual(scraper.missing_values([{'games':0,'net':None,'payout_percent':None},{'games':5,'net':-10,'payout_percent':90.0},
                                                  {'games':5,'net':None,'payout_percent':90.0},{'games':5,'net':3,'payout_percent':None}]),2)
-    def test_a_table_with_hidden_values_is_not_saved(self):
+    def test_a_table_with_hidden_values_never_stops_the_run(self):
         collector=self.store.collector; url='https://min-repo.com/3326458/'
         collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:12
         hidden=self.all_seats_html([(n,'-',100,'-') for n in range(1,13)])  # 12 played seats, 差枚/出率 blanked
@@ -230,10 +230,12 @@ class ScraperTests(unittest.TestCase):
         collector.progress={'id':'test-hidden','state':'running','added':0,'completed':0,'total':0}
         collector.seed.append({'day':'2026-09-02','url':'https://min-repo.com/3326459/'})
         collector.run('2026-09-02','2026-09-01',False,['2026-09-01','2026-09-02'])
-        self.assertEqual(collector.status()['summary']['records'],0)  # nothing saved; read again later
-        self.assertEqual(collector.progress['state'],'failed')  # the whole run stops at the first hidden table
-        self.assertIn(scraper.VALUES_HIDDEN,collector.progress['message'])
-        self.assertEqual(collector.progress['completed'],1)
+        self.assertEqual(collector.progress['state'],'complete')  # 停止事由 5 is no longer used (user decision)
+        self.assertIsNone(collector.progress.get('stopCode'))
+        self.assertEqual((collector.progress['completed'],collector.progress['hiddenDays']),(2,1))  # went on to the next day
+        self.assertEqual(collector.status()['summary']['records'],12)  # the hidden day's visible values are kept
+        shown=self.store.observations('2026-09-01')['rows']
+        self.assertTrue(all(r['差枚']=='' and r['出率']=='' for r in shown))  # hidden values stay 未取得, never guessed
     def last_run(self):
         with self.store.connect() as db:
             return dict(db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone())
@@ -320,16 +322,14 @@ class ScraperTests(unittest.TestCase):
         status=self.store.gdb_status()
         self.assertEqual((status['missingValueRows'],status['missingCombinedRows']),(1,2))
     def test_the_hidden_table_rule_can_be_changed_but_not_during_a_run(self):
-        self.assertEqual(self.store.scrape_settings(),{'hiddenAction':'stop','hiddenMinSeats':10,'hiddenMinPercent':10})
-        saved=self.store.save_scrape_settings({'hiddenAction':'continue','hiddenMinSeats':30,'hiddenMinPercent':20})
-        self.assertEqual(saved,{'hiddenAction':'continue','hiddenMinSeats':30,'hiddenMinPercent':20})
+        self.assertEqual(self.store.scrape_settings(),{'hiddenMinSeats':10,'hiddenMinPercent':10})
+        saved=self.store.save_scrape_settings({'hiddenMinSeats':30,'hiddenMinPercent':20})
+        self.assertEqual(saved,{'hiddenMinSeats':30,'hiddenMinPercent':20})
         self.assertEqual(server.Store(self.tmp.name).scrape_settings(),saved)  # kept in GDB
-        for bad in ({'hiddenAction':'ignore','hiddenMinSeats':10,'hiddenMinPercent':10},{'hiddenAction':'stop','hiddenMinSeats':0,'hiddenMinPercent':10},
-                    {'hiddenAction':'stop','hiddenMinSeats':10,'hiddenMinPercent':101},{'hiddenAction':'stop','hiddenMinSeats':'x','hiddenMinPercent':10}):
+        for bad in ({'hiddenMinSeats':0,'hiddenMinPercent':10},{'hiddenMinSeats':10,'hiddenMinPercent':101},{'hiddenMinSeats':'x','hiddenMinPercent':10}):
             with self.assertRaises(ValueError):self.store.save_scrape_settings(bad)
     def test_continuing_past_a_hidden_table_keeps_what_is_visible_and_skips_futile_rereads(self):
         collector=self.store.collector; url='https://min-repo.com/3326458/'; url2='https://min-repo.com/3326459/'
-        self.store.save_scrape_settings({'hiddenAction':'continue','hiddenMinSeats':10,'hiddenMinPercent':10})
         collector.seed=[{'day':'2026-09-01','url':url},{'day':'2026-09-02','url':url2}];collector.expected_count=lambda day:12
         hidden=self.all_seats_html([(n,'-',100,'-') for n in range(1,12)]+[(12,'300',100,'110%')])
         saved=[{'date':'2026-09-02','seat':str(n),'model':'TEST ONLY','games':100,'bb':1,'rb':1,'combined':'1/50','net':None,'payout_percent':None,

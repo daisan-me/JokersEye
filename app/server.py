@@ -472,23 +472,19 @@ class Store:
         with self.connect() as db:
             db.executemany("INSERT OR REPLACE INTO settings VALUES(?,?)",values.items())
 
-    SCRAPE_SETTINGS = {"hiddenAction": ("scrape_hidden_action", "stop"), "hiddenMinSeats": ("scrape_hidden_min_seats", 10),
-                       "hiddenMinPercent": ("scrape_hidden_min_percent", 10)}
+    SCRAPE_SETTINGS = {"hiddenMinSeats": ("scrape_hidden_min_seats", 10), "hiddenMinPercent": ("scrape_hidden_min_percent", 10)}
 
     def scrape_settings(self):
-        """When a table with hidden 差枚/出率 counts as 停止事由 5, and whether the run then stops (user-adjustable)."""
+        """When a table counts as having hidden 差枚/出率 (user-adjustable). Such a table never stops a run."""
         with self.connect() as db:
             saved = {r[0]: r[1] for r in db.execute("SELECT key,value FROM settings WHERE key LIKE 'scrape_hidden_%'")}
         result = {}
         for name, (key, default) in self.SCRAPE_SETTINGS.items():
             value = saved.get(key, default)
-            result[name] = value if name == "hiddenAction" else int(value)
+            result[name] = int(value)
         return result
 
     def save_scrape_settings(self, payload):
-        action = payload.get("hiddenAction")
-        if action not in ("stop", "continue"):
-            raise ValueError("伏せられた表を見つけたときの動きは「止める」か「続ける」を選んでください。")
         try:
             seats, percent = int(payload.get("hiddenMinSeats")), int(payload.get("hiddenMinPercent"))
         except (TypeError, ValueError) as ex:
@@ -497,7 +493,7 @@ class Store:
             raise ValueError("台数は1〜310台、割合は1〜100％で指定してください。")
         with self.connect() as db:
             db.executemany("INSERT OR REPLACE INTO settings VALUES(?,?)", [
-                ("scrape_hidden_action", action), ("scrape_hidden_min_seats", str(seats)), ("scrape_hidden_min_percent", str(percent))])
+                ("scrape_hidden_min_seats", str(seats)), ("scrape_hidden_min_percent", str(percent))])
         return self.scrape_settings()
 
     def copy_into(self, folder):
