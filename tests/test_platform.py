@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -132,6 +133,21 @@ class SourceBrowserWindowTests(unittest.TestCase):
         self.assertIn('MAP * ~NOTFOUND', arguments)
         for host in ('min-repo.com', '*.min-repo.com', '127.0.0.1', 'localhost'):
             self.assertIn('EXCLUDE ' + host, arguments)
+
+    def test_a_database_error_page_stops_at_once(self):
+        url = 'https://min-repo.com/1/?kishu=X'
+        window = FakeWindow()
+        window.show = window.load_url = lambda *args: None
+        probe = json.dumps({'href': url, 'status': 200, 'restricted': False, 'ready': False, 'empty': False,
+                            'html': None, 'trouble': True, 'timing': [0, 9000, 9001, 9002]})
+        window.run_js = lambda script: probe if 'trouble' in script else None
+        source = self.browser({}, window)
+        source.loaded.set()
+        started = time.monotonic()
+        with self.assertRaises(RuntimeError) as ex:
+            source.fetch({'url': url, 'kind': 'bonus-model', 'seats': ['1']})
+        self.assertIn('混雑または障害中', str(ex.exception))
+        self.assertLess(time.monotonic() - started, 3)  # not the 55-second wait
 
     def test_a_window_starts_at_most_one_page_every_cycle(self):
         source = self.browser({}, FakeWindow())

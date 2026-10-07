@@ -25,6 +25,17 @@ PAGES_PER_MINUTE = 240
 # may never have received it). A late answer from the first window is ignored.
 PAGE_LEASE = 20.0
 RESTRICTED = '公開サイトが取得を制限しました'
+# The site answered with a server error (e.g. WordPress "Error establishing a database connection"
+# under load). Stop everything, as for a restriction, instead of waiting and retrying.
+SITE_TROUBLE = '公開サイトが混雑または障害中です'
+# How many pages may be read at once adapts to the site (user decision, 2026-10-07): start low,
+# add a window after a round of quick answers, halve on a slow one. PAGES_PER_MINUTE still caps it.
+START_PARALLEL, MIN_PARALLEL = 3, 2
+QUICK_SERVER_MS, SLOW_SERVER_MS = 800, 2000
+
+
+def stops_everything(message):
+    return RESTRICTED in str(message) or SITE_TROUBLE in str(message)
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
@@ -213,6 +224,7 @@ class Collector:
         self.store=store; self.lock=threading.Lock(); self.cancelled=threading.Event()
         # Page requests waiting for a source-browser window, and those being read now.
         self.ready=threading.Condition(self.lock); self.queue=deque(); self.tasks={}; self.next_dispatch=0.0
+        self.parallel=START_PARALLEL; self.quick_streak=0  # pages read at once, adapted to the site's answers
         self.halted=None  # set to the restriction message when the source site restricts access
         self.active=False; self.progress={'state':'idle'};self.page_expectations={}
         self.seed=json.loads(Path(index_path).read_text(encoding='utf-8'))['reports'] if Path(index_path).exists() else []
@@ -259,7 +271,7 @@ class Collector:
         if self.cancelled.is_set(): raise RuntimeError('取得を停止しました。')
         if not result or result.get('error'):
             message=(result or {}).get('error','ブラウザー取得に失敗しました。')
-            if RESTRICTED in message: self.halted=message  # stop the other windows' pages too
+            if stops_everything(message): self.halted=message  # stop the other windows' pages too
             raise RuntimeError(message)
         return result['html']
 
@@ -273,13 +285,14 @@ class Collector:
                 for task in self.tasks.values():
                     if task.get('claimed') and now_-task['claimed']>PAGE_LEASE and task['id'] not in self.queue:
                         task['claimed']=None; self.queue.appendleft(task['id'])
-                if self.queue and now_>=self.next_dispatch:
+                reading=sum(1 for task in self.tasks.values() if task.get('claimed'))
+                if self.queue and now_>=self.next_dispatch and reading<self.parallel:
                     task=self.tasks[self.queue.popleft()]
                     task['claimed']=now_
                     self.next_dispatch=max(now_,self.next_dispatch)+60.0/PAGES_PER_MINUTE
                     return dict({k:v for k,v in task.items() if k not in ('done','answer','claimed')},active=self.active)
                 if now_>=deadline: return {'active':self.active}
-                self.ready.wait(min(deadline,self.next_dispatch if self.queue else deadline)-now_)
+                self.ready.wait(max(0.01,min(deadline,self.next_dispatch if self.queue else deadline)-now_))
 
     def browser_result(self,payload):
         with self.lock:
@@ -288,7 +301,20 @@ class Collector:
             html=payload.get('html','')
             if not isinstance(html,str) or len(html)>8*1024*1024: raise ValueError('ページが大きすぎます。')
             task['answer']={'html':html,'error':str(payload.get('error',''))}; task['done'].set()
+            self.adapt(payload.get('serverWait'))
+            self.ready.notify_all()
         return {'ok':True}
+
+    def adapt(self,server_wait):
+        """Fewer windows when the site answers slowly, one more after a round of quick answers."""
+        if not isinstance(server_wait,(int,float)) or server_wait<0:return
+        if server_wait>SLOW_SERVER_MS:
+            self.parallel=max(MIN_PARALLEL,self.parallel//2); self.quick_streak=0
+        elif server_wait<QUICK_SERVER_MS:
+            self.quick_streak+=1
+            if self.quick_streak>=self.parallel:
+                self.parallel=min(BROWSER_WINDOWS,self.parallel+1); self.quick_streak=0
+        self.progress['parallel']=self.parallel
 
     def status(self):
         with self.lock: result=dict(self.progress,active=self.active,runFailures=list(self.progress.get('failures',[])))
@@ -313,7 +339,7 @@ class Collector:
                     raise ValueError('差分日付が取得範囲外です。')
         with self.lock:
             if self.active: return dict(self.progress)
-            self.active=True; self.cancelled.clear(); self.halted=None
+            self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=START_PARALLEL; self.quick_streak=0
             self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
         return self.status()
@@ -435,7 +461,7 @@ class Collector:
                     # HTTP 401/403/429 is a source-side access restriction, not
                     # a date-local scrape miss. Stop without attempting a burst
                     # of requests. Ordinary parse/empty-page failures continue.
-                    if self.cancelled.is_set() or '公開サイトが取得を制限しました' in message:
+                    if self.cancelled.is_set() or stops_everything(message):
                         raise
                     continue
             with self.store.connect() as db:
@@ -493,8 +519,8 @@ class Collector:
                     old=saved.get(number_text,{})
                     saved[number_text]=dict(old,bb=value[0] if old.get('bb') is None else old['bb'],rb=value[1] if old.get('rb') is None else old['rb'])
         def stop_now(ex):
-            if RESTRICTED in str(ex):self.halted=str(ex)  # the other windows' jobs stop before reading
-            return self.cancelled.is_set() or RESTRICTED in str(ex)
+            if stops_everything(ex):self.halted=str(ex)  # the other windows' jobs stop before reading
+            return self.cancelled.is_set() or stops_everything(ex)
         def model_job(model,attempt):
             if self.cancelled.is_set():raise RuntimeError('取得を停止しました。')
             if self.halted:raise RuntimeError(self.halted)
@@ -530,7 +556,7 @@ class Collector:
                     try:future.result()
                     except (ValueError,RuntimeError) as ex:errors.append(ex)
             self.bonus_status(day,'partial',sum(complete(r) for r in rows),'BB/RB実値を補完中。揃っている台・機種は再取得しません。')
-            if errors:raise next((ex for ex in errors if RESTRICTED in str(ex)),errors[0])
+            if errors:raise next((ex for ex in errors if stops_everything(ex)),errors[0])
         covered={r['seat'] for r in rows if complete(r)}
         status='complete' if covered=={r['seat'] for r in rows} else 'partial'
         message='' if status=='complete' else '一部機種のBB/RB取得が未完了です。'+(' '+ ' / '.join(failures[:3]) if failures else '')
