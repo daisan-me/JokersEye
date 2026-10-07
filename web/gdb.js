@@ -27,7 +27,7 @@
   function render(app) {
     app.innerHTML = `
       <div class="card-header"><div><div class="kicker">MIN-REPO / GOTHAM DATABASE</div><h2>GothamDataBase（GDB）</h2></div><span class="tag" id="gdb-tag">0行</span></div>
-      <p>GDBに保存したみんレポ ゴッサムシティの台別記録（2024/03/01以降、日付・台番号ごとに1行）を、条件で絞り込んで閲覧します。空欄は公開ページで取得できなかった値です。</p>
+      <p>GDBに保存したみんレポ ゴッサムシティの台別記録（2024/03/01以降、日付・台番号ごとに1行）を、条件で絞り込んで閲覧します。「-」は本当に値がないもの（回されていない台の差枚・出率、BB・RBが0回の台の合成）、「未取得」は取れていない・伏せられた値です。</p>
       <p class="hint" id="gdb-status">状態を確認中…</p>
       <div class="gdb-filters">
         <div><label class="label" for="gdb-from">日付（開始）</label><input id="gdb-from" type="date"></div>
@@ -66,7 +66,7 @@
     const status = document.querySelector('#gdb-status');
     if (!tag || !status) return result;
     tag.textContent = `${count(result.rowCount)}行`;
-    status.textContent = `保存先: ${result.path} / ${count(result.dayCount)}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 記録がない日: ${count(result.actionableMissingDates.length)}日 / 未掲載: ${count(result.unpublishedDates.length)}日 / BB・RB不足: ${count(result.missingBonusRows)}行（ジャグラー ${count(result.missingJugglerBonusRows)}行） / 差枚・出率不足: ${count(result.missingValueRows)}行`;
+    status.textContent = `保存先: ${result.path} / ${count(result.dayCount)}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 記録がない日: ${count(result.actionableMissingDates.length)}日 / 未掲載: ${count(result.unpublishedDates.length)}日 / BB・RB不足: ${count(result.missingBonusRows)}行（ジャグラー ${count(result.missingJugglerBonusRows)}行） / 差枚・出率不足: ${count(result.missingValueRows)}行 / 合成不足: ${count(result.missingCombinedRows)}行`;
     return result;
   }
 

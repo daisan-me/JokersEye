@@ -130,7 +130,7 @@ class Store:
             latest = self.periods[-1] if self.periods else None
             map_count = latest["seatCount"] if latest else 0
             positioned = (WEB / "fixed-floor.json").is_file() or db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
-            return {"app": APP, "version": VERSION, "summary": summary, "dataPath": str(self.folder), "settings": {r[0]:r[1] for r in db.execute("SELECT key,value FROM settings WHERE key NOT LIKE 'public_map_%'")}, "databaseFile": self.path.name, "runs": [dict(r) for r in db.execute("SELECT state,start_day,end_day,started_at,finished_at,message,stop_reason,stop_code,elapsed_seconds,days_done,seconds_per_day FROM scrape_runs ORDER BY started_at DESC LIMIT 100")], "mapRegistered": bool(positioned), "mapSeats": map_count, "mapReportDate": self.history_source.get("lastObservedDate"), "mapPeriods": len(self.periods), "mapReports": self.history_source.get("reportCount",0)}
+            return {"app": APP, "version": VERSION, "summary": summary, "dataPath": str(self.folder), "settings": {r[0]:r[1] for r in db.execute("SELECT key,value FROM settings WHERE key NOT LIKE 'public_map_%'")}, "databaseFile": self.path.name, "runs": [dict(r) for r in db.execute("SELECT state,start_day,end_day,started_at,finished_at,message,stop_reason,stop_code,elapsed_seconds,days_done,seconds_per_day,refill_summary FROM scrape_runs ORDER BY started_at DESC LIMIT 100")], "mapRegistered": bool(positioned), "mapSeats": map_count, "mapReportDate": self.history_source.get("lastObservedDate"), "mapPeriods": len(self.periods), "mapReports": self.history_source.get("reportCount",0)}
 
     @staticmethod
     def _weekday(day):
@@ -171,8 +171,16 @@ class Store:
             current += timedelta(days=1)
         return result
 
+    @staticmethod
+    def _gdb_absent(value, really_none):
+        """An empty value: "-" when the site genuinely has none, "" when it is missing (hidden or not read)."""
+        return "-" if value in (None, "") and really_none else value
+
     def _gdb_row(self, row):
         model = row.get("model") or ""
+        games, bb, rb = row.get("games"), row.get("bb"), row.get("rb")
+        unplayed = games == 0                                    # no 差枚/出率 for a seat nobody played
+        no_bonus = bb is not None and rb is not None and bb + rb == 0  # no 合成 without a single BB/RB
         return {
             "日付": row.get("day", ""),
             "曜日": self._weekday(row["day"]),
@@ -182,9 +190,9 @@ class Store:
             "ゲーム数": self._gdb_number(row.get("games")),
             "BB数": self._gdb_number(row.get("bb")),
             "RB数": self._gdb_number(row.get("rb")),
-            "合成": self._gdb_number(row.get("combined")),
-            "差枚": self._gdb_number(row.get("net")),
-            "出率": self._gdb_rate(row.get("payout_percent")),
+            "合成": self._gdb_absent(self._gdb_number(row.get("combined")), no_bonus),
+            "差枚": self._gdb_absent(self._gdb_number(row.get("net")), unplayed),
+            "出率": self._gdb_absent(self._gdb_rate(row.get("payout_percent")), unplayed),
         }
 
     def gdb_rows_all(self):
@@ -216,7 +224,8 @@ class Store:
             "missingDates": missing, "actionableMissingDates": [day for day in missing if day not in unpublished],
             "unpublishedDates": sorted(day for day in missing if day in unpublished),
             "missingBonusRows": sum(row["BB数"] == "" or row["RB数"] == "" for row in rows),
-            "missingValueRows": sum(row["ゲーム数"] not in ("", "0") and (row["差枚"] == "" or row["出率"] == "") for row in rows),
+            "missingValueRows": sum(row["差枚"] == "" or row["出率"] == "" for row in rows),
+            "missingCombinedRows": sum(row["合成"] == "" for row in rows),
             "missingJugglerBonusRows": sum((row["BB数"] == "" or row["RB数"] == "") and row["ジャグラーかジャグラーじゃないか"] == "ジャグラー" for row in rows),
         }
 
@@ -463,6 +472,34 @@ class Store:
         with self.connect() as db:
             db.executemany("INSERT OR REPLACE INTO settings VALUES(?,?)",values.items())
 
+    SCRAPE_SETTINGS = {"hiddenAction": ("scrape_hidden_action", "stop"), "hiddenMinSeats": ("scrape_hidden_min_seats", 10),
+                       "hiddenMinPercent": ("scrape_hidden_min_percent", 10)}
+
+    def scrape_settings(self):
+        """When a table with hidden 差枚/出率 counts as 停止事由 5, and whether the run then stops (user-adjustable)."""
+        with self.connect() as db:
+            saved = {r[0]: r[1] for r in db.execute("SELECT key,value FROM settings WHERE key LIKE 'scrape_hidden_%'")}
+        result = {}
+        for name, (key, default) in self.SCRAPE_SETTINGS.items():
+            value = saved.get(key, default)
+            result[name] = value if name == "hiddenAction" else int(value)
+        return result
+
+    def save_scrape_settings(self, payload):
+        action = payload.get("hiddenAction")
+        if action not in ("stop", "continue"):
+            raise ValueError("伏せられた表を見つけたときの動きは「止める」か「続ける」を選んでください。")
+        try:
+            seats, percent = int(payload.get("hiddenMinSeats")), int(payload.get("hiddenMinPercent"))
+        except (TypeError, ValueError) as ex:
+            raise ValueError("台数と割合は整数で指定してください。") from ex
+        if not (1 <= seats <= 310 and 1 <= percent <= 100):
+            raise ValueError("台数は1〜310台、割合は1〜100％で指定してください。")
+        with self.connect() as db:
+            db.executemany("INSERT OR REPLACE INTO settings VALUES(?,?)", [
+                ("scrape_hidden_action", action), ("scrape_hidden_min_seats", str(seats)), ("scrape_hidden_min_percent", str(percent))])
+        return self.scrape_settings()
+
     def copy_into(self, folder):
         """Consistent copy of the database, for running another version on its own data.
         Saved under the legacy name: builds up to 1.3.1 read only that name, newer ones rename it."""
@@ -544,6 +581,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(self.server.versions.remote())
                 except ValueError as ex:
                     return self.reply({"error":str(ex)},400)
+            if path=="/api/scrape/settings":
+                return self.reply(self.server.store.scrape_settings())
             if path=="/api/scrape/status":
                 return self.reply(self.server.store.collector.status())
             if path=="/api/scrape/browser-task":
@@ -626,6 +665,10 @@ class Handler(BaseHTTPRequestHandler):
                     # New dates get the full table plus BB/RB; saved dates only their missing BB/RB.
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
                     result.update({'plan':plan})
+            elif path=="/api/scrape/settings":
+                if self.server.store.collector.active:
+                    raise ValueError("取得中は停止の条件を変えられません。取得が終わってから変更してください。")
+                result=self.server.store.save_scrape_settings(payload)
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":
