@@ -189,7 +189,7 @@ class SourceWindow:
             return True
         self.window.hide()
         try:
-            self.client.request("scrape/stop", {})
+            self.client.request("scrape/stop", {"reason": "window"})
         except (OSError, ValueError):
             pass
         return False
