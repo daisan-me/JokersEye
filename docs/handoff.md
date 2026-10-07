@@ -1,5 +1,11 @@
 # 引き継ぎメモ
 
+## 取得の速さの自動調整とサイトエラーでの停止（2026-10-07、ブランチ `fix/adaptive-scrape`）
+
+- 事象：12枚・毎分240ページの版（`8277be7`）で、ユーザーが朝10時前後に取得したところ、みんレポがWordPressの「Error establishing a database connection」（タイトル Database Error、HTTP 500または200）を返し続けた。本番の `source-browser.log` で約4分半に171ページ中33ページ、最初のページのサーバー応答待ちは7.6秒。エージェントがすぐ `scrape/stop` で停止した。直後にサイトは復旧していたが応答待ちは1.6秒。前回の高速化の検証（午前3時、応答待ち0.2〜0.8秒）では問題がなかったため、混む時間帯にこちらの負荷が重なったと判断した。
+- 修正：`Collector.adapt()` が窓からの `serverWait`（requestStart→responseStart）で同時に読む枚数 `parallel` を調整し、`browser_task` は読み中のページ数が `parallel` 未満のときだけ渡す。開始3・最小2・最大12、0.8秒未満が `parallel` 回続けば+1、2秒超で半分。`stops_everything()` で制限（`RESTRICTED`）とサイトのエラー（`SITE_TROUBLE`）をまとめて扱い、全窓を止める。窓は HTTP 500番台かDatabase Errorの画面をその場で失敗にする（55秒待たない）。
+- 検証（Windows、混む時間帯の10時台）：1日分を81秒、同時枚数は2〜4枚で推移、BB/RB不足0・失敗0・Database Error 0。単体テストに、サイトエラーでの全停止、同時枚数の増減、Database Error画面での即時失敗を追加。
+
 ## 公開リポジトリへの移行（2026-10-07）
 
 - 経緯：非公開リポジトリのGitHub Actionsが無料枠（月2,000分、Windowsは2倍・macOSは10倍で計算）を超え、「支払いの失敗か使用上限の引き上げが必要」としてジョブが起動しなくなった（10月の換算使用量は約4,720分で、9割以上がmacOS）。ユーザー判断でリポジトリを公開する。公開リポジトリでは通常の実行環境が無料。

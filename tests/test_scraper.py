@@ -80,6 +80,30 @@ class ScraperTests(unittest.TestCase):
         thread.join(5)
         self.assertEqual(result['html'],'second window')
         with self.assertRaises(ValueError):collector.browser_result({'id':first['id'],'html':'late first window'})
+    def test_a_site_error_stops_everything_like_a_restriction(self):
+        collector=self.store.collector
+        thread,result=self.fetch_in_background('https://min-repo.com/1/')
+        task=collector.browser_task(wait=1)
+        collector.browser_result({'id':task['id'],'error':scraper.SITE_TROUBLE+'（Database Error）。'})
+        thread.join(5)
+        self.assertTrue(scraper.stops_everything(result['error']))
+        with self.assertRaises(RuntimeError):collector._fetch_once('https://min-repo.com/2/')
+    def test_pages_read_at_once_follow_the_sites_answers(self):
+        collector=self.store.collector
+        self.assertEqual(collector.parallel,scraper.START_PARALLEL)
+        threads=[self.fetch_in_background('https://min-repo.com/%d/'%n) for n in range(6)]
+        given=[]
+        for _ in range(6):
+            task=collector.browser_task(wait=0.6)
+            if 'id' in task:given.append(task)
+        self.assertEqual(len(given),scraper.START_PARALLEL)  # no more than that until answers come back
+        for task in given:collector.browser_result({'id':task['id'],'html':'x','serverWait':100})  # quick answers
+        self.assertEqual(collector.parallel,scraper.START_PARALLEL+1)
+        task=collector.browser_task(wait=1)
+        collector.browser_result({'id':task['id'],'html':'x','serverWait':5000})  # a slow answer halves it
+        self.assertEqual(collector.parallel,max(scraper.MIN_PARALLEL,(scraper.START_PARALLEL+1)//2))
+        collector.stop()
+        for thread,_ in threads:thread.join(5)
     def test_a_restriction_in_one_window_stops_the_others(self):
         collector=self.store.collector
         thread,result=self.fetch_in_background('https://min-repo.com/1/')

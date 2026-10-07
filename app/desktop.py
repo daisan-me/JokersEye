@@ -64,6 +64,7 @@ PROBE_JS = ("(()=>{%s\nconst n=performance.getEntriesByType('navigation')[0];"
             "const restricted=sourceAccessRestricted(document);const ready=!restricted&&!!sourceDocumentReady(document,%s);"
             "return JSON.stringify({href:location.href,status:n&&n.responseStatus?n.responseStatus:0,restricted:restricted,"
             "ready:ready,empty:" + EMPTY_JS + ",html:ready?document.documentElement.outerHTML:null,"
+            "trouble:document.title==='Database Error'||/Error establishing a database connection/i.test(document.body?document.body.textContent:''),"
             "timing:n?[n.requestStart,n.responseStart,n.responseEnd,n.domInteractive].map(Math.round):null});})()")
 FOLLOW_JS = ("(()=>{if(location.protocol!=='https:')return false;const target=new URL(%s,location.href).href;const link=Array.from(document.querySelectorAll('a[href]'))"
              ".find(a=>a.href===target&&!a.target);if(!link)return false;link.click();return true;})()")
@@ -275,6 +276,8 @@ class SourceWindow:
         if self.disposed:
             return None
         payload = {"id": task_id, "html": html} if error is None else {"id": task_id, "error": error}
+        if error is None and self.last_timing:
+            payload["serverWait"] = self.last_timing[1] - self.last_timing[0]  # lets the collector adapt to the site
         try:
             self.client.request("scrape/browser-result", payload, timeout=15)
         except (OSError, ValueError):
@@ -316,6 +319,9 @@ class SourceWindow:
                 status_text = "HTTP %s" % status
             if status in (401, 403, 429):
                 raise RuntimeError("公開サイトが取得を制限しました（HTTP %s）。再試行せず停止します。" % status)
+            if status >= 500 or probe.get("trouble"):
+                raise RuntimeError("公開サイトが混雑または障害中です（%s）。負荷をかけないよう取得を止めました。時間をおいて再開してください。"
+                                   % ("HTTP %s" % status if status >= 500 else "Database Error"))
             if probe.get("restricted"):
                 raise RuntimeError("公開サイトが取得を制限しました（認証・確認画面）。操作・再試行せず停止します。")
             if probe.get("ready") and isinstance(probe.get("html"), str):
