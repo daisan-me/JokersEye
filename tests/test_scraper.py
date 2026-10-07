@@ -1,10 +1,13 @@
 import importlib.util
 from pathlib import Path
 import tempfile
+import threading
+import time
 import unittest
 
 spec=importlib.util.spec_from_file_location('scraper_server',Path(__file__).resolve().parents[1]/'app/server.py')
 server=importlib.util.module_from_spec(spec);spec.loader.exec_module(server)
+import scraper
 from scraper import parse_report, number, TableParser, all_data_link, bonus_links, parse_bonuses, index_links, TAG
 
 FIXTURE='''<h1>9/1(火) ゴッサムシティ</h1><time datetime="2026-09-02T05:00:00+09:00">2026年9月2日</time><table><tr><th>機種</th><th>台番</th><th>差枚</th><th>G数</th><th>出率</th></tr><tr><td>TEST ONLY</td><td>1</td><td>-</td><td>0</td><td>-</td></tr><tr><th>機種</th><th>台番</th><th>差枚</th><th>G数</th><th>出率</th></tr><tr><td>TEST ONLY</td><td>2</td><td>-1,234</td><td>2,345</td><td>82.1%</td></tr></table>'''
@@ -31,12 +34,70 @@ class ScraperTests(unittest.TestCase):
         saved=self.store.gdb_rows_all()
         self.assertEqual((saved[0]['BB数'],saved[0]['ゲーム数']),('','0'))
         self.assertEqual(server.Store(self.tmp.name).collector.status()['summary']['records'],2)
+    def fetch_in_background(self,url):
+        result={}
+        def run():
+            try:result['html']=self.store.collector._fetch_once(url)
+            except Exception as ex:result['error']=ex
+        thread=threading.Thread(target=run);thread.start()
+        return thread,result
     def test_browser_task_reports_whether_a_run_is_active(self):
         collector=self.store.collector
         self.assertEqual(collector.browser_task(),{'active':False})
-        collector.active=True;collector.pending={'id':'x','url':'https://min-repo.com/1/'}
-        self.assertEqual(collector.browser_task(),{'id':'x','url':'https://min-repo.com/1/','active':True})
-        collector.active=False;collector.pending=None
+        collector.active=True
+        self.assertEqual(collector.browser_task(),{'active':True})
+        collector.active=False
+    def test_pages_go_to_several_windows_at_most_240_a_minute(self):
+        collector=self.store.collector
+        self.assertEqual(scraper.PAGES_PER_MINUTE,240)
+        first,first_result=self.fetch_in_background('https://min-repo.com/1/')
+        second,second_result=self.fetch_in_background('https://min-repo.com/2/')
+        one=collector.browser_task(wait=1)
+        started=time.monotonic()
+        self.assertEqual(collector.browser_task(),{'active':False})  # the next page waits for its slot
+        two=collector.browser_task(wait=1)
+        self.assertGreaterEqual(time.monotonic()-started,60/240-0.05)
+        self.assertEqual({one['url'],two['url']},{'https://min-repo.com/1/','https://min-repo.com/2/'})
+        self.assertNotIn('done',one)
+        collector.browser_result({'id':two['id'],'html':'page '+two['url']})  # answers may come back in any order
+        collector.browser_result({'id':one['id'],'html':'page '+one['url']})
+        first.join(5);second.join(5)
+        self.assertEqual((first_result['html'],second_result['html']),('page https://min-repo.com/1/','page https://min-repo.com/2/'))
+        with self.assertRaises(ValueError):collector.browser_result({'id':one['id'],'html':'late'})
+    def test_a_page_no_window_answered_is_handed_out_again(self):
+        collector=self.store.collector
+        thread,result=self.fetch_in_background('https://min-repo.com/1/')
+        first=collector.browser_task(wait=1)
+        original=scraper.PAGE_LEASE
+        scraper.PAGE_LEASE=0.05
+        try:
+            time.sleep(0.3)  # the window that took it never answers (e.g. it did not receive the reply)
+            again=collector.browser_task(wait=1)
+        finally:
+            scraper.PAGE_LEASE=original
+        self.assertEqual(again['id'],first['id'])
+        collector.browser_result({'id':again['id'],'html':'second window'})
+        thread.join(5)
+        self.assertEqual(result['html'],'second window')
+        with self.assertRaises(ValueError):collector.browser_result({'id':first['id'],'html':'late first window'})
+    def test_a_restriction_in_one_window_stops_the_others(self):
+        collector=self.store.collector
+        thread,result=self.fetch_in_background('https://min-repo.com/1/')
+        task=collector.browser_task(wait=1)
+        collector.browser_result({'id':task['id'],'error':scraper.RESTRICTED+'（HTTP 429）。再試行せず停止します。'})
+        thread.join(5)
+        self.assertIn('HTTP 429',str(result['error']))
+        with self.assertRaises(RuntimeError):collector._fetch_once('https://min-repo.com/2/')  # not even queued
+        self.assertEqual(collector.browser_task(),{'active':False})
+    def test_stop_releases_pages_that_are_still_waiting(self):
+        collector=self.store.collector
+        thread,result=self.fetch_in_background('https://min-repo.com/1/')
+        for _ in range(50):
+            if collector.queue:break
+            time.sleep(0.01)
+        collector.stop();thread.join(5)
+        self.assertIn('停止',str(result['error']))
+        self.assertEqual(collector.browser_task(),{'active':False})
     def test_past_future_ranges_and_blocked_html(self):
         for end in ['2020-01-01','2099-01-01','bad']:
             with self.assertRaises(ValueError):self.store.collector.start(end)
