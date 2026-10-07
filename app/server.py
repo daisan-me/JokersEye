@@ -58,7 +58,8 @@ class Store:
         self.path = self.folder / DB_NAME
         self._rename_legacy_database()
         self.map_source = json.loads((WEB / "map-data.json").read_text(encoding="utf-8"))
-        self.floor_revision = hashlib.sha256((WEB / "floor-map.webp").read_bytes()).hexdigest()
+        # Positions are keyed to the fixed floor drawing (the shop's published floor image is not bundled).
+        self.floor_revision = hashlib.sha256((WEB / "fixed-floor.json").read_bytes()).hexdigest()
         history_file = WEB / "map-history.json"
         if history_file.exists():
             history_bytes = history_file.read_bytes()
@@ -562,7 +563,7 @@ class Handler(BaseHTTPRequestHandler):
             if path=="/api/health":
                 return self.reply({"app":APP,"version":VERSION})
             return self.reply({"error":"Not found"},404)
-        files={"/":"index.html","/app.js":"app.js","/versions.js":"versions.js","/versions.css":"versions.css","/gdb.js":"gdb.js","/map.js":"map.js","/floor-plan.js":"floor-plan.js","/fixed-floor.js":"fixed-floor.js","/fixed-floor.json":"fixed-floor.json","/fixed-floor-display.json":"fixed-floor-display.json","/scrape.js":"scrape.js","/style.css":"style.css","/map.css":"map.css","/juggler.js":"juggler.js","/juggler-math.js":"juggler-math.js","/juggler.css":"juggler.css","/juggler-specs.json":"juggler-specs.json","/icon.png":"icon.png","/icon.ico":"icon.ico","/manifest.json":"manifest.json","/floor-map.webp":"floor-map.webp"}
+        files={"/":"index.html","/app.js":"app.js","/versions.js":"versions.js","/versions.css":"versions.css","/gdb.js":"gdb.js","/map.js":"map.js","/floor-plan.js":"floor-plan.js","/fixed-floor.js":"fixed-floor.js","/fixed-floor.json":"fixed-floor.json","/fixed-floor-display.json":"fixed-floor-display.json","/scrape.js":"scrape.js","/style.css":"style.css","/map.css":"map.css","/juggler.js":"juggler.js","/juggler-math.js":"juggler-math.js","/juggler.css":"juggler.css","/juggler-specs.json":"juggler-specs.json","/icon.png":"icon.png","/icon.ico":"icon.ico","/manifest.json":"manifest.json"}
         if path not in files:
             return self.reply({"error":"Not found"},404)
         file=WEB/files[path]

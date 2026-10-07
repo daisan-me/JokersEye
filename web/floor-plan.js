@@ -12,10 +12,9 @@ const FloorPlan = (() => {
     const seats = data.seats;
     return `<div class="physical-plan">
       <div class="floor-heading"><div><div class="kicker">TOP VIEW / GOTHAM CITY</div><h3>実際のフロア図</h3></div><span class="tag">位置登録 ${positions.size} / ${seats.length} 台</span></div>
-      <p class="floor-warning">図の形・入口・通路は公開図のまま。背景に印刷された機種名は ${date} ごろの参考資料で、選択期間の機種ではありません。重ねた番号・機種だけが選択期間のデータです。</p>
+      <p class="floor-warning">店舗の公開フロア図（${date} ごろ）は同梱していません。掲載元のページで確認してください。重ねた番号・機種だけが選択期間のデータです。</p>
       <div class="floor-tools" role="group" aria-label="フロア図の拡大"><button type="button" data-zoom="in" aria-label="拡大">＋</button><button type="button" data-zoom="out" aria-label="縮小">−</button><button type="button" data-zoom="reset">全体表示</button><span class="hint">ドラッグで移動 · Ctrl＋ホイールで拡大</span></div>
       <svg class="physical-floor-svg" viewBox="${viewport.join(' ')}" role="img" aria-label="ゴッサムシティを真上から見たフロア図。位置未登録の台は重ねていません。">
-        <image href="/floor-map.webp" width="640" height="360" class="floor-source-image"/>
         ${seats.filter(s=>positions.has(s.seat)).map(s=>{
           const p=positions.get(s.seat), x=p.x*640,y=p.y*360;
           return `<g class="machine-seat physical-seat model-color-${color(s.model)} ${changed.has(s.seat)?'seat-changed':''}" data-seat="${esc(s.seat)}" role="button" tabindex="0" aria-label="${esc(s.seat)}番 ${esc(view==='numbers'?'':s.model)} · 利用者登録位置" transform="translate(${x} ${y})"><title>${esc(s.seat)}番 · ${esc(s.model)}\n位置根拠：${esc(p.evidence)}</title><rect x="-4.5" y="-4" width="9" height="8" rx="1" transform="rotate(${p.angle})"/><text class="physical-number" y="1.5" text-anchor="middle">${esc(s.seat)}</text>${view==='machine'?`<text class="physical-model" y="-7" text-anchor="middle">${esc(s.model)}</text>`:''}</g>`;
