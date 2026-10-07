@@ -309,6 +309,47 @@ class ScraperTests(unittest.TestCase):
             server.Store(folder)  # the time taken of an older run is filled from its start and end
             with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
                 self.assertEqual(db.execute("SELECT elapsed_seconds FROM scrape_runs WHERE id='older'").fetchone()[0],5400.0)
+    def test_truly_absent_values_show_a_dash_and_missing_ones_stay_empty(self):
+        rows=[dict(r,bb=b,rb=c,combined=None) for r,(b,c) in zip(parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all'),((0,0),(3,0)))]
+        rows.append(dict(rows[1],seat='3',net=None,payout_percent=None))  # played, but 差枚/出率 hidden
+        self.store.collector.save_rows(rows)
+        shown={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual((shown['1']['差枚'],shown['1']['出率'],shown['1']['合成']),('-','-','-'))  # 0 games, no BB/RB: nothing to show
+        self.assertEqual(shown['2']['合成'],'')  # BB/RB were hit, so 合成 exists but was not read
+        self.assertEqual((shown['3']['差枚'],shown['3']['出率']),('',''))  # played: missing (hidden), not absent
+        status=self.store.gdb_status()
+        self.assertEqual((status['missingValueRows'],status['missingCombinedRows']),(1,2))
+    def test_the_hidden_table_rule_can_be_changed_but_not_during_a_run(self):
+        self.assertEqual(self.store.scrape_settings(),{'hiddenAction':'stop','hiddenMinSeats':10,'hiddenMinPercent':10})
+        saved=self.store.save_scrape_settings({'hiddenAction':'continue','hiddenMinSeats':30,'hiddenMinPercent':20})
+        self.assertEqual(saved,{'hiddenAction':'continue','hiddenMinSeats':30,'hiddenMinPercent':20})
+        self.assertEqual(server.Store(self.tmp.name).scrape_settings(),saved)  # kept in GDB
+        for bad in ({'hiddenAction':'ignore','hiddenMinSeats':10,'hiddenMinPercent':10},{'hiddenAction':'stop','hiddenMinSeats':0,'hiddenMinPercent':10},
+                    {'hiddenAction':'stop','hiddenMinSeats':10,'hiddenMinPercent':101},{'hiddenAction':'stop','hiddenMinSeats':'x','hiddenMinPercent':10}):
+            with self.assertRaises(ValueError):self.store.save_scrape_settings(bad)
+    def test_continuing_past_a_hidden_table_keeps_what_is_visible_and_skips_futile_rereads(self):
+        collector=self.store.collector; url='https://min-repo.com/3326458/'; url2='https://min-repo.com/3326459/'
+        self.store.save_scrape_settings({'hiddenAction':'continue','hiddenMinSeats':10,'hiddenMinPercent':10})
+        collector.seed=[{'day':'2026-09-01','url':url},{'day':'2026-09-02','url':url2}];collector.expected_count=lambda day:12
+        hidden=self.all_seats_html([(n,'-',100,'-') for n in range(1,12)]+[(12,'300',100,'110%')])
+        saved=[{'date':'2026-09-02','seat':str(n),'model':'TEST ONLY','games':100,'bb':1,'rb':1,'combined':'1/50','net':None,'payout_percent':None,
+                'source_url':url2,'published_at':None,'fetched_at':'2026-10-01'} for n in range(1,13)]
+        collector.save_rows(saved);collector.day_status('2026-09-02',url2,'complete',12,'')
+        calls=[]
+        def fetch(target):
+            calls.append(target)
+            return hidden+'<a href="?kishu=all">全台データ一覧</a>' if target==url else hidden
+        collector.fetch=fetch
+        collector.active=True;collector.cancelled.clear();collector.run_started=time.monotonic()
+        collector.hidden_rule=self.store.scrape_settings()
+        collector.progress={'id':'test-continue','state':'running','added':0,'completed':0,'total':0,'failures':[]}
+        collector.run('2026-09-02','2026-09-01',False,['2026-09-01','2026-09-02'])
+        self.assertEqual(collector.progress['state'],'complete')
+        self.assertEqual(calls,[url,url+'?kishu=all'])  # 09-02 is not read again while values are hidden
+        self.assertEqual((collector.progress['hiddenDays'],collector.progress['skippedHidden']),(1,1))
+        day1={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual((day1['12']['差枚'],day1['1']['差枚']),('300',''))  # visible value kept, hidden one missing
+        self.assertIn('2026-09-01',self.store.gdb_value_days('2026-09-01','2026-09-02'))  # still due for a later re-read
     def test_a_saved_day_missing_values_is_read_again_once(self):
         collector=self.store.collector; url='https://min-repo.com/3326458/'
         collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:2
@@ -326,6 +367,10 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(calls,[url,url+'?kishu=all'])
         saved={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
         self.assertEqual((saved['2']['差枚'],saved['2']['出率'],saved['2']['BB数']),('-1234','82.1%','1'))  # BB/RB kept
+        # the re-read is checked against what was saved: 2 values filled, nothing changed, BB/RB kept
+        self.assertEqual(collector.progress['refill'],{'days':1,'filled':2,'stillMissing':0,'changed':0,'bonusKept':2,'bonusReset':0})
+        with self.store.connect() as db:
+            self.assertEqual(tuple(db.execute("SELECT filled,still_missing,changed,bonus_kept,bonus_reset FROM scrape_refill_days WHERE day='2026-09-01'").fetchone()),(2,0,0,2,0))
         calls.clear()
         collector.progress={'id':'test-refill-2','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-01','2026-09-01',True,['2026-09-01'])

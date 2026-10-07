@@ -34,10 +34,9 @@ START_PARALLEL, MIN_PARALLEL = 3, 2
 QUICK_SERVER_MS, SLOW_SERVER_MS = 800, 2000
 
 
-# 差枚 and 出率 must be read for every seat that was played. With ads blocked, the site was seen
-# blanking the negative 差枚 (and their 出率) of the rendered table (2026-10-07), so a table with
-# many played seats lacking them is not saved: it is read again later instead.
-HIDDEN_VALUES_LIMIT = 0.1
+# 差枚 and 出率 must be read for every seat that was played. The site was seen serving this app's
+# browser tables with the negative 差枚 (and their 出率) blanked (2026-10-07). A table with more
+# played seats lacking them than the user's limit (default: 10 seats and 10%) is 停止事由 5.
 
 
 def missing_values(rows):
@@ -60,7 +59,9 @@ STOP_REASON_CODES = {
     'エラー': 7,
 }
 STOP_REASONS = {'button': '「取得を停止」ボタン', 'window': '取得用ブラウザーを閉じた'}
-RUN_COLUMNS = (('stop_reason', 'TEXT'), ('elapsed_seconds', 'REAL'), ('days_done', 'INTEGER'), ('seconds_per_day', 'REAL'), ('stop_code', 'INTEGER'))
+RUN_COLUMNS = (('stop_reason', 'TEXT'), ('elapsed_seconds', 'REAL'), ('days_done', 'INTEGER'), ('seconds_per_day', 'REAL'), ('stop_code', 'INTEGER'),
+               ('refill_summary', 'TEXT'))
+DEFAULT_HIDDEN_RULE = {'hiddenAction': 'stop', 'hiddenMinSeats': 10, 'hiddenMinPercent': 10}
 
 
 def stop_reason(message, cancelled_by=None):
@@ -86,6 +87,7 @@ CREATE TABLE IF NOT EXISTS scrape_days(day TEXT PRIMARY KEY,url TEXT,status TEXT
 CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT,stop_reason TEXT,elapsed_seconds REAL,days_done INTEGER,seconds_per_day REAL,stop_code INTEGER);
 CREATE TABLE IF NOT EXISTS scrape_bonus_days(day TEXT PRIMARY KEY,status TEXT NOT NULL,rows INTEGER NOT NULL,message TEXT NOT NULL,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_report_index(day TEXT PRIMARY KEY,url TEXT NOT NULL UNIQUE,checked_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS scrape_refill_days(day TEXT,run_id TEXT,filled INTEGER NOT NULL,still_missing INTEGER NOT NULL,changed INTEGER NOT NULL,bonus_kept INTEGER NOT NULL,bonus_reset INTEGER NOT NULL,checked_at TEXT NOT NULL,PRIMARY KEY(day,run_id));
 CREATE TABLE IF NOT EXISTS scrape_value_days(day TEXT PRIMARY KEY,missing INTEGER NOT NULL,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_bonus_targets(day TEXT,model TEXT,seat TEXT,kind TEXT,url TEXT NOT NULL,PRIMARY KEY(day,model,seat,kind));
 '''
@@ -287,8 +289,9 @@ class Collector:
             db.execute("UPDATE scrape_runs SET elapsed_seconds=ROUND((julianday(finished_at)-julianday(started_at))*86400,1) WHERE elapsed_seconds IS NULL AND finished_at IS NOT NULL AND started_at IS NOT NULL AND state!='interrupted'")
             previous=db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone()
             if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'],
-                stopReason=previous['stop_reason'],stopCode=previous['stop_code'],elapsedSeconds=previous['elapsed_seconds'],daysDone=previous['days_done'],secondsPerDay=previous['seconds_per_day'])
-        self.cancelled_by=None; self.run_started=None
+                stopReason=previous['stop_reason'],stopCode=previous['stop_code'],elapsedSeconds=previous['elapsed_seconds'],daysDone=previous['days_done'],secondsPerDay=previous['seconds_per_day'],
+                refill=json.loads(previous['refill_summary']) if previous['refill_summary'] else None)
+        self.cancelled_by=None; self.run_started=None; self.hidden_seen=False; self.hidden_rule=dict(DEFAULT_HIDDEN_RULE)
 
     def fetch(self,url):
         # Detail pages are retried by collect_bonuses through the actual report
@@ -397,7 +400,9 @@ class Collector:
         with self.lock:
             if self.active: return dict(self.progress)
             self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=START_PARALLEL; self.quick_streak=0
-            self.cancelled_by=None; self.run_started=time.monotonic()
+            self.cancelled_by=None; self.run_started=time.monotonic(); self.hidden_seen=False
+            # 停止事由 5 (a table with hidden 差枚/出率) is user-adjustable; read once per run.
+            self.hidden_rule=self.store.scrape_settings() if hasattr(self.store,'scrape_settings') else dict(DEFAULT_HIDDEN_RULE)
             self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
         return self.status()
@@ -471,12 +476,17 @@ class Collector:
                 with self.store.connect() as db:
                     done=db.execute('SELECT status FROM scrape_days WHERE day=?',(day,)).fetchone()
                     existing=[dict(r) for r in db.execute('SELECT *,day AS date FROM scraped_observations WHERE day=? ORDER BY CAST(seat AS INTEGER)',(day,))]
-                base_complete=bool(done and done[0]=='complete' and {r['seat'] for r in existing}=={str(n) for n in range(1,self.expected_count(day)+1)})
+                seats_complete=bool(done and done[0]=='complete' and {r['seat'] for r in existing}=={str(n) for n in range(1,self.expected_count(day)+1)})
                 bonus_complete=bool(existing) and all(r['bb'] is not None and r['rb'] is not None for r in existing)
                 # All 11 columns: a played seat without 差枚/出率 needs the table again, unless that day
                 # was already read again with the current checks and the site itself has no value.
-                if base_complete and missing_values(existing) and not self.values_checked(day):
-                    base_complete=False
+                needs_values=seats_complete and bool(missing_values(existing)) and not self.values_checked(day)
+                base_complete=seats_complete and not needs_values
+                if needs_values and self.hidden_seen and (not include_bonus or bonus_complete):
+                    # Values are hidden from this browser in this run: reading the table again cannot fill them.
+                    with self.lock:
+                        self.progress['completed']+=1; self.progress['skippedHidden']=self.progress.get('skippedHidden',0)+1
+                    continue
                 if (base_complete or bonus_only) and existing and (not include_bonus or bonus_complete):
                     if include_bonus:self.bonus_status(day,'complete',len(existing),'')
                     with self.lock:self.progress['completed']+=1
@@ -497,16 +507,26 @@ class Collector:
                         all_html=self.fetch(all_url)
                         rows=parse_report(all_html,day,all_url)
                         hidden=missing_values(rows)
-                        if hidden>max(10,len(rows)*HIDDEN_VALUES_LIMIT):
+                        rule=self.hidden_rule
+                        table_hidden=hidden>max(rule['hiddenMinSeats'],len(rows)*rule['hiddenMinPercent']/100)
+                        if table_hidden and rule['hiddenAction']=='stop':
                             # The site hides values from this browser: every further page would come back the
                             # same, so stop the whole run instead of requesting hundreds of pages in vain.
                             raise RuntimeError(VALUES_HIDDEN+'（全台表で%d台が「-」）。保存せず取得を止めました。時間をおいて再開してください。'%hidden)
-                        expected=self.expected_count(day)
-                        complete={r['seat'] for r in rows}=={str(n) for n in range(1,expected+1)} if expected else False
-                        self.save_rows(rows)
-                        self.value_status(day,hidden)
-                        self.day_status(day,url,'complete' if complete else 'partial',len(rows),'' if complete else '台番号の全台網羅を確認できません。')
-                        with self.lock:self.progress['added']+=len(rows)
+                        if table_hidden:
+                            self.hidden_seen=True
+                            with self.lock:self.progress['hiddenDays']=self.progress.get('hiddenDays',0)+1
+                        if table_hidden and existing:
+                            rows=existing; all_html=None  # nothing newer to save; the saved values stay
+                        else:
+                            expected=self.expected_count(day)
+                            complete={r['seat'] for r in rows}=={str(n) for n in range(1,expected+1)} if expected else False
+                            before={r['seat']:dict(r) for r in existing}
+                            self.save_rows(rows)
+                            if not table_hidden:self.value_status(day,hidden)  # a hidden day stays due for a later re-read
+                            if before:self.record_refill(day,run_id,before)
+                            self.day_status(day,url,'complete' if complete else 'partial',len(rows),'' if complete else '台番号の全台網羅を確認できません。')
+                            with self.lock:self.progress['added']+=len(rows)
                     all_saved=True
                     if include_bonus:
                         try:self.collect_bonuses(all_html,day,url,rows)
@@ -550,8 +570,9 @@ class Collector:
                 self.progress.setdefault('stopReason',None)
                 self.progress['stopCode']=STOP_REASON_CODES.get(self.progress['stopReason'])
             with self.store.connect() as db:
-                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=?,stop_reason=?,stop_code=?,elapsed_seconds=?,days_done=?,seconds_per_day=? WHERE id=?',
-                           (self.progress['state'],now(),self.progress['message'],self.progress['stopReason'],self.progress['stopCode'],self.progress['elapsedSeconds'],done,per_day,run_id))
+                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=?,stop_reason=?,stop_code=?,elapsed_seconds=?,days_done=?,seconds_per_day=?,refill_summary=? WHERE id=?',
+                           (self.progress['state'],now(),self.progress['message'],self.progress['stopReason'],self.progress['stopCode'],self.progress['elapsedSeconds'],done,per_day,
+                            json.dumps(self.progress['refill'],ensure_ascii=False) if self.progress.get('refill') else None,run_id))
             with self.lock: self.active=False; self.queue.clear(); self.tasks.clear(); self.ready.notify_all()
 
     def expected_count(self,day):
@@ -659,6 +680,30 @@ class Collector:
             cursor=db.execute('''UPDATE scraped_observations SET bb=COALESCE(bb,?),rb=COALESCE(rb,?),combined=COALESCE(combined,?),bonus_source_url=?,fetched_at=?
                 WHERE day=? AND seat=? AND model=? AND games IS ?''',(*values,url,now(),day,row['seat'],row['model'],row['games']))
             if cursor.rowcount!=1:raise ValueError('BB/RB保存時に対象台の基礎値が変わりました。')
+
+    def record_refill(self,day,run_id,before):
+        """Compare a day read again with what was saved before: which empty values were filled, what is still
+        missing, whether a saved value changed (the site corrected its data) and whether BB/RB were kept."""
+        with self.store.connect() as db:
+            after={r['seat']:dict(r) for r in db.execute('SELECT * FROM scraped_observations WHERE day=?',(day,))}
+        filled=changed=kept=reset=0
+        for seat,old in before.items():
+            new=after.get(seat,{})
+            for key in ('net','payout_percent'):
+                if old.get(key) is None and new.get(key) is not None:filled+=1
+                elif old.get(key) is not None and new.get(key)!=old.get(key):changed+=1
+            for key in ('model','games'):
+                if old.get(key) is not None and new.get(key)!=old.get(key):changed+=1
+            if old.get('bb') is not None and old.get('rb') is not None:
+                if (new.get('bb'),new.get('rb'))==(old['bb'],old['rb']):kept+=1
+                else:reset+=1
+        still=missing_values(list(after.values()))
+        with self.store.connect() as db:
+            db.execute('INSERT OR REPLACE INTO scrape_refill_days VALUES(?,?,?,?,?,?,?,?)',(day,run_id,filled,still,changed,kept,reset,now()))
+        with self.lock:
+            refill=self.progress.setdefault('refill',{'days':0,'filled':0,'stillMissing':0,'changed':0,'bonusKept':0,'bonusReset':0})
+            for key,value in (('days',1),('filled',filled),('stillMissing',still),('changed',changed),('bonusKept',kept),('bonusReset',reset)):
+                refill[key]+=value
 
     def value_status(self,day,missing):
         with self.store.connect() as db:
