@@ -66,7 +66,7 @@
     const status = document.querySelector('#gdb-status');
     if (!tag || !status) return result;
     tag.textContent = `${count(result.rowCount)}行`;
-    status.textContent = `保存先: ${result.path} / ${count(result.dayCount)}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 記録がない日: ${count(result.actionableMissingDates.length)}日 / 未掲載: ${count(result.unpublishedDates.length)}日 / BB・RB不足: ${count(result.missingBonusRows)}行（ジャグラー ${count(result.missingJugglerBonusRows)}行）`;
+    status.textContent = `保存先: ${result.path} / ${count(result.dayCount)}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 記録がない日: ${count(result.actionableMissingDates.length)}日 / 未掲載: ${count(result.unpublishedDates.length)}日 / BB・RB不足: ${count(result.missingBonusRows)}行（ジャグラー ${count(result.missingJugglerBonusRows)}行） / 差枚・出率不足: ${count(result.missingValueRows)}行`;
     return result;
   }
 

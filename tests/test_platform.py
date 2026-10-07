@@ -125,14 +125,9 @@ class SourceBrowserWindowTests(unittest.TestCase):
         self.assertLessEqual(max(x for _, x, _ in created) + 470, 1920)  # fits a full-HD screen
         self.assertLessEqual(max(y for _, _, y in created) + 340, 1080)
 
-    def test_webviews_reach_only_the_public_site_and_this_app(self):
-        environ = {}
-        desktop.limit_webview_hosts(environ)
-        arguments = environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS']
-        self.assertIn('--disable-features=ElasticOverscroll', arguments)  # pywebview's own argument is kept
-        self.assertIn('MAP * ~NOTFOUND', arguments)
-        for host in ('min-repo.com', '*.min-repo.com', '127.0.0.1', 'localhost'):
-            self.assertIn('EXCLUDE ' + host, arguments)
+    def test_webviews_load_pages_as_an_ordinary_visitor(self):
+        # Blocking third-party hosts made the site blank negative 差枚/出率 (2026-10-07): not done any more.
+        self.assertFalse(hasattr(desktop, 'limit_webview_hosts'))
 
     def test_a_database_error_page_stops_at_once(self):
         url = 'https://min-repo.com/1/?kishu=X'

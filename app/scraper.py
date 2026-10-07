@@ -34,8 +34,22 @@ START_PARALLEL, MIN_PARALLEL = 3, 2
 QUICK_SERVER_MS, SLOW_SERVER_MS = 800, 2000
 
 
+# 差枚 and 出率 must be read for every seat that was played. With ads blocked, the site was seen
+# blanking the negative 差枚 (and their 出率) of the rendered table (2026-10-07), so a table with
+# many played seats lacking them is not saved: it is read again later instead.
+HIDDEN_VALUES_LIMIT = 0.1
+
+
+def missing_values(rows):
+    """Played seats whose 差枚 or 出率 is empty (a seat with 0 games legitimately has none)."""
+    return sum(1 for r in rows if r.get('games') and (r.get('net') is None or r.get('payout_percent') is None))
+
+
+VALUES_HIDDEN = '公開サイトが差枚・出率を伏せています'
+
+
 def stops_everything(message):
-    return RESTRICTED in str(message) or SITE_TROUBLE in str(message)
+    return any(marker in str(message) for marker in (RESTRICTED, SITE_TROUBLE, VALUES_HIDDEN))
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
@@ -43,6 +57,7 @@ CREATE TABLE IF NOT EXISTS scrape_days(day TEXT PRIMARY KEY,url TEXT,status TEXT
 CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT);
 CREATE TABLE IF NOT EXISTS scrape_bonus_days(day TEXT PRIMARY KEY,status TEXT NOT NULL,rows INTEGER NOT NULL,message TEXT NOT NULL,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_report_index(day TEXT PRIMARY KEY,url TEXT NOT NULL UNIQUE,checked_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS scrape_value_days(day TEXT PRIMARY KEY,missing INTEGER NOT NULL,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_bonus_targets(day TEXT,model TEXT,seat TEXT,kind TEXT,url TEXT NOT NULL,PRIMARY KEY(day,model,seat,kind));
 '''
 
@@ -412,6 +427,10 @@ class Collector:
                     existing=[dict(r) for r in db.execute('SELECT *,day AS date FROM scraped_observations WHERE day=? ORDER BY CAST(seat AS INTEGER)',(day,))]
                 base_complete=bool(done and done[0]=='complete' and {r['seat'] for r in existing}=={str(n) for n in range(1,self.expected_count(day)+1)})
                 bonus_complete=bool(existing) and all(r['bb'] is not None and r['rb'] is not None for r in existing)
+                # All 11 columns: a played seat without 差枚/出率 needs the table again, unless that day
+                # was already read again with the current checks and the site itself has no value.
+                if base_complete and missing_values(existing) and not self.values_checked(day):
+                    base_complete=False
                 if (base_complete or bonus_only) and existing and (not include_bonus or bonus_complete):
                     if include_bonus:self.bonus_status(day,'complete',len(existing),'')
                     with self.lock:self.progress['completed']+=1
@@ -431,9 +450,15 @@ class Collector:
                         all_url=all_data_link(self.fetch(url),day,url)
                         all_html=self.fetch(all_url)
                         rows=parse_report(all_html,day,all_url)
+                        hidden=missing_values(rows)
+                        if hidden>max(10,len(rows)*HIDDEN_VALUES_LIMIT):
+                            # The site hides values from this browser: every further page would come back the
+                            # same, so stop the whole run instead of requesting hundreds of pages in vain.
+                            raise RuntimeError(VALUES_HIDDEN+'（全台表で%d台が「-」）。保存せず取得を止めました。時間をおいて再開してください。'%hidden)
                         expected=self.expected_count(day)
                         complete={r['seat'] for r in rows}=={str(n) for n in range(1,expected+1)} if expected else False
                         self.save_rows(rows)
+                        self.value_status(day,hidden)
                         self.day_status(day,url,'complete' if complete else 'partial',len(rows),'' if complete else '台番号の全台網羅を確認できません。')
                         with self.lock:self.progress['added']+=len(rows)
                     all_saved=True
@@ -579,6 +604,14 @@ class Collector:
             cursor=db.execute('''UPDATE scraped_observations SET bb=COALESCE(bb,?),rb=COALESCE(rb,?),combined=COALESCE(combined,?),bonus_source_url=?,fetched_at=?
                 WHERE day=? AND seat=? AND model=? AND games IS ?''',(*values,url,now(),day,row['seat'],row['model'],row['games']))
             if cursor.rowcount!=1:raise ValueError('BB/RB保存時に対象台の基礎値が変わりました。')
+
+    def value_status(self,day,missing):
+        with self.store.connect() as db:
+            db.execute('INSERT INTO scrape_value_days VALUES(?,?,?) ON CONFLICT(day) DO UPDATE SET missing=excluded.missing,checked_at=excluded.checked_at',(day,missing,now()))
+
+    def values_checked(self,day):
+        with self.store.connect() as db:
+            return db.execute('SELECT 1 FROM scrape_value_days WHERE day=?',(day,)).fetchone() is not None
 
     def bonus_status(self,day,status,count,message):
         with self.store.connect() as db:

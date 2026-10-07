@@ -212,6 +212,49 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(collector.progress['added'],2)
         self.assertEqual(collector.status()['coverage'],[{'status':'complete','days':1}])
 
+    def all_seats_html(self,rows):
+        cells=''.join('<tr><td>TEST ONLY</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td></tr>'%row for row in rows)
+        return FIXTURE.split('<table>')[0]+'<table><tr><th>機種</th><th>台番</th><th>差枚</th><th>G数</th><th>出率</th></tr>'+cells+'</table>'
+    def test_missing_values_counts_only_played_seats(self):
+        self.assertEqual(scraper.missing_values([{'games':0,'net':None,'payout_percent':None},{'games':5,'net':-10,'payout_percent':90.0},
+                                                 {'games':5,'net':None,'payout_percent':90.0},{'games':5,'net':3,'payout_percent':None}]),2)
+    def test_a_table_with_hidden_values_is_not_saved(self):
+        collector=self.store.collector; url='https://min-repo.com/3326458/'
+        collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:12
+        hidden=self.all_seats_html([(n,'-',100,'-') for n in range(1,13)])  # 12 played seats, 差枚/出率 blanked
+        def fetch(target):
+            if '/tag/' in target:return '<h1>ゴッサムシティ</h1><table></table>'
+            if target==url:return hidden+'<a href="?kishu=all">全台データ一覧</a>'
+            return hidden
+        collector.fetch=fetch
+        collector.progress={'id':'test-hidden','state':'running','added':0,'completed':0,'total':0}
+        collector.seed.append({'day':'2026-09-02','url':'https://min-repo.com/3326459/'})
+        collector.run('2026-09-02','2026-09-01',False,['2026-09-01','2026-09-02'])
+        self.assertEqual(collector.status()['summary']['records'],0)  # nothing saved; read again later
+        self.assertEqual(collector.progress['state'],'failed')  # the whole run stops at the first hidden table
+        self.assertIn(scraper.VALUES_HIDDEN,collector.progress['message'])
+        self.assertEqual(collector.progress['completed'],1)
+    def test_a_saved_day_missing_values_is_read_again_once(self):
+        collector=self.store.collector; url='https://min-repo.com/3326458/'
+        collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:2
+        rows=parse_report(FIXTURE,'2026-09-01',url+'?kishu=all')
+        collector.save_rows([dict(r,net=None,payout_percent=None,bb=1,rb=1) for r in rows])  # saved earlier with values hidden
+        collector.day_status('2026-09-01',url,'complete',2,'')
+        calls=[]
+        def fetch(target):
+            calls.append(target)
+            if target==url:return FIXTURE+'<a href="?kishu=all">全台データ一覧</a>'
+            return FIXTURE
+        collector.fetch=fetch
+        collector.progress={'id':'test-refill','state':'running','added':0,'completed':0,'total':0}
+        collector.run('2026-09-01','2026-09-01',True,['2026-09-01'])
+        self.assertEqual(calls,[url,url+'?kishu=all'])
+        saved={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual((saved['2']['差枚'],saved['2']['出率'],saved['2']['BB数']),('-1234','82.1%','1'))  # BB/RB kept
+        calls.clear()
+        collector.progress={'id':'test-refill-2','state':'running','added':0,'completed':0,'total':0}
+        collector.run('2026-09-01','2026-09-01',True,['2026-09-01'])
+        self.assertEqual(calls,[])  # read again once; the remaining blank (0 games) is the site's own
     def test_index_year_pagination_and_durable_links(self):
         url='https://min-repo.com/3382117/'
         html='<h1>ゴッサムシティ</h1><a href="'+url+'">9/29(火)</a><a href="'+TAG+'page/2/">»</a><a href="https://example.com/page/3/">次へ</a>'
