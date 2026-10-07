@@ -38,18 +38,8 @@ PAGE_CYCLE = 1.5
 # rarely: once a second while loading, then right after the page reports it has loaded.
 LOADING_CHECK = 1.0
 LOADED_CHECK = 0.25
-# The app's WebViews may reach only the public data site and this app itself. Ads, trackers and
-# other third-party loads fail at name resolution, so a page is ready sooner (user decision, 2026-10-07).
-ALLOWED_HOSTS = (SOURCE_HOST, "*." + SOURCE_HOST, "127.0.0.1", "localhost")
-WEBVIEW2_ARGUMENTS = '--disable-features=ElasticOverscroll --host-resolver-rules="MAP * ~NOTFOUND, %s"' % \
-    ", ".join("EXCLUDE " + host for host in ALLOWED_HOSTS)
-
-
-def limit_webview_hosts(environ=None):
-    """WebView2 reads extra browser arguments from this variable when its environment is created;
-    pywebview sets them for every window alike, so this is the one place to add them."""
-    environ = os.environ if environ is None else environ
-    environ["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = WEBVIEW2_ARGUMENTS
+# Third-party loads (ads etc.) are NOT blocked: with them blocked, the site blanked the negative
+# 差枚/出率 of its table (2026-10-07), so source pages are read as an ordinary visitor sees them.
 ROOT = server.ROOT
 
 EXTERNAL_LINK_JS = """(()=>{if(window.__jokerExternal)return;window.__jokerExternal=true;
@@ -442,7 +432,6 @@ def main(argv=None):
     if not instance.acquire():
         bring_existing_to_front(folder)
         return 0
-    limit_webview_hosts()
     try:
         import webview
     except ImportError:

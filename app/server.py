@@ -216,6 +216,7 @@ class Store:
             "missingDates": missing, "actionableMissingDates": [day for day in missing if day not in unpublished],
             "unpublishedDates": sorted(day for day in missing if day in unpublished),
             "missingBonusRows": sum(row["BB数"] == "" or row["RB数"] == "" for row in rows),
+            "missingValueRows": sum(row["ゲーム数"] not in ("", "0") and (row["差枚"] == "" or row["出率"] == "") for row in rows),
             "missingJugglerBonusRows": sum((row["BB数"] == "" or row["RB数"] == "") and row["ジャグラーかジャグラーじゃないか"] == "ジャグラー" for row in rows),
         }
 
@@ -238,6 +239,13 @@ class Store:
         return {"start": start, "targetEnd": end, "missingDates": [row[0] for row in days], "missingDateCount": len(days),
                 "missingRows": sum(row[1] for row in days)}
 
+    def gdb_value_days(self, start, end):
+        """Saved days where a played seat lacks 差枚 or 出率 and the table was not read again since."""
+        with self.connect() as db:
+            return [row[0] for row in db.execute("""SELECT DISTINCT day FROM scraped_observations
+                WHERE day BETWEEN ? AND ? AND games>0 AND (net IS NULL OR payout_percent IS NULL)
+                AND day NOT IN (SELECT day FROM scrape_value_days) ORDER BY day""", (start, end))]
+
     def gdb_range_plan(self, start, end, retry_unpublished_after=None):
         """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out,
         except those after retry_unpublished_after), or a saved record whose BB or RB is empty.
@@ -250,8 +258,9 @@ class Store:
         retry = {day for day in status["unpublishedDates"] if retry_unpublished_after and day > retry_unpublished_after}
         new_days = [day for day in status["missingDates"] if start <= day <= end and (day in status["actionableMissingDates"] or day in retry)]
         bonus_days = self.gdb_bonus_plan(start, end)["missingDates"]
-        return {"start": start, "targetEnd": end, "missingDates": sorted(set(new_days) | set(bonus_days)),
-                "newDateCount": len(new_days), "bonusDateCount": len(bonus_days),
+        value_days = self.gdb_value_days(start, end)
+        return {"start": start, "targetEnd": end, "missingDates": sorted(set(new_days) | set(bonus_days) | set(value_days)),
+                "newDateCount": len(new_days), "bonusDateCount": len(bonus_days), "valueDateCount": len(value_days),
                 "unpublishedDates": [day for day in status["unpublishedDates"] if start <= day <= end and day not in retry]}
 
     @staticmethod
