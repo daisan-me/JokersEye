@@ -25,12 +25,10 @@
       <div class="toolbar scrape-range"><label>開始日<input id="scrape-from" type="date" min="2024-03-01"></label><label>終了日<input id="scrape-to" type="date" min="2024-03-01"></label><button id="scrape-range-start" class="secondary">期間を指定して取得</button></div>
       <p class="hint">期間内で、記録がない日は全台表とBB・RBを取得し、BB・RBが空の日はそこだけ補完します。揃っている日・機種は再取得しません。まず1週間ほどで試してから広げると、取り方の問題に早く気づけます。</p>
       <p id="scrape-progress" role="status">取得状況を確認中…</p><p id="scrape-run" class="hint"></p><div id="scrape-stop-reason" hidden></div>
-      <details id="scrape-rules"><summary>停止の条件</summary>
-        <p class="hint">停止事由 5（差枚・出率が伏せられた表）の条件と動きを変えられます。停止事由 3（アクセス制限）と 4（サイトのエラー）は、サイトに負担をかけないため必ず止めます。</p>
-        <div class="toolbar"><label>伏せられた台が<input id="rule-seats" type="number" min="1" max="310" step="1">台</label><label>かつ<input id="rule-percent" type="number" min="1" max="100" step="1">％を超えたら</label>
-          <label><select id="rule-action"><option value="stop">取得を止める（おすすめ）</option><option value="continue">伏せられた値は「未取得」のまま続ける</option></select></label>
+      <details id="scrape-rules"><summary>伏せられた表の扱い</summary>
+        <p class="hint">差枚・出率が伏せられた表でも取得は止めません。新しい日は見えている値とBB・RBを保存し、伏せられた値は「未取得」のまま残します（後で取り直せます）。保存済みの値は上書きせず、伏せられていると分かった回は差枚・出率だけの取り直しを飛ばします。停止事由 3（アクセス制限）と 4（サイトのエラー）は、サイトに負担をかけないため必ず止めます。</p>
+        <div class="toolbar"><label>伏せられた台が<input id="rule-seats" type="number" min="1" max="310" step="1">台</label><label>かつ<input id="rule-percent" type="number" min="1" max="100" step="1">％を超えたら「伏せられた表」とみなす</label>
           <button id="rule-save" class="secondary">条件を保存</button></div>
-        <p class="hint">「続ける」を選ぶと、新しい日は見えている値とBB・RBを保存し、伏せられた値は「未取得」のまま残します（後で取り直せます）。伏せられていると分かった回は、差枚・出率だけの取り直しは飛ばします。</p>
       </details><progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
       <details id="scrape-failures"><summary>欠落・未掲載・失敗（最新40日）</summary><div></div></details>
       <p class="hint">公開表にない値は空欄で保存します。全台表にBB/RBがない場合、その欄は未取得のままで、0ではありません。差枚の「−」も欠測です。取得元に制限や確認画面が出た場合は停止します。取得用ブラウザーを閉じると停止します。</p>`;
@@ -41,11 +39,11 @@
     panel.querySelector('#scrape-range-start').addEventListener('click',()=>start('gdb/range',{start:panel.querySelector('#scrape-from').value||null,end:panel.querySelector('#scrape-to').value||null}));
     panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{reason:'button'});await poll();}catch(e){showError(e);}});
     loadRules(panel).catch(showError);
-    panel.querySelector('#rule-save').addEventListener('click',async()=>{try{const r=await api('scrape/settings',{hiddenAction:panel.querySelector('#rule-action').value,hiddenMinSeats:Number(panel.querySelector('#rule-seats').value),hiddenMinPercent:Number(panel.querySelector('#rule-percent').value)});showRules(panel,r);notice('停止の条件を保存しました。次の取得から使います。');}catch(e){showError(e);}});
+    panel.querySelector('#rule-save').addEventListener('click',async()=>{try{const r=await api('scrape/settings',{hiddenMinSeats:Number(panel.querySelector('#rule-seats').value),hiddenMinPercent:Number(panel.querySelector('#rule-percent').value)});showRules(panel,r);notice('伏せられた表の条件を保存しました。次の取得から使います。');}catch(e){showError(e);}});
     poll();
     if(!timer)timer=setInterval(poll,2000);
   }
-  function showRules(panel,r){panel.querySelector('#rule-seats').value=r.hiddenMinSeats;panel.querySelector('#rule-percent').value=r.hiddenMinPercent;panel.querySelector('#rule-action').value=r.hiddenAction;}
+  function showRules(panel,r){panel.querySelector('#rule-seats').value=r.hiddenMinSeats;panel.querySelector('#rule-percent').value=r.hiddenMinPercent;}
   async function loadRules(panel){showRules(panel,await api('scrape/settings'));}
   // What a re-read changed: filled values, values still missing, saved values that changed, BB/RB kept or read again.
   function refillRecord(status){
@@ -73,7 +71,7 @@
       panel.querySelector('#scrape-stop').disabled=!running;
       panel.querySelector('#scrape-progress').textContent=status.message||'取得待機中';
       panel.querySelector('#scrape-run').textContent=[runRecord(status,running),refillRecord(status)].filter(Boolean).join(' / ');
-      panel.querySelectorAll('#rule-seats,#rule-percent,#rule-action,#rule-save').forEach(input=>{input.disabled=running;});
+      panel.querySelectorAll('#rule-seats,#rule-percent,#rule-save').forEach(input=>{input.disabled=running;});
       const reason=panel.querySelector('#scrape-stop-reason');  // 停止事由 with its number, in red
       reason.hidden=running||!status.stopReason;
       reason.className='stop-reason';

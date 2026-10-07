@@ -44,7 +44,7 @@ def missing_values(rows):
     return sum(1 for r in rows if r.get('games') and (r.get('net') is None or r.get('payout_percent') is None))
 
 
-VALUES_HIDDEN = '公開サイトが差枚・出率を伏せています'
+VALUES_HIDDEN = '公開サイトが差枚・出率を伏せています'  # only in runs recorded before 2026-10-08 (停止事由 5)
 
 
 # Why a run stopped (user decision, 2026-10-07: always record the reason, the time taken and the time per day).
@@ -61,7 +61,9 @@ STOP_REASON_CODES = {
 STOP_REASONS = {'button': '「取得を停止」ボタン', 'window': '取得用ブラウザーを閉じた'}
 RUN_COLUMNS = (('stop_reason', 'TEXT'), ('elapsed_seconds', 'REAL'), ('days_done', 'INTEGER'), ('seconds_per_day', 'REAL'), ('stop_code', 'INTEGER'),
                ('refill_summary', 'TEXT'))
-DEFAULT_HIDDEN_RULE = {'hiddenAction': 'stop', 'hiddenMinSeats': 10, 'hiddenMinPercent': 10}
+# A table counts as hidden above this many seats and percent (user-adjustable). It never stops a run
+# (user decision, 2026-10-08: 停止事由 5 is no longer used; its number stays for old records).
+DEFAULT_HIDDEN_RULE = {'hiddenMinSeats': 10, 'hiddenMinPercent': 10}
 
 
 def stop_reason(message, cancelled_by=None):
@@ -401,7 +403,7 @@ class Collector:
             if self.active: return dict(self.progress)
             self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=START_PARALLEL; self.quick_streak=0
             self.cancelled_by=None; self.run_started=time.monotonic(); self.hidden_seen=False
-            # 停止事由 5 (a table with hidden 差枚/出率) is user-adjustable; read once per run.
+            # When a table counts as hidden is user-adjustable; read once per run.
             self.hidden_rule=self.store.scrape_settings() if hasattr(self.store,'scrape_settings') else dict(DEFAULT_HIDDEN_RULE)
             self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
@@ -509,11 +511,8 @@ class Collector:
                         hidden=missing_values(rows)
                         rule=self.hidden_rule
                         table_hidden=hidden>max(rule['hiddenMinSeats'],len(rows)*rule['hiddenMinPercent']/100)
-                        if table_hidden and rule['hiddenAction']=='stop':
-                            # The site hides values from this browser: every further page would come back the
-                            # same, so stop the whole run instead of requesting hundreds of pages in vain.
-                            raise RuntimeError(VALUES_HIDDEN+'（全台表で%d台が「-」）。保存せず取得を止めました。時間をおいて再開してください。'%hidden)
                         if table_hidden:
+                            # The site hides values from this browser: keep going, leave them 未取得 (never guessed).
                             self.hidden_seen=True
                             with self.lock:self.progress['hiddenDays']=self.progress.get('hiddenDays',0)+1
                         if table_hidden and existing:
