@@ -11,7 +11,7 @@
   function runRecord(status,running){
     if(running)return `経過 ${duration(status.elapsedSeconds)} · ${number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}${status.remainingSeconds?` · 残り約 ${duration(status.remainingSeconds)}`:''}`;
     if(!status.state||status.state==='idle')return '';
-    return `前回の取得：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}${status.stopReason?` · 停止事由：${status.stopReason}`:''}`;
+    return `前回の取得：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}`;
   }
   let timer=null, busy=false;
   function mount(){
@@ -24,7 +24,7 @@
       <p class="hint">GDBに記録されている最後の日から本日（日本時間）までを取得します。記録がまだない場合は2024/03/01から取得します。</p>
       <div class="toolbar scrape-range"><label>開始日<input id="scrape-from" type="date" min="2024-03-01"></label><label>終了日<input id="scrape-to" type="date" min="2024-03-01"></label><button id="scrape-range-start" class="secondary">期間を指定して取得</button></div>
       <p class="hint">期間内で、記録がない日は全台表とBB・RBを取得し、BB・RBが空の日はそこだけ補完します。揃っている日・機種は再取得しません。まず1週間ほどで試してから広げると、取り方の問題に早く気づけます。</p>
-      <p id="scrape-progress" role="status">取得状況を確認中…</p><p id="scrape-run" class="hint"></p><progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
+      <p id="scrape-progress" role="status">取得状況を確認中…</p><p id="scrape-run" class="hint"></p><div id="scrape-stop-reason" hidden></div><progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
       <details id="scrape-failures"><summary>欠落・未掲載・失敗（最新40日）</summary><div></div></details>
       <p class="hint">公開表にない値は空欄で保存します。全台表にBB/RBがない場合、その欄は未取得のままで、0ではありません。差枚の「−」も欠測です。取得元に制限や確認画面が出た場合は停止します。取得用ブラウザーを閉じると停止します。</p>`;
     content.prepend(panel);
@@ -54,6 +54,10 @@
       panel.querySelector('#scrape-stop').disabled=!running;
       panel.querySelector('#scrape-progress').textContent=status.message||'取得待機中';
       panel.querySelector('#scrape-run').textContent=runRecord(status,running);
+      const reason=panel.querySelector('#scrape-stop-reason');  // 停止事由 with its number, in red
+      reason.hidden=running||!status.stopReason;
+      reason.className='stop-reason';
+      reason.innerHTML=reason.hidden?'':`<span class="stop-code">${esc(status.stopCode??'?')}</span><div><strong>停止事由 ${esc(status.stopCode??'?')}：${esc(status.stopReason)}</strong><small>${esc(status.message||'')}</small></div>`;
       const meter=panel.querySelector('#scrape-meter');meter.hidden=!running;meter.max=Math.max(1,status.total||1);meter.value=status.completed||0;
       const s=status.summary;
       panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得・欠測 ${number(s.missingBonuses)} 行 · 差枚欠測 ${number(s.missingNet)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 枚':''):''}`;
