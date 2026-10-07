@@ -64,6 +64,22 @@ class ScraperTests(unittest.TestCase):
         first.join(5);second.join(5)
         self.assertEqual((first_result['html'],second_result['html']),('page https://min-repo.com/1/','page https://min-repo.com/2/'))
         with self.assertRaises(ValueError):collector.browser_result({'id':one['id'],'html':'late'})
+    def test_a_page_no_window_answered_is_handed_out_again(self):
+        collector=self.store.collector
+        thread,result=self.fetch_in_background('https://min-repo.com/1/')
+        first=collector.browser_task(wait=1)
+        original=scraper.PAGE_LEASE
+        scraper.PAGE_LEASE=0.05
+        try:
+            time.sleep(0.3)  # the window that took it never answers (e.g. it did not receive the reply)
+            again=collector.browser_task(wait=1)
+        finally:
+            scraper.PAGE_LEASE=original
+        self.assertEqual(again['id'],first['id'])
+        collector.browser_result({'id':again['id'],'html':'second window'})
+        thread.join(5)
+        self.assertEqual(result['html'],'second window')
+        with self.assertRaises(ValueError):collector.browser_result({'id':first['id'],'html':'late first window'})
     def test_a_restriction_in_one_window_stops_the_others(self):
         collector=self.store.collector
         thread,result=self.fetch_in_background('https://min-repo.com/1/')

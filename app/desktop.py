@@ -254,8 +254,11 @@ class SourceWindow:
     def poll(self):
         """Read one page if the collector has one. Returns when that page was started, or None."""
         try:
-            task = self.client.request("scrape/browser-task?wait=1")
-        except (OSError, ValueError):
+            # The collector holds this request up to a second; allow far longer than that, since a
+            # task the collector handed out but this window never received is lost until re-sent.
+            task = self.client.request("scrape/browser-task?wait=1", timeout=10)
+        except (OSError, ValueError) as ex:
+            self.log("task-request " + type(ex).__name__)
             return None
         # The collector reports `active` until the run (including the CSV sync) ends.
         if task.get("active") is False and self.window is not None:
@@ -292,7 +295,9 @@ class SourceWindow:
         status, status_text = 0, "loading"
         # Follow a genuine link of the currently rendered page when available; this keeps
         # ordinary navigation/referrers. No headers, cookies or checks are manufactured.
-        followed = self.evaluate(FOLLOW_JS % json.dumps(url))
+        # Model/seat pages never link to each other, so they skip this check (one less UI-thread call).
+        bonus_page = str(task.get("kind", "")).startswith("bonus-")
+        followed = False if bonus_page else self.evaluate(FOLLOW_JS % json.dumps(url))
         if not truthy(followed):
             self.window.load_url(url)
         started = time.monotonic()

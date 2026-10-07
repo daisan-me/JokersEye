@@ -21,6 +21,9 @@ START = '2023-04-27'
 # per-window cycle; the collector enforces the overall rate).
 BROWSER_WINDOWS = 12
 PAGES_PER_MINUTE = 240
+# A page handed to a window but not answered within this time is handed out again (the window
+# may never have received it). A late answer from the first window is ignored.
+PAGE_LEASE = 20.0
 RESTRICTED = '公開サイトが取得を制限しました'
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
@@ -267,10 +270,14 @@ class Collector:
         with self.ready:
             while True:
                 now_=time.monotonic()
+                for task in self.tasks.values():
+                    if task.get('claimed') and now_-task['claimed']>PAGE_LEASE and task['id'] not in self.queue:
+                        task['claimed']=None; self.queue.appendleft(task['id'])
                 if self.queue and now_>=self.next_dispatch:
                     task=self.tasks[self.queue.popleft()]
+                    task['claimed']=now_
                     self.next_dispatch=max(now_,self.next_dispatch)+60.0/PAGES_PER_MINUTE
-                    return dict({k:v for k,v in task.items() if k not in ('done','answer')},active=self.active)
+                    return dict({k:v for k,v in task.items() if k not in ('done','answer','claimed')},active=self.active)
                 if now_>=deadline: return {'active':self.active}
                 self.ready.wait(min(deadline,self.next_dispatch if self.queue else deadline)-now_)
 
