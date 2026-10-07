@@ -4,6 +4,15 @@
 (() => {
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const number=v=>Number(v||0).toLocaleString('ja-JP');
+  // 1時間2分3秒 / 2分3秒 / 3.4秒
+  const duration=s=>{if(s===null||s===undefined)return '—';if(s<60)return `${Math.round(s*10)/10}秒`;s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60;return (h?`${h}時間`:'')+`${m}分`+(h?'':`${r}秒`);};
+  const states={complete:'完了',stopped:'停止',failed:'失敗（停止）',interrupted:'中断',running:'取得中'};
+  // Time taken, days done, time per day and (when stopped) the reason; while running, the time left.
+  function runRecord(status,running){
+    if(running)return `経過 ${duration(status.elapsedSeconds)} · ${number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}${status.remainingSeconds?` · 残り約 ${duration(status.remainingSeconds)}`:''}`;
+    if(!status.state||status.state==='idle')return '';
+    return `前回の取得：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}${status.stopReason?` · 停止事由：${status.stopReason}`:''}`;
+  }
   let timer=null, busy=false;
   function mount(){
     const content=document.querySelector('#content');
@@ -15,7 +24,7 @@
       <p class="hint">GDBに記録されている最後の日から本日（日本時間）までを取得します。記録がまだない場合は2024/03/01から取得します。</p>
       <div class="toolbar scrape-range"><label>開始日<input id="scrape-from" type="date" min="2024-03-01"></label><label>終了日<input id="scrape-to" type="date" min="2024-03-01"></label><button id="scrape-range-start" class="secondary">期間を指定して取得</button></div>
       <p class="hint">期間内で、記録がない日は全台表とBB・RBを取得し、BB・RBが空の日はそこだけ補完します。揃っている日・機種は再取得しません。まず1週間ほどで試してから広げると、取り方の問題に早く気づけます。</p>
-      <p id="scrape-progress" role="status">取得状況を確認中…</p><progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
+      <p id="scrape-progress" role="status">取得状況を確認中…</p><p id="scrape-run" class="hint"></p><progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
       <details id="scrape-failures"><summary>欠落・未掲載・失敗（最新40日）</summary><div></div></details>
       <p class="hint">公開表にない値は空欄で保存します。全台表にBB/RBがない場合、その欄は未取得のままで、0ではありません。差枚の「−」も欠測です。取得元に制限や確認画面が出た場合は停止します。取得用ブラウザーを閉じると停止します。</p>`;
     content.prepend(panel);
@@ -23,7 +32,7 @@
     panel.querySelectorAll('#scrape-from,#scrape-to').forEach(input=>{input.max=today;});
     panel.querySelector('#scrape-today').addEventListener('click',()=>start('gdb/update',{}));
     panel.querySelector('#scrape-range-start').addEventListener('click',()=>start('gdb/range',{start:panel.querySelector('#scrape-from').value||null,end:panel.querySelector('#scrape-to').value||null}));
-    panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{});await poll();}catch(e){showError(e);}});
+    panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{reason:'button'});await poll();}catch(e){showError(e);}});
     poll();
     if(!timer)timer=setInterval(poll,2000);
   }
@@ -44,6 +53,7 @@
       panel.querySelectorAll('#scrape-today,#scrape-range-start').forEach(b=>b.disabled=running);
       panel.querySelector('#scrape-stop').disabled=!running;
       panel.querySelector('#scrape-progress').textContent=status.message||'取得待機中';
+      panel.querySelector('#scrape-run').textContent=runRecord(status,running);
       const meter=panel.querySelector('#scrape-meter');meter.hidden=!running;meter.max=Math.max(1,status.total||1);meter.value=status.completed||0;
       const s=status.summary;
       panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得・欠測 ${number(s.missingBonuses)} 行 · 差枚欠測 ${number(s.missingNet)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 枚':''):''}`;

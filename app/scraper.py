@@ -48,13 +48,32 @@ def missing_values(rows):
 VALUES_HIDDEN = '公開サイトが差枚・出率を伏せています'
 
 
+# Why a run stopped (user decision, 2026-10-07: always record the reason, the time taken and the time per day).
+STOP_REASONS = {'button': '「取得を停止」ボタン', 'window': '取得用ブラウザーを閉じた'}
+RUN_COLUMNS = (('stop_reason', 'TEXT'), ('elapsed_seconds', 'REAL'), ('days_done', 'INTEGER'), ('seconds_per_day', 'REAL'))
+
+
+def stop_reason(message, cancelled_by=None):
+    """The category shown as 停止事由 (the message keeps the details)."""
+    if cancelled_by:
+        return STOP_REASONS.get(cancelled_by, cancelled_by)
+    message = str(message)
+    if RESTRICTED in message:
+        return 'アクセス制限（HTTP 401/403/429・認証・確認画面）'
+    if SITE_TROUBLE in message:
+        return 'サイトのエラー（HTTP 500番台・Database Error）'
+    if VALUES_HIDDEN in message:
+        return '差枚・出率が伏せられた表'
+    return 'エラー'
+
+
 def stops_everything(message):
     return any(marker in str(message) for marker in (RESTRICTED, SITE_TROUBLE, VALUES_HIDDEN))
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
 CREATE TABLE IF NOT EXISTS scrape_days(day TEXT PRIMARY KEY,url TEXT,status TEXT NOT NULL,rows INTEGER NOT NULL DEFAULT 0,message TEXT NOT NULL DEFAULT '',checked_at TEXT);
-CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT);
+CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT,stop_reason TEXT,elapsed_seconds REAL,days_done INTEGER,seconds_per_day REAL);
 CREATE TABLE IF NOT EXISTS scrape_bonus_days(day TEXT PRIMARY KEY,status TEXT NOT NULL,rows INTEGER NOT NULL,message TEXT NOT NULL,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_report_index(day TEXT PRIMARY KEY,url TEXT NOT NULL UNIQUE,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_value_days(day TEXT PRIMARY KEY,missing INTEGER NOT NULL,checked_at TEXT NOT NULL);
@@ -249,9 +268,16 @@ class Collector:
                 db.execute('ALTER TABLE scraped_observations ADD COLUMN bonus_source_url TEXT')
             if 'rate' in {r[1] for r in db.execute('PRAGMA table_info(scraped_observations)')}:
                 db.execute('ALTER TABLE scraped_observations DROP COLUMN rate')  # 貸区分 is no longer recorded
-            db.execute("UPDATE scrape_runs SET state='interrupted',finished_at=?,message='アプリ終了で中断。次回再開できます。' WHERE state='running'",(now(),))
+            columns={r[1] for r in db.execute('PRAGMA table_info(scrape_runs)')}
+            for name,kind in RUN_COLUMNS:
+                if name not in columns:db.execute('ALTER TABLE scrape_runs ADD COLUMN %s %s'%(name,kind))
+            db.execute("UPDATE scrape_runs SET state='interrupted',finished_at=?,message='アプリ終了で中断。次回再開できます。',stop_reason='アプリの終了で中断' WHERE state='running'",(now(),))
+            # Runs recorded before the time was kept: their start and end still give the time taken.
+            db.execute("UPDATE scrape_runs SET elapsed_seconds=ROUND((julianday(finished_at)-julianday(started_at))*86400,1) WHERE elapsed_seconds IS NULL AND finished_at IS NOT NULL AND started_at IS NOT NULL AND state!='interrupted'")
             previous=db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone()
-            if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'])
+            if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'],
+                stopReason=previous['stop_reason'],elapsedSeconds=previous['elapsed_seconds'],daysDone=previous['days_done'],secondsPerDay=previous['seconds_per_day'])
+        self.cancelled_by=None; self.run_started=None
 
     def fetch(self,url):
         # Detail pages are retried by collect_bonuses through the actual report
@@ -332,7 +358,12 @@ class Collector:
         self.progress['parallel']=self.parallel
 
     def status(self):
-        with self.lock: result=dict(self.progress,active=self.active,runFailures=list(self.progress.get('failures',[])))
+        with self.lock:
+            result=dict(self.progress,active=self.active,runFailures=list(self.progress.get('failures',[])))
+            if self.active and self.run_started is not None:  # live: time so far, per day, and what is left
+                elapsed=time.monotonic()-self.run_started; done=self.progress.get('completed',0); total=self.progress.get('total',0)
+                result.update(elapsedSeconds=round(elapsed,1),daysDone=done,secondsPerDay=round(elapsed/done,1) if done else None,
+                              remainingSeconds=round(elapsed/done*(total-done)) if done and total>done else None)
         with self.store.connect() as db:
             result['summary']=dict(db.execute('SELECT COUNT(*) records,COUNT(DISTINCT day) days,MIN(day) first,MAX(day) last,SUM(bb IS NULL OR rb IS NULL) missingBonuses,SUM(net IS NULL) missingNet FROM scraped_observations').fetchone())
             result['coverage']=[dict(r) for r in db.execute('SELECT status,COUNT(*) days FROM scrape_days GROUP BY status')]
@@ -355,11 +386,15 @@ class Collector:
         with self.lock:
             if self.active: return dict(self.progress)
             self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=START_PARALLEL; self.quick_streak=0
+            self.cancelled_by=None; self.run_started=time.monotonic()
             self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
         return self.status()
 
-    def stop(self):
+    def stop(self,reason='button'):
+        if reason not in STOP_REASONS:raise ValueError('停止の理由の指定が不正です。')
+        with self.lock:
+            if self.active and not self.cancelled.is_set():self.cancelled_by=reason
         self.cancelled.set()
         with self.lock:
             self.queue.clear()
@@ -385,7 +420,7 @@ class Collector:
                     retry=[r[0] for r in db.execute("SELECT day FROM scrape_days WHERE status IN ('failed','partial','not-published') AND day BETWEEN ? AND ? ORDER BY day",(requested_start,end))]
                     if include_bonus:
                         retry+= [r[0] for r in db.execute("SELECT DISTINCT day FROM scraped_observations WHERE day BETWEEN ? AND ? AND (bb IS NULL OR rb IS NULL) ORDER BY day",(requested_start,end))]
-                db.execute('INSERT INTO scrape_runs VALUES(?,?,?,?,?,?,?)',(run_id,'running',start,end,now(),None,''))
+                db.execute('INSERT INTO scrape_runs(id,state,start_day,end_day,started_at,finished_at,message) VALUES(?,?,?,?,?,?,?)',(run_id,'running',start,end,now(),None,''))
             with self.lock: self.progress['start']=start
             if only_dates is not None:
                 days=list(only_dates)
@@ -493,10 +528,18 @@ class Collector:
                 missing=sum(db.execute('SELECT COUNT(*) FROM scraped_observations WHERE day=? AND (bb IS NULL OR rb IS NULL)',(day,)).fetchone()[0] for day in days)
             with self.lock: self.progress.update(state='complete',missingBonusRows=missing,message='取得処理が終了しました。対象日のBB/RB不足: '+str(missing)+'台。未掲載・失敗は取得状況を確認してください。')
         except Exception as ex:
-            with self.lock: self.progress.update(state='stopped' if self.cancelled.is_set() else 'failed',message=str(ex))
+            with self.lock: self.progress.update(state='stopped' if self.cancelled.is_set() else 'failed',message=str(ex),
+                                                 stopReason=stop_reason(ex,self.cancelled_by if self.cancelled.is_set() else None))
         finally:
+            elapsed=time.monotonic()-self.run_started if self.run_started is not None else None
+            done=self.progress.get('completed',0)
+            per_day=round(elapsed/done,1) if elapsed is not None and done else None
+            with self.lock:
+                self.progress.update(elapsedSeconds=round(elapsed,1) if elapsed is not None else None,daysDone=done,secondsPerDay=per_day,remainingSeconds=None)
+                self.progress.setdefault('stopReason',None)
             with self.store.connect() as db:
-                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=? WHERE id=?',(self.progress['state'],now(),self.progress['message'],run_id))
+                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=?,stop_reason=?,elapsed_seconds=?,days_done=?,seconds_per_day=? WHERE id=?',
+                           (self.progress['state'],now(),self.progress['message'],self.progress['stopReason'],self.progress['elapsedSeconds'],done,per_day,run_id))
             with self.lock: self.active=False; self.queue.clear(); self.tasks.clear(); self.ready.notify_all()
 
     def expected_count(self,day):

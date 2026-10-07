@@ -130,7 +130,7 @@ class Store:
             latest = self.periods[-1] if self.periods else None
             map_count = latest["seatCount"] if latest else 0
             positioned = (WEB / "fixed-floor.json").is_file() or db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
-            return {"app": APP, "version": VERSION, "summary": summary, "dataPath": str(self.folder), "settings": {r[0]:r[1] for r in db.execute("SELECT key,value FROM settings WHERE key NOT LIKE 'public_map_%'")}, "databaseFile": self.path.name, "runs": [dict(r) for r in db.execute("SELECT state,start_day,end_day,started_at,finished_at,message FROM scrape_runs ORDER BY started_at DESC LIMIT 100")], "mapRegistered": bool(positioned), "mapSeats": map_count, "mapReportDate": self.history_source.get("lastObservedDate"), "mapPeriods": len(self.periods), "mapReports": self.history_source.get("reportCount",0)}
+            return {"app": APP, "version": VERSION, "summary": summary, "dataPath": str(self.folder), "settings": {r[0]:r[1] for r in db.execute("SELECT key,value FROM settings WHERE key NOT LIKE 'public_map_%'")}, "databaseFile": self.path.name, "runs": [dict(r) for r in db.execute("SELECT state,start_day,end_day,started_at,finished_at,message,stop_reason,elapsed_seconds,days_done,seconds_per_day FROM scrape_runs ORDER BY started_at DESC LIMIT 100")], "mapRegistered": bool(positioned), "mapSeats": map_count, "mapReportDate": self.history_source.get("lastObservedDate"), "mapPeriods": len(self.periods), "mapReports": self.history_source.get("reportCount",0)}
 
     @staticmethod
     def _weekday(day):
@@ -627,7 +627,7 @@ class Handler(BaseHTTPRequestHandler):
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
                     result.update({'plan':plan})
             elif path=="/api/scrape/stop":
-                result=self.server.store.collector.stop()
+                result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":
                 result=self.server.store.collector.browser_result(payload)
             elif path=="/api/backup":

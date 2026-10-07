@@ -234,6 +234,74 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(collector.progress['state'],'failed')  # the whole run stops at the first hidden table
         self.assertIn(scraper.VALUES_HIDDEN,collector.progress['message'])
         self.assertEqual(collector.progress['completed'],1)
+    def last_run(self):
+        with self.store.connect() as db:
+            return dict(db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone())
+    def start_run(self,fetch,days=('2026-09-01',)):
+        collector=self.store.collector; url='https://min-repo.com/3326458/'
+        collector.seed=[{'day':day,'url':url} for day in days];collector.expected_count=lambda day:2
+        collector.fetch=fetch
+        collector.active=True;collector.cancelled.clear();collector.cancelled_by=None;collector.run_started=time.monotonic()
+        collector.progress={'id':'test-record-%d'%time.monotonic_ns(),'state':'running','added':0,'completed':0,'total':0,'failures':[]}
+        collector.run(days[-1],days[0],False,list(days))
+        return collector
+    def test_a_finished_run_records_time_days_and_time_per_day(self):
+        url='https://min-repo.com/3326458/'
+        def fetch(target):
+            time.sleep(0.05)
+            return FIXTURE+'<a href="?kishu=all">全台データ一覧</a>' if target==url else FIXTURE
+        collector=self.start_run(fetch)
+        run=self.last_run()
+        self.assertEqual((run['state'],run['stop_reason'],run['days_done']),('complete',None,1))
+        self.assertGreater(run['elapsed_seconds'],0.09)
+        self.assertAlmostEqual(run['seconds_per_day'],run['elapsed_seconds'],delta=0.11)
+        status=collector.status()
+        self.assertEqual((status['daysDone'],status['stopReason']),(1,None))
+    def test_a_stopped_run_records_why(self):
+        collector=self.store.collector
+        def stopped_by_window(target):
+            collector.stop('window')
+            raise RuntimeError('取得を停止しました。')
+        self.start_run(stopped_by_window)
+        self.assertEqual((self.last_run()['state'],self.last_run()['stop_reason']),('stopped','取得用ブラウザーを閉じた'))
+        def restricted(target):
+            raise RuntimeError(scraper.RESTRICTED+'（HTTP 429）。再試行せず停止します。')
+        self.start_run(restricted)
+        run=self.last_run()
+        self.assertEqual(run['state'],'failed')
+        self.assertTrue(run['stop_reason'].startswith('アクセス制限'),run)
+        self.assertIn('HTTP 429',run['message'])
+        self.assertIsNotNone(run['elapsed_seconds'])
+        with self.assertRaises(ValueError):collector.stop('unknown')
+    def test_reasons_by_kind(self):
+        self.assertEqual(scraper.stop_reason(scraper.SITE_TROUBLE+'（Database Error）'),'サイトのエラー（HTTP 500番台・Database Error）')
+        self.assertEqual(scraper.stop_reason(scraper.VALUES_HIDDEN+'（全台表で191台が「-」）'),'差枚・出率が伏せられた表')
+        self.assertEqual(scraper.stop_reason('予期しないこと'),'エラー')
+        self.assertEqual(scraper.stop_reason('取得を停止しました。','button'),'「取得を停止」ボタン')
+    def test_a_running_status_shows_time_so_far_and_left(self):
+        collector=self.store.collector
+        collector.active=True;collector.run_started=time.monotonic()-100
+        collector.progress={'state':'running','completed':4,'total':10}
+        status=collector.status()
+        self.assertEqual(status['daysDone'],4)
+        self.assertAlmostEqual(status['secondsPerDay'],25,delta=1)
+        self.assertAlmostEqual(status['remainingSeconds'],150,delta=5)
+        collector.active=False
+    def test_old_run_records_get_the_new_columns_and_an_interrupted_reason(self):
+        with tempfile.TemporaryDirectory() as folder:
+            import sqlite3
+            from contextlib import closing
+            with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
+                db.execute('CREATE TABLE scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT)')
+                db.execute("INSERT INTO scrape_runs VALUES('old','running','2026-09-01','2026-09-02','2026-10-01T00:00:00+00:00',NULL,'')");db.commit()
+            store=server.Store(folder)
+            self.assertEqual(store.state()['runs'][0]['stop_reason'],'アプリの終了で中断')
+            self.assertEqual(store.collector.status()['stopReason'],'アプリの終了で中断')
+            with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
+                db.execute("INSERT INTO scrape_runs(id,state,start_day,end_day,started_at,finished_at,message) VALUES('older','complete','2026-08-01','2026-08-02','2026-09-01T00:00:00+00:00','2026-09-01T01:30:00+00:00','')");db.commit()
+            server.Store(folder)  # the time taken of an older run is filled from its start and end
+            with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
+                self.assertEqual(db.execute("SELECT elapsed_seconds FROM scrape_runs WHERE id='older'").fetchone()[0],5400.0)
     def test_a_saved_day_missing_values_is_read_again_once(self):
         collector=self.store.collector; url='https://min-repo.com/3326458/'
         collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:2
