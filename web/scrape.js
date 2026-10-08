@@ -25,32 +25,23 @@
       <div class="toolbar scrape-range"><label>開始日<input id="scrape-from" type="date" min="2024-03-01"></label><label>終了日<input id="scrape-to" type="date" min="2024-03-01"></label><button id="scrape-range-start" class="secondary">期間を指定して取得</button></div>
       <p class="hint">期間内で、記録がない日は全台表とBB・RBを取得し、BB・RBが空の日はそこだけ補完します。揃っている日・機種は再取得しません。まず1週間ほどで試してから広げると、取り方の問題に早く気づけます。</p>
       <p id="scrape-progress" role="status">取得状況を確認中…</p><p id="scrape-run" class="hint"></p><div id="scrape-stop-reason" hidden></div>
-      <details id="scrape-rules"><summary>伏せられた表の扱い</summary>
-        <p class="hint">差枚・出率が伏せられた表でも取得は止めません。新しい日は見えている値とBB・RBを保存し、伏せられた値は「未取得」のまま残します（後で取り直せます）。保存済みの値は上書きせず、伏せられていると分かった回は差枚・出率だけの取り直しを飛ばします。停止事由 3（アクセス制限）と 4（サイトのエラー）は、サイトに負担をかけないため必ず止めます。</p>
-        <div class="toolbar"><label>伏せられた台が<input id="rule-seats" type="number" min="1" max="310" step="1">台</label><label>かつ<input id="rule-percent" type="number" min="1" max="100" step="1">％を超えたら「伏せられた表」とみなす</label>
-          <button id="rule-save" class="secondary">条件を保存</button></div>
-      </details><progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
+<progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
       <details id="scrape-failures"><summary>欠落・未掲載・失敗（最新40日）</summary><div></div></details>
-      <p class="hint">公開表にない値は空欄で保存します。全台表にBB/RBがない場合、その欄は未取得のままで、0ではありません。差枚の「−」も欠測です。取得元に制限や確認画面が出た場合は停止します。取得用ブラウザーを閉じると停止します。</p>`;
+      <p class="hint">全台表で「-」と表示された値は「-」として記録します（隠されたものか、値がないものかは区別しません）。BB/RBがまだ取れていない欄は「未取得」で、0ではありません。ロックした日は取得しません。取得元に制限や確認画面が出た場合は停止します。取得用ブラウザーを閉じると停止します。</p>`;
     content.prepend(panel);
     const today=new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);  // Japan time, as the server
     panel.querySelectorAll('#scrape-from,#scrape-to').forEach(input=>{input.max=today;});
     panel.querySelector('#scrape-today').addEventListener('click',()=>start('gdb/update',{}));
     panel.querySelector('#scrape-range-start').addEventListener('click',()=>start('gdb/range',{start:panel.querySelector('#scrape-from').value||null,end:panel.querySelector('#scrape-to').value||null}));
     panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{reason:'button'});await poll();}catch(e){showError(e);}});
-    loadRules(panel).catch(showError);
-    panel.querySelector('#rule-save').addEventListener('click',async()=>{try{const r=await api('scrape/settings',{hiddenMinSeats:Number(panel.querySelector('#rule-seats').value),hiddenMinPercent:Number(panel.querySelector('#rule-percent').value)});showRules(panel,r);notice('伏せられた表の条件を保存しました。次の取得から使います。');}catch(e){showError(e);}});
     poll();
     if(!timer)timer=setInterval(poll,2000);
   }
-  function showRules(panel,r){panel.querySelector('#rule-seats').value=r.hiddenMinSeats;panel.querySelector('#rule-percent').value=r.hiddenMinPercent;}
-  async function loadRules(panel){showRules(panel,await api('scrape/settings'));}
-  // What a re-read changed: filled values, values still missing, saved values that changed, BB/RB kept or read again.
+  // What a re-read changed (filled values, saved values that changed, BB/RB kept or read again) and locked days left alone.
   function refillRecord(status){
     const r=status.refill, extra=[];
-    if(r)extra.push(`取り直し ${number(r.days)} 日 · 埋まった値 ${number(r.filled)} 件 · 残った欠け ${number(r.stillMissing)} 台 · 既存値の変化 ${number(r.changed)} 件 · BB/RB保持 ${number(r.bonusKept)} 台${r.bonusReset?` · BB/RB取り直し ${number(r.bonusReset)} 台`:''}`);
-    if(status.hiddenDays)extra.push(`伏せられた表 ${number(status.hiddenDays)} 日（伏せられた値は「未取得」のまま）`);
-    if(status.skippedHidden)extra.push(`伏せられていたため差枚・出率の取り直しを飛ばした日 ${number(status.skippedHidden)} 日`);
+    if(r)extra.push(`取り直し ${number(r.days)} 日 · 埋まった値 ${number(r.filled)} 件 · 既存値の変化 ${number(r.changed)} 件 · BB/RB保持 ${number(r.bonusKept)} 台${r.bonusReset?` · BB/RB取り直し ${number(r.bonusReset)} 台`:''}`);
+    if(status.lockedDays)extra.push(`ロック中のため取得しなかった日 ${number(status.lockedDays)} 日`);
     return extra.join(' / ');
   }
   async function start(path,payload){
@@ -71,14 +62,13 @@
       panel.querySelector('#scrape-stop').disabled=!running;
       panel.querySelector('#scrape-progress').textContent=status.message||'取得待機中';
       panel.querySelector('#scrape-run').textContent=[runRecord(status,running),refillRecord(status)].filter(Boolean).join(' / ');
-      panel.querySelectorAll('#rule-seats,#rule-percent,#rule-save').forEach(input=>{input.disabled=running;});
       const reason=panel.querySelector('#scrape-stop-reason');  // 停止事由 with its number, in red
       reason.hidden=running||!status.stopReason;
       reason.className='stop-reason';
       reason.innerHTML=reason.hidden?'':`<span class="stop-code">${esc(status.stopCode??'?')}</span><div><strong>停止事由 ${esc(status.stopCode??'?')}：${esc(status.stopReason)}</strong><small>${esc(status.message||'')}</small></div>`;
       const meter=panel.querySelector('#scrape-meter');meter.hidden=!running;meter.max=Math.max(1,status.total||1);meter.value=status.completed||0;
       const s=status.summary;
-      panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得・欠測 ${number(s.missingBonuses)} 行 · 差枚欠測 ${number(s.missingNet)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 枚':''):''}`;
+      panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得 ${number(s.missingBonuses)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 枚':''):''}`;
       panel.querySelector('#scrape-failures>div').innerHTML=[...status.failures.map(f=>`<p>${esc(f.day)} · ${esc(({failed:'取得失敗',partial:'全台未確認','not-published':'公開一覧に未掲載'})[f.status]||f.status)}<br>${esc(f.message)}</p>`),...(status.bonusFailures||[]).map(f=>`<p>${esc(f.day)} · BB/RB追加取得 ${esc(f.status)}（${number(f.rows)}台確認済み）<br>${esc(f.message)}</p>`)].join('')||'<p>記録なし</p>';
       if(!running && panel.dataset.finalRun!==status.id){
         panel.dataset.finalRun=status.id;await refresh();
@@ -86,6 +76,7 @@
         await loadObservations();
         document.dispatchEvent(new CustomEvent('jokers:data-changed'));
       }
+      document.dispatchEvent(new CustomEvent('jokers:scrape-state',{detail:{running}}));
     }catch(e){panel.querySelector('#scrape-progress').textContent=e.message;}
   }
   new MutationObserver(mount).observe(document.querySelector('#content'),{childList:true});

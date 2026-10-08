@@ -215,10 +215,7 @@ class ScraperTests(unittest.TestCase):
     def all_seats_html(self,rows):
         cells=''.join('<tr><td>TEST ONLY</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td></tr>'%row for row in rows)
         return FIXTURE.split('<table>')[0]+'<table><tr><th>機種</th><th>台番</th><th>差枚</th><th>G数</th><th>出率</th></tr>'+cells+'</table>'
-    def test_missing_values_counts_only_played_seats(self):
-        self.assertEqual(scraper.missing_values([{'games':0,'net':None,'payout_percent':None},{'games':5,'net':-10,'payout_percent':90.0},
-                                                 {'games':5,'net':None,'payout_percent':90.0},{'games':5,'net':3,'payout_percent':None}]),2)
-    def test_a_table_with_hidden_values_never_stops_the_run(self):
+    def test_dashes_in_the_table_are_recorded_as_dashes_and_the_day_is_complete(self):
         collector=self.store.collector; url='https://min-repo.com/3326458/'
         collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:12
         hidden=self.all_seats_html([(n,'-',100,'-') for n in range(1,13)])  # 12 played seats, 差枚/出率 blanked
@@ -230,12 +227,16 @@ class ScraperTests(unittest.TestCase):
         collector.progress={'id':'test-hidden','state':'running','added':0,'completed':0,'total':0}
         collector.seed.append({'day':'2026-09-02','url':'https://min-repo.com/3326459/'})
         collector.run('2026-09-02','2026-09-01',False,['2026-09-01','2026-09-02'])
-        self.assertEqual(collector.progress['state'],'complete')  # 停止事由 5 is no longer used (user decision)
+        self.assertEqual(collector.progress['state'],'complete')  # dashes never stop a run
         self.assertIsNone(collector.progress.get('stopCode'))
-        self.assertEqual((collector.progress['completed'],collector.progress['hiddenDays']),(2,1))  # went on to the next day
-        self.assertEqual(collector.status()['summary']['records'],12)  # the hidden day's visible values are kept
+        self.assertEqual(collector.status()['summary']['records'],12)
         shown=self.store.observations('2026-09-01')['rows']
-        self.assertTrue(all(r['差枚']=='' and r['出率']=='' for r in shown))  # hidden values stay 未取得, never guessed
+        self.assertTrue(all(r['差枚']=='-' and r['出率']=='-' for r in shown))  # recorded as "-", whatever the cause
+        calls=[]
+        collector.fetch=lambda target:calls.append(target) or fetch(target)
+        collector.progress={'id':'test-dash-2','state':'running','added':0,'completed':0,'total':0}
+        collector.run('2026-09-01','2026-09-01',False,['2026-09-01'])
+        self.assertEqual(calls,[])  # a day read in full is complete: its dashes are not read again
     def last_run(self):
         with self.store.connect() as db:
             return dict(db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone())
@@ -311,51 +312,68 @@ class ScraperTests(unittest.TestCase):
             server.Store(folder)  # the time taken of an older run is filled from its start and end
             with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
                 self.assertEqual(db.execute("SELECT elapsed_seconds FROM scrape_runs WHERE id='older'").fetchone()[0],5400.0)
-    def test_truly_absent_values_show_a_dash_and_missing_ones_stay_empty(self):
+    def test_dash_and_not_yet_read(self):
         rows=[dict(r,bb=b,rb=c,combined=None) for r,(b,c) in zip(parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all'),((0,0),(3,0)))]
-        rows.append(dict(rows[1],seat='3',net=None,payout_percent=None))  # played, but 差枚/出率 hidden
+        rows.append(dict(rows[1],seat='3',net=None,payout_percent=None,bb=None,rb=None))
         self.store.collector.save_rows(rows)
         shown={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
-        self.assertEqual((shown['1']['差枚'],shown['1']['出率'],shown['1']['合成']),('-','-','-'))  # 0 games, no BB/RB: nothing to show
-        self.assertEqual(shown['2']['合成'],'')  # BB/RB were hit, so 合成 exists but was not read
-        self.assertEqual((shown['3']['差枚'],shown['3']['出率']),('',''))  # played: missing (hidden), not absent
+        self.assertEqual((shown['1']['差枚'],shown['1']['出率'],shown['1']['合成']),('-','-','-'))
+        self.assertEqual((shown['2']['差枚'],shown['2']['合成']),('-1234','-'))  # BB/RB read: an empty 合成 is "-"
+        self.assertEqual((shown['3']['差枚'],shown['3']['出率'],shown['3']['BB数'],shown['3']['合成']),('-','-','',''))  # BB/RB not read yet
         status=self.store.gdb_status()
-        self.assertEqual((status['missingValueRows'],status['missingCombinedRows']),(1,2))
-    def test_the_hidden_table_rule_can_be_changed_but_not_during_a_run(self):
-        self.assertEqual(self.store.scrape_settings(),{'hiddenMinSeats':10,'hiddenMinPercent':10})
-        saved=self.store.save_scrape_settings({'hiddenMinSeats':30,'hiddenMinPercent':20})
-        self.assertEqual(saved,{'hiddenMinSeats':30,'hiddenMinPercent':20})
-        self.assertEqual(server.Store(self.tmp.name).scrape_settings(),saved)  # kept in GDB
-        for bad in ({'hiddenMinSeats':0,'hiddenMinPercent':10},{'hiddenMinSeats':10,'hiddenMinPercent':101},{'hiddenMinSeats':'x','hiddenMinPercent':10}):
-            with self.assertRaises(ValueError):self.store.save_scrape_settings(bad)
-    def test_continuing_past_a_hidden_table_keeps_what_is_visible_and_skips_futile_rereads(self):
-        collector=self.store.collector; url='https://min-repo.com/3326458/'; url2='https://min-repo.com/3326459/'
-        collector.seed=[{'day':'2026-09-01','url':url},{'day':'2026-09-02','url':url2}];collector.expected_count=lambda day:12
-        hidden=self.all_seats_html([(n,'-',100,'-') for n in range(1,12)]+[(12,'300',100,'110%')])
-        saved=[{'date':'2026-09-02','seat':str(n),'model':'TEST ONLY','games':100,'bb':1,'rb':1,'combined':'1/50','net':None,'payout_percent':None,
-                'source_url':url2,'published_at':None,'fetched_at':'2026-10-01'} for n in range(1,13)]
-        collector.save_rows(saved);collector.day_status('2026-09-02',url2,'complete',12,'')
+        self.assertEqual(status['missingBonusRows'],1)
+        self.assertNotIn('missingValueRows',status)
+    def save_day(self,day,seats=2):
+        url='https://min-repo.com/3326458/'
+        rows=[{'date':day,'seat':str(n),'model':'TEST ONLY','games':100,'bb':1,'rb':1,'combined':'1/50','net':10,'payout_percent':101.0,
+               'source_url':url,'published_at':None,'fetched_at':'2026-10-01'} for n in range(1,seats+1)]
+        self.store.collector.save_rows(rows);self.store.collector.day_status(day,url,'complete',seats,'')
+        self.store.collector.bonus_status(day,'complete',seats,'')
+    def day_rows(self,day):
+        with self.store.connect() as db:
+            return db.execute('SELECT COUNT(*) FROM scraped_observations WHERE day=?',(day,)).fetchone()[0]
+    def test_deleting_a_range_empties_every_seat_of_those_days_except_locked_ones(self):
+        for day in ('2026-09-01','2026-09-02','2026-09-03'):self.save_day(day)
+        self.store.gdb_lock('2026-09-02','2026-09-02',True)
+        result=self.store.gdb_delete('2026-09-01','2026-09-02')
+        self.assertEqual((result['deletedDays'],result['deletedRows'],result['lockedKept']),(1,2,['2026-09-02']))
+        self.assertEqual([self.day_rows(d) for d in ('2026-09-01','2026-09-02','2026-09-03')],[0,2,2])
+        with self.store.connect() as db:
+            self.assertIsNone(db.execute("SELECT 1 FROM scrape_days WHERE day='2026-09-01'").fetchone())  # fetched again next time
+            self.assertIsNone(db.execute("SELECT 1 FROM scrape_bonus_days WHERE day='2026-09-01'").fetchone())
+        plan=self.store.gdb_range_plan('2026-09-01','2026-09-03')
+        self.assertIn('2026-09-01',plan['missingDates'])
+        self.assertNotIn('2026-09-02',plan['missingDates'])
+        self.assertEqual(plan['lockedDates'],['2026-09-02'])
+        for start,end in (('2026-09-02','2026-09-01'),('2024-02-29','2024-03-01'),('2026-9-1','2026-09-02'),(None,'2026-09-02')):
+            with self.assertRaises(ValueError):self.store.gdb_delete(start,end)
+    def test_a_locked_day_is_not_fetched_overwritten_or_deleted_until_unlocked(self):
+        self.save_day('2026-09-01')
+        locked=self.store.gdb_lock('2026-09-01','2026-09-01',True)
+        self.assertEqual((locked['days'],locked['lockedDates']),(1,['2026-09-01']))
+        self.assertEqual(self.store.gdb_status()['lockedDates'],['2026-09-01'])
+        collector=self.store.collector
+        collector.save_rows([{'date':'2026-09-01','seat':'1','model':'OTHER','games':5,'bb':None,'rb':None,'combined':None,'net':None,'payout_percent':None,
+                              'source_url':'x','published_at':None,'fetched_at':'2026-10-09'}])
+        self.assertEqual(self.store.observations('2026-09-01')['rows'][0]['機種'],'TEST ONLY')  # not overwritten
+        with self.assertRaises(ValueError):collector.save_bonus_values('2026-09-01',{'seat':'1','model':'TEST ONLY','games':100},(2,2,'1/25'),'x')
+        with self.store.connect() as db:db.execute("UPDATE scrape_days SET status='partial' WHERE day='2026-09-01'")  # would be read again if unlocked
         calls=[]
-        def fetch(target):
-            calls.append(target)
-            return hidden+'<a href="?kishu=all">全台データ一覧</a>' if target==url else hidden
-        collector.fetch=fetch
-        collector.active=True;collector.cancelled.clear();collector.run_started=time.monotonic()
-        collector.hidden_rule=self.store.scrape_settings()
-        collector.progress={'id':'test-continue','state':'running','added':0,'completed':0,'total':0,'failures':[]}
-        collector.run('2026-09-02','2026-09-01',False,['2026-09-01','2026-09-02'])
-        self.assertEqual(collector.progress['state'],'complete')
-        self.assertEqual(calls,[url,url+'?kishu=all'])  # 09-02 is not read again while values are hidden
-        self.assertEqual((collector.progress['hiddenDays'],collector.progress['skippedHidden']),(1,1))
-        day1={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
-        self.assertEqual((day1['12']['差枚'],day1['1']['差枚']),('300',''))  # visible value kept, hidden one missing
-        self.assertIn('2026-09-01',self.store.gdb_value_days('2026-09-01','2026-09-02'))  # still due for a later re-read
-    def test_a_saved_day_missing_values_is_read_again_once(self):
+        collector.seed=[{'day':'2026-09-01','url':'https://min-repo.com/3326458/'}];collector.expected_count=lambda day:2
+        collector.fetch=lambda target:calls.append(target) or FIXTURE
+        collector.progress={'id':'test-locked','state':'running','added':0,'completed':0,'total':0}
+        collector.run('2026-09-01','2026-09-01',True,['2026-09-01'])
+        self.assertEqual((calls,collector.progress['lockedDays'],collector.progress['completed']),([],1,1))
+        self.assertEqual(self.store.gdb_delete('2026-09-01','2026-09-01')['deletedRows'],0)
+        self.assertEqual(self.day_rows('2026-09-01'),2)
+        self.assertEqual(self.store.gdb_lock('2026-09-01','2026-09-01',False)['lockedDates'],[])
+        self.assertEqual(self.store.gdb_delete('2026-09-01','2026-09-01')['deletedRows'],2)
+    def test_a_day_read_again_records_what_changed(self):
         collector=self.store.collector; url='https://min-repo.com/3326458/'
         collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:2
         rows=parse_report(FIXTURE,'2026-09-01',url+'?kishu=all')
-        collector.save_rows([dict(r,net=None,payout_percent=None,bb=1,rb=1) for r in rows])  # saved earlier with values hidden
-        collector.day_status('2026-09-01',url,'complete',2,'')
+        collector.save_rows([dict(r,net=None,payout_percent=None,bb=1,rb=1) for r in rows])  # saved earlier with dashes
+        collector.day_status('2026-09-01',url,'partial',2,'')  # not every seat was confirmed: read again
         calls=[]
         def fetch(target):
             calls.append(target)
@@ -368,13 +386,13 @@ class ScraperTests(unittest.TestCase):
         saved={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
         self.assertEqual((saved['2']['差枚'],saved['2']['出率'],saved['2']['BB数']),('-1234','82.1%','1'))  # BB/RB kept
         # the re-read is checked against what was saved: 2 values filled, nothing changed, BB/RB kept
-        self.assertEqual(collector.progress['refill'],{'days':1,'filled':2,'stillMissing':0,'changed':0,'bonusKept':2,'bonusReset':0})
+        self.assertEqual(collector.progress['refill'],{'days':1,'filled':2,'changed':0,'bonusKept':2,'bonusReset':0})
         with self.store.connect() as db:
             self.assertEqual(tuple(db.execute("SELECT filled,still_missing,changed,bonus_kept,bonus_reset FROM scrape_refill_days WHERE day='2026-09-01'").fetchone()),(2,0,0,2,0))
         calls.clear()
         collector.progress={'id':'test-refill-2','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-01','2026-09-01',True,['2026-09-01'])
-        self.assertEqual(calls,[])  # read again once; the remaining blank (0 games) is the site's own
+        self.assertEqual(calls,[])  # complete now: not read again
     def test_index_year_pagination_and_durable_links(self):
         url='https://min-repo.com/3382117/'
         html='<h1>ゴッサムシティ</h1><a href="'+url+'">9/29(火)</a><a href="'+TAG+'page/2/">»</a><a href="https://example.com/page/3/">次へ</a>'
