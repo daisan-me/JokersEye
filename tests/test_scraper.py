@@ -184,6 +184,15 @@ class ScraperTests(unittest.TestCase):
         values=parse_bonuses(detail,'2026-09-01','TEST ONLY',rows)
         self.assertEqual(values,{'1':(0,0,None),'2':(10,5,'1/156.3')})
 
+    def test_a_dash_on_reading_again_keeps_the_saved_number(self):
+        rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
+        self.store.collector.save_rows(rows)
+        self.store.collector.save_rows([dict(r,net=None,payout_percent=None) for r in rows])  # read again, shown as "-"
+        shown={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual((shown['2']['差枚'],shown['2']['出率']),('-1234','82.1%'))
+        self.store.collector.save_rows([dict(r,model='OTHER',net=None,payout_percent=None) for r in rows])  # another machine: not the same record
+        shown={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual(shown['2']['差枚'],'-')
     def test_bonus_links_and_provenance_preserved_on_rescrape(self):
         rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
         html=FIXTURE+'<a href="?kishu=TEST%20ONLY">TEST ONLY</a><a href="https://example.com/?kishu=TEST%20ONLY">TEST ONLY</a>'
