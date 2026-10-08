@@ -12,3 +12,8 @@ body.light .primary{color:#fff}
 .stop-code{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--red);color:#fff;font-weight:700;flex:none}
 .stop-cell{color:var(--red);font-weight:600;white-space:nowrap}
 .stop-cell .stop-code{min-width:22px;height:22px;margin-right:6px;font-size:12px}
+/* GDB: delete / lock days (user decision, 2026-10-09) */
+.gdb-manage{margin:12px 0;padding:10px 14px;border:1px solid var(--line);border-radius:8px}
+.gdb-manage summary{cursor:pointer;font-weight:600}
+button.danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red-line)}
+button.danger:hover:not(:disabled){background:var(--red);color:#fff}

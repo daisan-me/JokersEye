@@ -1,5 +1,14 @@
 # 引き継ぎメモ
 
+## 「-」はそのまま記録・日付ごとの削除とロック（2026-10-09、ブランチ `feature/day-delete-lock`）
+
+- ユーザーの仕様変更：①未取得の数による停止・判定をやめ、「-」はただ「-」として記録する（隠されたためか、値がないためかは考えない）。②指定した期間の全台のデータを削除して空欄にできる。③目視で確認した日などをロックし、削除・上書きをできなくする。
+- ①`Collector.run`：伏せられた表の判定（`missing_values`・`hidden_rule`・`hidden_seen`）と、差枚・出率だけの読み直し（`value_status`・`values_checked`・`gdb_value_days`）を削除。日の完了は「全台表で全台を確認＋全台のBB・RB」。`Store._gdb_dash`：全台表から保存した行の差枚・出率と、BB・RB取得済みの行の合成は、NULLなら「-」。設定 `scrape/settings` のAPIと画面を削除（`settings` 表に残った `scrape_hidden_*` は読まない。`scrape_value_days` 表と `scrape_refill_days.still_missing` 列は過去の記録として残し、使わない）。
+- ②`Store.gdb_delete(start,end)`／`POST /api/gdb/delete`：期間内のロックしていない日について `scraped_observations`・`scrape_days`・`scrape_bonus_days`・`scrape_bonus_targets`・`scrape_value_days` を削除（`scrape_report_index` と取得の履歴は残す）。期間は2024-03-01〜本日。自動のバックアップは取らない（GDBは約190MBあり、削除のたびに複製すると大きいため）。画面では確認ダイアログを出す。
+- ③`gdb_locked_days` 表。`Store.gdb_lock(start,end,locked)`／`POST /api/gdb/lock`・`/api/gdb/unlock`。ロックした日は `Collector.run` で開かず（`progress.lockedDays`）、`save_rows` は書かず、`save_bonus_values` は拒否し、`gdb_range_plan` は除き、`gdb_delete` は残す。`gdb_status.lockedDates` で一覧。削除・ロック・解除は取得中は400で拒否。
+- 画面：GDBのカードの「日付ごとの削除・ロック」（開始日・終了日、削除・ロック・解除のボタン、ロック中の日を範囲でまとめて表示）。取得中はボタンを無効にする（`jokers:scrape-state` イベント）。
+- 本番GDBの差枚・出率の空欄（約17万行）は、これからは「-」と表示され、取り直しの対象にならない。取り直したい日は、削除してから取得する。
+
 ## 停止事由5で止めない（2026-10-08、ブランチ `fix/no-stop-on-hidden`）
 
 - ユーザー指示：「停止の条件を選ぶ」とは停止事由5で止まる状態をなくす選択肢のこと。停止事由5で止めない。

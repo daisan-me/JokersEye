@@ -217,6 +217,27 @@ class ApiTests(unittest.TestCase):
         finally:
             self.host.store.collector.active=False
 
+    def test_days_can_be_deleted_and_locked_but_not_during_a_run(self):
+        self.assertEqual(self.post('gdb/lock',{'start':'2024-03-02','end':'2024-03-03'})['lockedDates'],['2024-03-02','2024-03-03'])
+        result=self.post('gdb/delete',{'start':'2024-03-01','end':'2024-03-03'})
+        self.assertEqual((result['deletedDays'],result['lockedKept']),(1,['2024-03-02','2024-03-03']))
+        self.assertEqual(self.post('gdb/unlock',{'start':'2024-03-03','end':'2024-03-03'})['lockedDates'],['2024-03-02'])
+        with self.assertRaises(urllib.error.HTTPError) as ex:
+            self.post('gdb/delete',{'start':'2024-03-03','end':'2024-03-01'})
+        self.assertEqual(ex.exception.code,400)
+        self.host.store.collector.active=True
+        try:
+            for path in ('gdb/delete','gdb/lock','gdb/unlock'):
+                with self.assertRaises(urllib.error.HTTPError) as ex:
+                    self.post(path,{'start':'2024-03-01','end':'2024-03-01'})
+                self.assertIn('取得中',json.load(ex.exception)['error'])
+        finally:
+            self.host.store.collector.active=False
+        for path in ('scrape/settings',):
+            with self.assertRaises(urllib.error.HTTPError) as ex:
+                self.post(path,{})
+            self.assertEqual(ex.exception.code,404,path)
+
     def test_fixed_floor_assets_and_registration(self):
         with urllib.request.urlopen(self.base+'/fixed-floor.json') as response:
             floor = json.load(response)

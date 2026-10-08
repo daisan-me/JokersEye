@@ -27,8 +27,14 @@
   function render(app) {
     app.innerHTML = `
       <div class="card-header"><div><div class="kicker">MIN-REPO / GOTHAM DATABASE</div><h2>GothamDataBase（GDB）</h2></div><span class="tag" id="gdb-tag">0行</span></div>
-      <p>GDBに保存したみんレポ ゴッサムシティの台別記録（2024/03/01以降、日付・台番号ごとに1行）を、条件で絞り込んで閲覧します。「-」は本当に値がないもの（回されていない台の差枚・出率、BB・RBが0回の台の合成）、「未取得」は取れていない・伏せられた値です。</p>
+      <p>GDBに保存したみんレポ ゴッサムシティの台別記録（2024/03/01以降、日付・台番号ごとに1行）を、条件で絞り込んで閲覧します。「-」は公開ページで「-」と表示された値（理由は区別しません）、「未取得」はまだ取得していない値です。</p>
       <p class="hint" id="gdb-status">状態を確認中…</p>
+      <details class="gdb-manage" id="gdb-manage"><summary>日付ごとの削除・ロック</summary>
+        <p class="hint">期間内の全台のデータを削除して空欄（未取得）に戻せます。削除した日は、次の取得で取り直します。目視で問題がないと確認した日はロックすると、削除・上書き・取得の対象から外れます。取得中は操作できません。</p>
+        <div class="toolbar"><label>開始日<input id="gdb-manage-from" type="date" min="2024-03-01"></label><label>終了日<input id="gdb-manage-to" type="date" min="2024-03-01"></label>
+          <button class="danger" id="gdb-delete">期間のデータを削除</button><button class="secondary" id="gdb-lock">期間をロック</button><button class="secondary" id="gdb-unlock">ロックを解除</button></div>
+        <p class="hint" id="gdb-locked">ロック中の日: —</p>
+      </details>
       <div class="gdb-filters">
         <div><label class="label" for="gdb-from">日付（開始）</label><input id="gdb-from" type="date"></div>
         <div><label class="label" for="gdb-to">日付（終了）</label><input id="gdb-to" type="date"></div>
@@ -45,11 +51,39 @@
       <div class="gdb-result-head"><span id="gdb-count">—</span><span class="hint">表示件数は最大100件</span></div>
       <div id="gdb-results"><p class="muted">読み込み中…</p></div>
       <div class="gdb-pagination"><button class="secondary" id="gdb-prev">← 前へ</button><span id="gdb-page">1</span><button class="secondary" id="gdb-next">次へ →</button></div>`;
+    app.querySelector('#gdb-delete').addEventListener('click', () => manage('delete').catch(showError));
+    app.querySelector('#gdb-lock').addEventListener('click', () => manage('lock').catch(showError));
+    app.querySelector('#gdb-unlock').addEventListener('click', () => manage('unlock').catch(showError));
     app.querySelector('#gdb-apply').addEventListener('click', () => { offset = 0; loadRows().catch(showError); });
     app.querySelector('#gdb-reset').addEventListener('click', () => { app.querySelectorAll('.gdb-filters input').forEach(input => { input.value = ''; }); app.querySelector('#gdb-juggler').value = 'all'; app.querySelector('#gdb-weekday').value = ''; offset = 0; loadRows().catch(showError); });
     app.querySelector('#gdb-prev').addEventListener('click', () => { offset = Math.max(0, offset - limit); loadRows().catch(showError); });
     app.querySelector('#gdb-next').addEventListener('click', () => { offset += limit; loadRows().catch(showError); });
     loadStatus().then(loadRows).catch(showError);
+  }
+
+  // Consecutive locked days shown as ranges: 2024-03-01～2024-03-05, 2024-04-01
+  function ranges(days) {
+    const out = [];
+    days.forEach(day => {
+      const last = out[out.length - 1];
+      const next = last && new Date(Date.parse(last[1] + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10);
+      if (last && next === day) last[1] = day; else out.push([day, day]);
+    });
+    return out.map(([a, b]) => a === b ? a : `${a}～${b}`).join(', ');
+  }
+
+  async function manage(action) {
+    const root = document.querySelector('#gdb-app');
+    const start = root.querySelector('#gdb-manage-from').value, end = root.querySelector('#gdb-manage-to').value || start;
+    if (!start) throw new Error('開始日を指定してください。');
+    const span = start === end ? start : `${start} ～ ${end}`;
+    if (action === 'delete' && !confirm(`${span} の全台のデータを削除します。ロック中の日は残します。削除すると元に戻せません（次の取得で取り直します）。削除しますか？`)) return;
+    if (action === 'unlock' && !confirm(`${span} のロックを解除しますか？解除した日は削除・上書き・取得の対象に戻ります。`)) return;
+    const result = await api('gdb/' + action, {start, end});
+    if (action === 'delete') notice(`${span}：${count(result.deletedDays)}日・${count(result.deletedRows)}行を削除しました。${result.lockedKept.length ? `ロック中の${count(result.lockedKept.length)}日は残しました。` : ''}`);
+    else notice(`${span}（${count(result.days)}日）を${action === 'lock' ? 'ロックしました' : 'ロック解除しました'}。`);
+    await loadStatus(); await loadRows();
+    document.dispatchEvent(new CustomEvent('jokers:data-changed'));
   }
 
   function params() {
@@ -66,7 +100,9 @@
     const status = document.querySelector('#gdb-status');
     if (!tag || !status) return result;
     tag.textContent = `${count(result.rowCount)}行`;
-    status.textContent = `保存先: ${result.path} / ${count(result.dayCount)}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 記録がない日: ${count(result.actionableMissingDates.length)}日 / 未掲載: ${count(result.unpublishedDates.length)}日 / BB・RB不足: ${count(result.missingBonusRows)}行（ジャグラー ${count(result.missingJugglerBonusRows)}行） / 差枚・出率不足: ${count(result.missingValueRows)}行 / 合成不足: ${count(result.missingCombinedRows)}行`;
+    status.textContent = `保存先: ${result.path} / ${count(result.dayCount)}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 記録がない日: ${count(result.actionableMissingDates.length)}日 / 未掲載: ${count(result.unpublishedDates.length)}日 / BB・RB未取得: ${count(result.missingBonusRows)}行（ジャグラー ${count(result.missingJugglerBonusRows)}行） / ロック中: ${count(result.lockedDates.length)}日`;
+    const locked = document.querySelector('#gdb-locked');
+    if (locked) locked.textContent = `ロック中の日（${count(result.lockedDates.length)}日）: ${result.lockedDates.length ? ranges(result.lockedDates) : 'なし'}`;
     return result;
   }
 
@@ -91,6 +127,8 @@
     render(app);
   }
 
+  // Deleting or locking is refused while a run is going: disable the buttons meanwhile.
+  document.addEventListener('jokers:scrape-state', event => { document.querySelectorAll('#gdb-delete,#gdb-lock,#gdb-unlock').forEach(button => { button.disabled = event.detail.running; }); });
   // A finished scraping run changes GDB: show the new rows without reopening the page.
   document.addEventListener('jokers:data-changed', () => { if (document.querySelector('#gdb-app')) loadStatus().then(loadRows).catch(showError); });
   const observer = new MutationObserver(() => { mounted = false; mount(); });

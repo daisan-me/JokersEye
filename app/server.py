@@ -172,15 +172,14 @@ class Store:
         return result
 
     @staticmethod
-    def _gdb_absent(value, really_none):
-        """An empty value: "-" when the site genuinely has none, "" when it is missing (hidden or not read)."""
-        return "-" if value in (None, "") and really_none else value
+    def _gdb_dash(value, read):
+        """A value the site showed as "-" is recorded as "-", whatever the cause (hidden or none; user decision,
+        2026-10-09). Only a value that was never read stays "" (未取得)."""
+        return "-" if value in (None, "") and read else value
 
     def _gdb_row(self, row):
         model = row.get("model") or ""
-        games, bb, rb = row.get("games"), row.get("bb"), row.get("rb")
-        unplayed = games == 0                                    # no 差枚/出率 for a seat nobody played
-        no_bonus = bb is not None and rb is not None and bb + rb == 0  # no 合成 without a single BB/RB
+        bonus_read = row.get("bb") is not None and row.get("rb") is not None  # 合成 comes with BB/RB
         return {
             "日付": row.get("day", ""),
             "曜日": self._weekday(row["day"]),
@@ -190,9 +189,9 @@ class Store:
             "ゲーム数": self._gdb_number(row.get("games")),
             "BB数": self._gdb_number(row.get("bb")),
             "RB数": self._gdb_number(row.get("rb")),
-            "合成": self._gdb_absent(self._gdb_number(row.get("combined")), no_bonus),
-            "差枚": self._gdb_absent(self._gdb_number(row.get("net")), unplayed),
-            "出率": self._gdb_absent(self._gdb_rate(row.get("payout_percent")), unplayed),
+            "合成": self._gdb_dash(self._gdb_number(row.get("combined")), bonus_read),
+            "差枚": self._gdb_dash(self._gdb_number(row.get("net")), True),        # the row comes from the all-seat table
+            "出率": self._gdb_dash(self._gdb_rate(row.get("payout_percent")), True),
         }
 
     def gdb_rows_all(self):
@@ -224,9 +223,8 @@ class Store:
             "missingDates": missing, "actionableMissingDates": [day for day in missing if day not in unpublished],
             "unpublishedDates": sorted(day for day in missing if day in unpublished),
             "missingBonusRows": sum(row["BB数"] == "" or row["RB数"] == "" for row in rows),
-            "missingValueRows": sum(row["差枚"] == "" or row["出率"] == "" for row in rows),
-            "missingCombinedRows": sum(row["合成"] == "" for row in rows),
             "missingJugglerBonusRows": sum((row["BB数"] == "" or row["RB数"] == "") and row["ジャグラーかジャグラーじゃないか"] == "ジャグラー" for row in rows),
+            "lockedDates": self.gdb_locked_days(),
         }
 
     def gdb_today_plan(self):
@@ -248,12 +246,44 @@ class Store:
         return {"start": start, "targetEnd": end, "missingDates": [row[0] for row in days], "missingDateCount": len(days),
                 "missingRows": sum(row[1] for row in days)}
 
-    def gdb_value_days(self, start, end):
-        """Saved days where a played seat lacks 差枚 or 出率 and the table was not read again since."""
+    def gdb_locked_days(self):
         with self.connect() as db:
-            return [row[0] for row in db.execute("""SELECT DISTINCT day FROM scraped_observations
-                WHERE day BETWEEN ? AND ? AND games>0 AND (net IS NULL OR payout_percent IS NULL)
-                AND day NOT IN (SELECT day FROM scrape_value_days) ORDER BY day""", (start, end))]
+            return [row[0] for row in db.execute("SELECT day FROM gdb_locked_days ORDER BY day")]
+
+    def _gdb_day_range(self, start, end, action):
+        try:
+            valid = date.fromisoformat(start).isoformat() == start and date.fromisoformat(end).isoformat() == end
+        except (TypeError, ValueError):
+            valid = False
+        if not valid or not GDB_START <= start <= end <= source_today():
+            raise ValueError("%sする期間は %s から本日までの範囲で、開始日を終了日以前にしてください。" % (action, GDB_START))
+        return self._calendar_days(start, end)
+
+    def gdb_delete(self, start, end):
+        """Delete every seat of the days in [start, end] so they are empty (未取得) and fetched again.
+        Locked days are kept as they are."""
+        days = self._gdb_day_range(start, end, "削除")
+        locked = set(self.gdb_locked_days())
+        targets = [day for day in days if day not in locked]
+        with self.connect() as db:
+            rows = 0
+            for day in targets:
+                rows += db.execute("DELETE FROM scraped_observations WHERE day=?", (day,)).rowcount
+                for table in ("scrape_days", "scrape_bonus_days", "scrape_bonus_targets", "scrape_value_days"):
+                    db.execute("DELETE FROM %s WHERE day=?" % table, (day,))
+        logging.info("GDB delete %s..%s: %d rows, %d locked days kept", start, end, rows, len(days) - len(targets))
+        return {"start": start, "end": end, "deletedRows": rows, "deletedDays": len(targets),
+                "lockedKept": [day for day in days if day in locked]}
+
+    def gdb_lock(self, start, end, locked):
+        """Lock (confirm) or unlock the days in [start, end]. A locked day cannot be deleted, overwritten or fetched."""
+        days = self._gdb_day_range(start, end, "ロック" if locked else "ロック解除")
+        with self.connect() as db:
+            if locked:
+                db.executemany("INSERT OR IGNORE INTO gdb_locked_days VALUES(?,?)", [(day, now()) for day in days])
+            else:
+                db.executemany("DELETE FROM gdb_locked_days WHERE day=?", [(day,) for day in days])
+        return {"start": start, "end": end, "days": len(days), "lockedDates": self.gdb_locked_days()}
 
     def gdb_range_plan(self, start, end, retry_unpublished_after=None):
         """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out,
@@ -267,9 +297,12 @@ class Store:
         retry = {day for day in status["unpublishedDates"] if retry_unpublished_after and day > retry_unpublished_after}
         new_days = [day for day in status["missingDates"] if start <= day <= end and (day in status["actionableMissingDates"] or day in retry)]
         bonus_days = self.gdb_bonus_plan(start, end)["missingDates"]
-        value_days = self.gdb_value_days(start, end)
-        return {"start": start, "targetEnd": end, "missingDates": sorted(set(new_days) | set(bonus_days) | set(value_days)),
-                "newDateCount": len(new_days), "bonusDateCount": len(bonus_days), "valueDateCount": len(value_days),
+        locked = set(status["lockedDates"])  # a locked (confirmed) day is never fetched again
+        new_days = [day for day in new_days if day not in locked]
+        bonus_days = [day for day in bonus_days if day not in locked]
+        return {"start": start, "targetEnd": end, "missingDates": sorted(set(new_days) | set(bonus_days)),
+                "newDateCount": len(new_days), "bonusDateCount": len(bonus_days),
+                "lockedDates": [day for day in status["lockedDates"] if start <= day <= end],
                 "unpublishedDates": [day for day in status["unpublishedDates"] if start <= day <= end and day not in retry]}
 
     @staticmethod
@@ -472,30 +505,6 @@ class Store:
         with self.connect() as db:
             db.executemany("INSERT OR REPLACE INTO settings VALUES(?,?)",values.items())
 
-    SCRAPE_SETTINGS = {"hiddenMinSeats": ("scrape_hidden_min_seats", 10), "hiddenMinPercent": ("scrape_hidden_min_percent", 10)}
-
-    def scrape_settings(self):
-        """When a table counts as having hidden 差枚/出率 (user-adjustable). Such a table never stops a run."""
-        with self.connect() as db:
-            saved = {r[0]: r[1] for r in db.execute("SELECT key,value FROM settings WHERE key LIKE 'scrape_hidden_%'")}
-        result = {}
-        for name, (key, default) in self.SCRAPE_SETTINGS.items():
-            value = saved.get(key, default)
-            result[name] = int(value)
-        return result
-
-    def save_scrape_settings(self, payload):
-        try:
-            seats, percent = int(payload.get("hiddenMinSeats")), int(payload.get("hiddenMinPercent"))
-        except (TypeError, ValueError) as ex:
-            raise ValueError("台数と割合は整数で指定してください。") from ex
-        if not (1 <= seats <= 310 and 1 <= percent <= 100):
-            raise ValueError("台数は1〜310台、割合は1〜100％で指定してください。")
-        with self.connect() as db:
-            db.executemany("INSERT OR REPLACE INTO settings VALUES(?,?)", [
-                ("scrape_hidden_min_seats", str(seats)), ("scrape_hidden_min_percent", str(percent))])
-        return self.scrape_settings()
-
     def copy_into(self, folder):
         """Consistent copy of the database, for running another version on its own data.
         Saved under the legacy name: builds up to 1.3.1 read only that name, newer ones rename it."""
@@ -577,8 +586,6 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(self.server.versions.remote())
                 except ValueError as ex:
                     return self.reply({"error":str(ex)},400)
-            if path=="/api/scrape/settings":
-                return self.reply(self.server.store.scrape_settings())
             if path=="/api/scrape/status":
                 return self.reply(self.server.store.collector.status())
             if path=="/api/scrape/browser-task":
@@ -661,10 +668,13 @@ class Handler(BaseHTTPRequestHandler):
                     # New dates get the full table plus BB/RB; saved dates only their missing BB/RB.
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
                     result.update({'plan':plan})
-            elif path=="/api/scrape/settings":
+            elif path in ("/api/gdb/delete","/api/gdb/lock","/api/gdb/unlock"):
                 if self.server.store.collector.active:
-                    raise ValueError("取得中は停止の条件を変えられません。取得が終わってから変更してください。")
-                result=self.server.store.save_scrape_settings(payload)
+                    raise ValueError("取得中はデータの削除・ロックをできません。取得が終わってから操作してください。")
+                if path=="/api/gdb/delete":
+                    result=self.server.store.gdb_delete(payload.get("start"),payload.get("end"))
+                else:
+                    result=self.server.store.gdb_lock(payload.get("start"),payload.get("end"),path=="/api/gdb/lock")
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":
