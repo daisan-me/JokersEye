@@ -1,5 +1,14 @@
 # 引き継ぎメモ
 
+## 削除・ロックの見直し（2026-10-09、ブランチ `fix/review-findings`）
+
+- `/code-review` の指摘9件への対応。
+- ロックはDBのトリガー（`gdb_locked_insert`・`gdb_locked_update`・`gdb_locked_delete`、`RAISE(ABORT,'GDB_LOCKED_DAY')`）で守る。`scraper.locked_guard()` がこれを `ValueError('ロックされた日のデータは書き換えません。')` に変える（`save_rows`・`save_bonus_values`）。`Collector.run` はロック中の日の一覧を開始時に1度だけ読んで飛ばす。
+- `Collector.idle()`：削除・ロック・解除のAPIはこの中で動く。取得中なら拒否し、処理中は `Collector.start` が `ValueError` を出す（`maintenance` フラグ）。
+- 起動時に `scrape_refill_days.still_missing` 列と `scrape_value_days` 表を削除する。`scrape_runs.locked_days` を追加し、`status().lockedDays` を前回の取得から復元する。
+- 「本日までの分を更新」は従来どおり最後の日から本日まで（仕様）。削除した古い日は「期間を指定して取得」で取り直す、と画面・確認ダイアログ・AGENTS.md の案内を直した。
+- 指摘のうち「1コミットに3つの目的」（400099d）は、mainに入った履歴の書き換えになるため直していない。今後は目的ごとに分ける。
+
 ## 「-」はそのまま記録・日付ごとの削除とロック（2026-10-09、ブランチ `feature/day-delete-lock`）
 
 - ユーザーの仕様変更：①未取得の数による停止・判定をやめ、「-」はただ「-」として記録する（隠されたためか、値がないためかは考えない）。②指定した期間の全台のデータを削除して空欄にできる。③目視で確認した日などをロックし、削除・上書きをできなくする。

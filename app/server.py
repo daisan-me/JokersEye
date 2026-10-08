@@ -260,8 +260,8 @@ class Store:
         return self._calendar_days(start, end)
 
     def gdb_delete(self, start, end):
-        """Delete every seat of the days in [start, end] so they are empty (未取得) and fetched again.
-        Locked days are kept as they are."""
+        """Delete every seat of the days in [start, end] so they are empty (未取得). They are fetched again by
+        「期間を指定して取得」, or by 「本日までの分を更新」 when no later day is recorded. Locked days are kept."""
         days = self._gdb_day_range(start, end, "削除")
         locked = set(self.gdb_locked_days())
         targets = [day for day in days if day not in locked]
@@ -269,7 +269,7 @@ class Store:
             rows = 0
             for day in targets:
                 rows += db.execute("DELETE FROM scraped_observations WHERE day=?", (day,)).rowcount
-                for table in ("scrape_days", "scrape_bonus_days", "scrape_bonus_targets", "scrape_value_days"):
+                for table in ("scrape_days", "scrape_bonus_days", "scrape_bonus_targets"):
                     db.execute("DELETE FROM %s WHERE day=?" % table, (day,))
         logging.info("GDB delete %s..%s: %d rows, %d locked days kept", start, end, rows, len(days) - len(targets))
         return {"start": start, "end": end, "deletedRows": rows, "deletedDays": len(targets),
@@ -669,12 +669,11 @@ class Handler(BaseHTTPRequestHandler):
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
                     result.update({'plan':plan})
             elif path in ("/api/gdb/delete","/api/gdb/lock","/api/gdb/unlock"):
-                if self.server.store.collector.active:
-                    raise ValueError("取得中はデータの削除・ロックをできません。取得が終わってから操作してください。")
-                if path=="/api/gdb/delete":
-                    result=self.server.store.gdb_delete(payload.get("start"),payload.get("end"))
-                else:
-                    result=self.server.store.gdb_lock(payload.get("start"),payload.get("end"),path=="/api/gdb/lock")
+                with self.server.store.collector.idle():  # refused while a run is going; no run starts meanwhile
+                    if path=="/api/gdb/delete":
+                        result=self.server.store.gdb_delete(payload.get("start"),payload.get("end"))
+                    else:
+                        result=self.server.store.gdb_lock(payload.get("start"),payload.get("end"),path=="/api/gdb/lock")
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":
