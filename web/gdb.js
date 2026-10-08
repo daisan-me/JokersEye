@@ -30,7 +30,7 @@
       <p>GDBに保存したみんレポ ゴッサムシティの台別記録（2024/03/01以降、日付・台番号ごとに1行）を、条件で絞り込んで閲覧します。「-」は公開ページで「-」と表示された値（理由は区別しません）、「未取得」はまだ取得していない値です。</p>
       <p class="hint" id="gdb-status">状態を確認中…</p>
       <details class="gdb-manage" id="gdb-manage"><summary>日付ごとの削除・ロック</summary>
-        <p class="hint">期間内の全台のデータを削除して空欄（未取得）に戻せます。削除した日は、次の取得で取り直します。目視で問題がないと確認した日はロックすると、削除・上書き・取得の対象から外れます。取得中は操作できません。</p>
+        <p class="hint">期間内の全台のデータを削除して空欄（未取得）に戻せます。削除した日は「期間を指定して取得」で取り直せます（「本日までの分を更新」はGDBの最後の日より後だけを取るため、それより前の削除した日は取り直しません）。目視で問題がないと確認した日はロックすると、削除・上書き・取得の対象から外れます。取得中は操作できません。</p>
         <div class="toolbar"><label>開始日<input id="gdb-manage-from" type="date" min="2024-03-01"></label><label>終了日<input id="gdb-manage-to" type="date" min="2024-03-01"></label>
           <button class="danger" id="gdb-delete">期間のデータを削除</button><button class="secondary" id="gdb-lock">期間をロック</button><button class="secondary" id="gdb-unlock">ロックを解除</button></div>
         <p class="hint" id="gdb-locked">ロック中の日: —</p>
@@ -51,6 +51,8 @@
       <div class="gdb-result-head"><span id="gdb-count">—</span><span class="hint">表示件数は最大100件</span></div>
       <div id="gdb-results"><p class="muted">読み込み中…</p></div>
       <div class="gdb-pagination"><button class="secondary" id="gdb-prev">← 前へ</button><span id="gdb-page">1</span><button class="secondary" id="gdb-next">次へ →</button></div>`;
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);  // Japan time, as the server
+    app.querySelectorAll('#gdb-manage-from,#gdb-manage-to').forEach(input => { input.max = today; });
     app.querySelector('#gdb-delete').addEventListener('click', () => manage('delete').catch(showError));
     app.querySelector('#gdb-lock').addEventListener('click', () => manage('lock').catch(showError));
     app.querySelector('#gdb-unlock').addEventListener('click', () => manage('unlock').catch(showError));
@@ -77,7 +79,7 @@
     const start = root.querySelector('#gdb-manage-from').value, end = root.querySelector('#gdb-manage-to').value || start;
     if (!start) throw new Error('開始日を指定してください。');
     const span = start === end ? start : `${start} ～ ${end}`;
-    if (action === 'delete' && !confirm(`${span} の全台のデータを削除します。ロック中の日は残します。削除すると元に戻せません（次の取得で取り直します）。削除しますか？`)) return;
+    if (action === 'delete' && !confirm(`${span} の全台のデータを削除します。ロック中の日は残します。削除すると元に戻せません（「期間を指定して取得」で取り直せます）。削除しますか？`)) return;
     if (action === 'unlock' && !confirm(`${span} のロックを解除しますか？解除した日は削除・上書き・取得の対象に戻ります。`)) return;
     const result = await api('gdb/' + action, {start, end});
     if (action === 'delete') notice(`${span}：${count(result.deletedDays)}日・${count(result.deletedRows)}行を削除しました。${result.lockedKept.length ? `ロック中の${count(result.lockedKept.length)}日は残しました。` : ''}`);

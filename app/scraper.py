@@ -5,11 +5,13 @@ No authentication tokens/cookies are extracted from the source browser.
 """
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
 import json
 from pathlib import Path
 import re
+import sqlite3
 import threading
 import time
 import uuid
@@ -34,11 +36,6 @@ START_PARALLEL, MIN_PARALLEL = 3, 2
 QUICK_SERVER_MS, SLOW_SERVER_MS = 800, 2000
 
 
-# 差枚 and 出率 must be read for every seat that was played. The site was seen serving this app's
-# browser tables with the negative 差枚 (and their 出率) blanked (2026-10-07). A table with more
-# played seats lacking them than the user's limit (default: 10 seats and 10%) is 停止事由 5.
-
-
 VALUES_HIDDEN = '公開サイトが差枚・出率を伏せています'  # only in runs recorded before 2026-10-08 (停止事由 5)
 
 
@@ -55,7 +52,17 @@ STOP_REASON_CODES = {
 }
 STOP_REASONS = {'button': '「取得を停止」ボタン', 'window': '取得用ブラウザーを閉じた'}
 RUN_COLUMNS = (('stop_reason', 'TEXT'), ('elapsed_seconds', 'REAL'), ('days_done', 'INTEGER'), ('seconds_per_day', 'REAL'), ('stop_code', 'INTEGER'),
-               ('refill_summary', 'TEXT'))
+               ('refill_summary', 'TEXT'), ('locked_days', 'INTEGER'))
+
+
+@contextmanager
+def locked_guard():
+    """A write to a locked GDB day is refused by the database itself (triggers on scraped_observations)."""
+    try:
+        yield
+    except sqlite3.IntegrityError as ex:
+        if 'GDB_LOCKED_DAY' in str(ex):raise ValueError('ロックされた日のデータは書き換えません。') from ex
+        raise
 
 
 def stop_reason(message, cancelled_by=None):
@@ -73,7 +80,7 @@ def stop_reason(message, cancelled_by=None):
 
 
 def stops_everything(message):
-    return any(marker in str(message) for marker in (RESTRICTED, SITE_TROUBLE, VALUES_HIDDEN))
+    return any(marker in str(message) for marker in (RESTRICTED, SITE_TROUBLE))
 TAG = 'https://min-repo.com/tag/' + quote('ゴッサムシティ') + '/'
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS scraped_observations(day TEXT,seat TEXT,model TEXT NOT NULL,games INTEGER,bb INTEGER,rb INTEGER,combined TEXT,net INTEGER,payout_percent REAL,source_url TEXT NOT NULL,published_at TEXT,fetched_at TEXT NOT NULL,PRIMARY KEY(day,seat));
@@ -81,9 +88,14 @@ CREATE TABLE IF NOT EXISTS scrape_days(day TEXT PRIMARY KEY,url TEXT,status TEXT
 CREATE TABLE IF NOT EXISTS scrape_runs(id TEXT PRIMARY KEY,state TEXT,start_day TEXT,end_day TEXT,started_at TEXT,finished_at TEXT,message TEXT,stop_reason TEXT,elapsed_seconds REAL,days_done INTEGER,seconds_per_day REAL,stop_code INTEGER);
 CREATE TABLE IF NOT EXISTS scrape_bonus_days(day TEXT PRIMARY KEY,status TEXT NOT NULL,rows INTEGER NOT NULL,message TEXT NOT NULL,checked_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS scrape_report_index(day TEXT PRIMARY KEY,url TEXT NOT NULL UNIQUE,checked_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS scrape_refill_days(day TEXT,run_id TEXT,filled INTEGER NOT NULL,still_missing INTEGER NOT NULL,changed INTEGER NOT NULL,bonus_kept INTEGER NOT NULL,bonus_reset INTEGER NOT NULL,checked_at TEXT NOT NULL,PRIMARY KEY(day,run_id));
-CREATE TABLE IF NOT EXISTS scrape_value_days(day TEXT PRIMARY KEY,missing INTEGER NOT NULL,checked_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS scrape_refill_days(day TEXT,run_id TEXT,filled INTEGER NOT NULL,changed INTEGER NOT NULL,bonus_kept INTEGER NOT NULL,bonus_reset INTEGER NOT NULL,checked_at TEXT NOT NULL,PRIMARY KEY(day,run_id));
 CREATE TABLE IF NOT EXISTS gdb_locked_days(day TEXT PRIMARY KEY,locked_at TEXT NOT NULL);
+CREATE TRIGGER IF NOT EXISTS gdb_locked_insert BEFORE INSERT ON scraped_observations
+  WHEN EXISTS(SELECT 1 FROM gdb_locked_days WHERE day=NEW.day) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
+CREATE TRIGGER IF NOT EXISTS gdb_locked_update BEFORE UPDATE ON scraped_observations
+  WHEN EXISTS(SELECT 1 FROM gdb_locked_days WHERE day IN (OLD.day,NEW.day)) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
+CREATE TRIGGER IF NOT EXISTS gdb_locked_delete BEFORE DELETE ON scraped_observations
+  WHEN EXISTS(SELECT 1 FROM gdb_locked_days WHERE day=OLD.day) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
 CREATE TABLE IF NOT EXISTS scrape_bonus_targets(day TEXT,model TEXT,seat TEXT,kind TEXT,url TEXT NOT NULL,PRIMARY KEY(day,model,seat,kind));
 '''
 
@@ -275,6 +287,10 @@ class Collector:
                 db.execute('ALTER TABLE scraped_observations ADD COLUMN bonus_source_url TEXT')
             if 'rate' in {r[1] for r in db.execute('PRAGMA table_info(scraped_observations)')}:
                 db.execute('ALTER TABLE scraped_observations DROP COLUMN rate')  # 貸区分 is no longer recorded
+            # Missing 差枚/出率 are no longer counted or read again on their own (user decision, 2026-10-09).
+            if 'still_missing' in {r[1] for r in db.execute('PRAGMA table_info(scrape_refill_days)')}:
+                db.execute('ALTER TABLE scrape_refill_days DROP COLUMN still_missing')
+            db.execute('DROP TABLE IF EXISTS scrape_value_days')
             columns={r[1] for r in db.execute('PRAGMA table_info(scrape_runs)')}
             for name,kind in RUN_COLUMNS:
                 if name not in columns:db.execute('ALTER TABLE scrape_runs ADD COLUMN %s %s'%(name,kind))
@@ -285,8 +301,9 @@ class Collector:
             previous=db.execute('SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT 1').fetchone()
             if previous:self.progress.update(state=previous['state'],id=previous['id'],start=previous['start_day'],end=previous['end_day'],message=previous['message'],
                 stopReason=previous['stop_reason'],stopCode=previous['stop_code'],elapsedSeconds=previous['elapsed_seconds'],daysDone=previous['days_done'],secondsPerDay=previous['seconds_per_day'],
-                refill=json.loads(previous['refill_summary']) if previous['refill_summary'] else None)
+                refill=json.loads(previous['refill_summary']) if previous['refill_summary'] else None,lockedDays=previous['locked_days'])
         self.cancelled_by=None; self.run_started=None
+        self.maintenance=False  # deleting or locking GDB days: no run may start meanwhile
 
     def fetch(self,url):
         # Detail pages are retried by collect_bonuses through the actual report
@@ -394,11 +411,24 @@ class Collector:
                     raise ValueError('差分日付が取得範囲外です。')
         with self.lock:
             if self.active: return dict(self.progress)
+            if self.maintenance:raise ValueError('データの削除・ロックの処理中です。終わってから取得してください。')
             self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=START_PARALLEL; self.quick_streak=0
             self.cancelled_by=None; self.run_started=time.monotonic()
             self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
         threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
         return self.status()
+
+    @contextmanager
+    def idle(self):
+        """Hold off runs while GDB days are deleted, locked or unlocked; refused while a run is going."""
+        with self.lock:
+            if self.active or self.maintenance:
+                raise ValueError('取得中はデータの削除・ロックをできません。取得が終わってから操作してください。')
+            self.maintenance=True
+        try:
+            yield
+        finally:
+            with self.lock:self.maintenance=False
 
     def stop(self,reason='button'):
         if reason not in STOP_REASONS:raise ValueError('停止の理由の指定が不正です。')
@@ -464,9 +494,10 @@ class Collector:
                 with self.lock:self.progress['message']='過去の公開一覧を確認しています。'+str(len(visited)+1)+'ページ目'
                 page=next_page
             with self.lock: self.progress['total']=len(days)
+            locked=self.locked_days()  # locks cannot change during a run (Collector.idle)
             for day in days:
                 if self.cancelled.is_set(): raise RuntimeError('取得を停止しました。')
-                if day in self.locked_days():
+                if day in locked:
                     # A locked (confirmed) day is never read, overwritten or completed again.
                     with self.lock:
                         self.progress['completed']+=1; self.progress['lockedDays']=self.progress.get('lockedDays',0)+1
@@ -547,9 +578,9 @@ class Collector:
                 self.progress.setdefault('stopReason',None)
                 self.progress['stopCode']=STOP_REASON_CODES.get(self.progress['stopReason'])
             with self.store.connect() as db:
-                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=?,stop_reason=?,stop_code=?,elapsed_seconds=?,days_done=?,seconds_per_day=?,refill_summary=? WHERE id=?',
+                db.execute('UPDATE scrape_runs SET state=?,finished_at=?,message=?,stop_reason=?,stop_code=?,elapsed_seconds=?,days_done=?,seconds_per_day=?,refill_summary=?,locked_days=? WHERE id=?',
                            (self.progress['state'],now(),self.progress['message'],self.progress['stopReason'],self.progress['stopCode'],self.progress['elapsedSeconds'],done,per_day,
-                            json.dumps(self.progress['refill'],ensure_ascii=False) if self.progress.get('refill') else None,run_id))
+                            json.dumps(self.progress['refill'],ensure_ascii=False) if self.progress.get('refill') else None,self.progress.get('lockedDays'),run_id))
             with self.lock: self.active=False; self.queue.clear(); self.tasks.clear(); self.ready.notify_all()
 
     def expected_count(self,day):
@@ -650,8 +681,7 @@ class Collector:
             return [dict(r) for r in db.execute('SELECT * FROM scrape_bonus_targets WHERE day=?',(day,))]
 
     def save_bonus_values(self,day,row,values,url):
-        if day in self.locked_days():raise ValueError('ロックされた日のデータは書き換えません。')
-        with self.store.connect() as db:
+        with locked_guard(),self.store.connect() as db:
             previous=db.execute('SELECT bb,rb FROM scraped_observations WHERE day=? AND seat=?',(day,row['seat'])).fetchone()
             if previous and any(old is not None and new is not None and old!=new for old,new in zip(previous,values[:2])):
                 raise ValueError('保存済みBB/RBと詳細ページの実値が一致しません。既存値を保持します。')
@@ -680,8 +710,7 @@ class Collector:
                 if (new.get('bb'),new.get('rb'))==(old['bb'],old['rb']):kept+=1
                 else:reset+=1
         with self.store.connect() as db:
-            # still_missing is no longer counted (user decision, 2026-10-09); the column stays for old records.
-            db.execute('INSERT OR REPLACE INTO scrape_refill_days VALUES(?,?,?,?,?,?,?,?)',(day,run_id,filled,0,changed,kept,reset,now()))
+            db.execute('INSERT OR REPLACE INTO scrape_refill_days VALUES(?,?,?,?,?,?,?)',(day,run_id,filled,changed,kept,reset,now()))
         with self.lock:
             refill=self.progress.setdefault('refill',{'days':0,'filled':0,'changed':0,'bonusKept':0,'bonusReset':0})
             for key,value in (('days',1),('filled',filled),('changed',changed),('bonusKept',kept),('bonusReset',reset)):
@@ -692,9 +721,7 @@ class Collector:
             db.execute('INSERT INTO scrape_bonus_days VALUES(?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET status=excluded.status,rows=excluded.rows,message=excluded.message,checked_at=excluded.checked_at',(day,status,count,message,now()))
 
     def save_rows(self,rows):
-        locked=self.locked_days()
-        rows=[r for r in rows if r['date'] not in locked]  # a locked day is never overwritten
-        with self.store.connect() as db:
+        with locked_guard(),self.store.connect() as db:
             db.executemany('''INSERT INTO scraped_observations(day,seat,model,games,bb,rb,combined,net,payout_percent,source_url,published_at,fetched_at,bonus_source_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(day,seat) DO UPDATE SET model=excluded.model,games=excluded.games,
                 bb=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.bb,scraped_observations.bb) ELSE excluded.bb END,

@@ -353,9 +353,12 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual((locked['days'],locked['lockedDates']),(1,['2026-09-01']))
         self.assertEqual(self.store.gdb_status()['lockedDates'],['2026-09-01'])
         collector=self.store.collector
-        collector.save_rows([{'date':'2026-09-01','seat':'1','model':'OTHER','games':5,'bb':None,'rb':None,'combined':None,'net':None,'payout_percent':None,
-                              'source_url':'x','published_at':None,'fetched_at':'2026-10-09'}])
+        with self.assertRaises(ValueError):  # refused by the database itself
+            collector.save_rows([{'date':'2026-09-01','seat':'1','model':'OTHER','games':5,'bb':None,'rb':None,'combined':None,'net':None,'payout_percent':None,
+                                  'source_url':'x','published_at':None,'fetched_at':'2026-10-09'}])
         self.assertEqual(self.store.observations('2026-09-01')['rows'][0]['機種'],'TEST ONLY')  # not overwritten
+        with self.assertRaises(ValueError),scraper.locked_guard(),self.store.connect() as db:
+            db.execute("DELETE FROM scraped_observations WHERE day='2026-09-01'")  # no write path can bypass the lock
         with self.assertRaises(ValueError):collector.save_bonus_values('2026-09-01',{'seat':'1','model':'TEST ONLY','games':100},(2,2,'1/25'),'x')
         with self.store.connect() as db:db.execute("UPDATE scrape_days SET status='partial' WHERE day='2026-09-01'")  # would be read again if unlocked
         calls=[]
@@ -364,10 +367,35 @@ class ScraperTests(unittest.TestCase):
         collector.progress={'id':'test-locked','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-01','2026-09-01',True,['2026-09-01'])
         self.assertEqual((calls,collector.progress['lockedDays'],collector.progress['completed']),([],1,1))
+        self.assertEqual(server.Store(self.tmp.name).collector.status()['lockedDays'],1)  # kept with the run
         self.assertEqual(self.store.gdb_delete('2026-09-01','2026-09-01')['deletedRows'],0)
         self.assertEqual(self.day_rows('2026-09-01'),2)
         self.assertEqual(self.store.gdb_lock('2026-09-01','2026-09-01',False)['lockedDates'],[])
         self.assertEqual(self.store.gdb_delete('2026-09-01','2026-09-01')['deletedRows'],2)
+    def test_no_run_starts_while_days_are_deleted_or_locked(self):
+        collector=self.store.collector
+        with collector.idle():
+            with self.assertRaises(ValueError):collector.start('2026-09-01','2026-09-01')
+            with self.assertRaises(ValueError):
+                with collector.idle():pass
+        collector.active=True
+        try:
+            with self.assertRaises(ValueError):
+                with collector.idle():pass
+        finally:
+            collector.active=False
+        self.assertFalse(collector.maintenance)
+    def test_old_value_tables_are_removed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            import sqlite3
+            from contextlib import closing
+            with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
+                db.execute('CREATE TABLE scrape_refill_days(day TEXT,run_id TEXT,filled INTEGER NOT NULL,still_missing INTEGER NOT NULL,changed INTEGER NOT NULL,bonus_kept INTEGER NOT NULL,bonus_reset INTEGER NOT NULL,checked_at TEXT NOT NULL,PRIMARY KEY(day,run_id))')
+                db.execute('CREATE TABLE scrape_value_days(day TEXT PRIMARY KEY,missing INTEGER NOT NULL,checked_at TEXT NOT NULL)');db.commit()
+            server.Store(folder)
+            with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:
+                self.assertNotIn('still_missing',{r[1] for r in db.execute('PRAGMA table_info(scrape_refill_days)')})
+                self.assertIsNone(db.execute("SELECT 1 FROM sqlite_master WHERE name='scrape_value_days'").fetchone())
     def test_a_day_read_again_records_what_changed(self):
         collector=self.store.collector; url='https://min-repo.com/3326458/'
         collector.seed=[{'day':'2026-09-01','url':url}];collector.expected_count=lambda day:2
@@ -388,7 +416,7 @@ class ScraperTests(unittest.TestCase):
         # the re-read is checked against what was saved: 2 values filled, nothing changed, BB/RB kept
         self.assertEqual(collector.progress['refill'],{'days':1,'filled':2,'changed':0,'bonusKept':2,'bonusReset':0})
         with self.store.connect() as db:
-            self.assertEqual(tuple(db.execute("SELECT filled,still_missing,changed,bonus_kept,bonus_reset FROM scrape_refill_days WHERE day='2026-09-01'").fetchone()),(2,0,0,2,0))
+            self.assertEqual(tuple(db.execute("SELECT filled,changed,bonus_kept,bonus_reset FROM scrape_refill_days WHERE day='2026-09-01'").fetchone()),(2,0,2,0))
         calls.clear()
         collector.progress={'id':'test-refill-2','state':'running','added':0,'completed':0,'total':0}
         collector.run('2026-09-01','2026-09-01',True,['2026-09-01'])
