@@ -173,7 +173,7 @@ class ScraperTests(unittest.TestCase):
         rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
         detail='<h1>9/1(火) ゴッサムシティ</h1><time datetime="2026-09-02">9/2</time><table><tr><th>台番</th><th>G数</th><th>BB</th><th>RB</th></tr><tr><td>1</td><td>0</td><td>0</td><td>0</td></tr><tr><td>2</td><td>2,345</td><td>-</td><td>5</td></tr></table>'
         values=parse_bonuses(detail,'2026-09-01','TEST ONLY',rows)
-        self.assertEqual(values,{'1':(0,0,None),'2':(None,5,None)})
+        self.assertEqual(values,{'1':(0,0,None,None,None),'2':(None,5,None,None,None)})
         for bad in [detail.replace('2,345','2,346'),detail.replace('2026-09-02','2025-09-02'),detail.replace('<td>2</td>','<td>3</td>')]:
             with self.assertRaises(ValueError):parse_bonuses(bad,'2026-09-01','TEST ONLY',rows)
         with self.assertRaises(ValueError):number('1.5')
@@ -182,8 +182,32 @@ class ScraperTests(unittest.TestCase):
         rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
         detail='<h1>9/1(火) ゴッサムシティ</h1><time datetime="2026-09-02">9/2</time><table><tr><th>台番</th><th>G数</th><th>BB</th><th>RB</th><th>合成</th></tr><tr><td>1</td><td>0</td><td>0</td><td>0</td><td>-</td></tr><tr><td>2</td><td>2,345</td><td>10</td><td>5</td><td>1/156.3</td></tr></table>'
         values=parse_bonuses(detail,'2026-09-01','TEST ONLY',rows)
-        self.assertEqual(values,{'1':(0,0,None),'2':(10,5,'1/156.3')})
+        self.assertEqual(values,{'1':(0,0,None,None,None),'2':(10,5,'1/156.3',None,None)})
 
+    def test_a_model_page_fills_values_the_all_seat_table_showed_as_dashes(self):
+        rows=[dict(r,net=None,payout_percent=None) for r in parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')]
+        self.store.collector.save_rows(rows)
+        detail=('<h1>9/1(火) ゴッサムシティ</h1><time datetime="2026-09-02">9/2</time><table><tr><th>台番</th><th>差枚</th><th>G数</th><th>出率</th><th>BB</th><th>RB</th><th>合成</th></tr>'
+                '<tr><td>1</td><td>0</td><td>0</td><td>-</td><td>0</td><td>0</td><td>-</td></tr><tr><td>2</td><td>-1,234</td><td>2,345</td><td>82.1%</td><td>10</td><td>5</td><td>1/156</td></tr></table>')
+        values=parse_bonuses(detail,'2026-09-01','TEST ONLY',rows)
+        self.assertEqual(values,{'1':(0,0,None,0,None),'2':(10,5,'1/156',-1234,82.1)})
+        for seat,value in values.items():
+            self.store.collector.save_bonus_values('2026-09-01',next(r for r in rows if r['seat']==seat),value,'x')
+        shown={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual((shown['2']['差枚'],shown['2']['出率'],shown['2']['BB数']),('-1234','82.1%','10'))
+        self.assertEqual((shown['1']['差枚'],shown['1']['出率']),('0','-'))
+        # where both pages show a number, they must agree
+        full=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
+        with self.assertRaises(ValueError):parse_bonuses(detail.replace('-1,234','-1,000'),'2026-09-01','TEST ONLY',full)
+    def test_a_dash_on_reading_again_keeps_the_saved_number(self):
+        rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
+        self.store.collector.save_rows(rows)
+        self.store.collector.save_rows([dict(r,net=None,payout_percent=None) for r in rows])  # read again, shown as "-"
+        shown={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual((shown['2']['差枚'],shown['2']['出率']),('-1234','82.1%'))
+        self.store.collector.save_rows([dict(r,model='OTHER',net=None,payout_percent=None) for r in rows])  # another machine: not the same record
+        shown={r['台番号']:r for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual(shown['2']['差枚'],'-')
     def test_bonus_links_and_provenance_preserved_on_rescrape(self):
         rows=parse_report(FIXTURE,'2026-09-01','https://min-repo.com/3326458/?kishu=all')
         html=FIXTURE+'<a href="?kishu=TEST%20ONLY">TEST ONLY</a><a href="https://example.com/?kishu=TEST%20ONLY">TEST ONLY</a>'

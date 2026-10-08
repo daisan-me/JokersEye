@@ -240,18 +240,20 @@ def parse_bonuses(html, day, model, rows, seat=None):
     if not wanted:raise ValueError('対象台が全台一覧にありません。')
     def read(values,number_text):
         if number(values['G数'])!=wanted[number_text]['games']:raise ValueError('全台表と詳細ページのG数が一致しません。')
-        # Some detail tables hide negative net/payout values. Keep the values
-        # from the all-seat table, and compare only publicly populated details.
+        # The model and seat pages show 差枚/出率 too. Where both pages show a number they must agree;
+        # where only this page does (the all-seat table showed "-"), its number is recorded.
+        details=[]
         for name,key,integer_value in (('差枚','net',True),('出率','payout_percent',False)):
             detail=number(values.get(name,''),integer_value)
             if detail is not None and wanted[number_text].get(key) is not None and detail!=wanted[number_text][key]:
                 raise ValueError('全台表と詳細ページの'+name+'が一致しません。')
+            details.append(detail)
         bb,rb=number(values['BB']),number(values['RB'])
         combined=values.get('合成','').strip().replace('／','/') or None
         if combined in ('-','―','－','–','N/A'):combined=None
         if combined is not None and not re.fullmatch(r'1/\d+(?:\.\d+)?',combined):raise ValueError('合成確率の値が不正です。')
         if any(n is not None and not 0<=n<=1000000 for n in (bb,rb)):raise ValueError('BB/RBの値が不正です。')
-        return bb,rb,combined
+        return (bb,rb,combined,*details)
     for table in doc.tables:
         if not table or not {'台番','G数','BB','RB'}.issubset(table[0]):continue
         for cells in table[1:]:
@@ -681,11 +683,14 @@ class Collector:
             return [dict(r) for r in db.execute('SELECT * FROM scrape_bonus_targets WHERE day=?',(day,))]
 
     def save_bonus_values(self,day,row,values,url):
+        """BB/RB/合成 from a model or seat page, plus its 差枚/出率 where the all-seat table showed "-"."""
+        values=(tuple(values)+(None,None))[:5]  # bb, rb, combined, net, payout_percent
         with locked_guard(),self.store.connect() as db:
             previous=db.execute('SELECT bb,rb FROM scraped_observations WHERE day=? AND seat=?',(day,row['seat'])).fetchone()
             if previous and any(old is not None and new is not None and old!=new for old,new in zip(previous,values[:2])):
                 raise ValueError('保存済みBB/RBと詳細ページの実値が一致しません。既存値を保持します。')
-            cursor=db.execute('''UPDATE scraped_observations SET bb=COALESCE(bb,?),rb=COALESCE(rb,?),combined=COALESCE(combined,?),bonus_source_url=?,fetched_at=?
+            cursor=db.execute('''UPDATE scraped_observations SET bb=COALESCE(bb,?),rb=COALESCE(rb,?),combined=COALESCE(combined,?),
+                net=COALESCE(net,?),payout_percent=COALESCE(payout_percent,?),bonus_source_url=?,fetched_at=?
                 WHERE day=? AND seat=? AND model=? AND games IS ?''',(*values,url,now(),day,row['seat'],row['model'],row['games']))
             if cursor.rowcount!=1:raise ValueError('BB/RB保存時に対象台の基礎値が変わりました。')
 
@@ -727,6 +732,8 @@ class Collector:
                 bb=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.bb,scraped_observations.bb) ELSE excluded.bb END,
                 rb=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.rb,scraped_observations.rb) ELSE excluded.rb END,
                 combined=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.combined,scraped_observations.combined) ELSE excluded.combined END,
-                net=excluded.net,payout_percent=excluded.payout_percent,source_url=excluded.source_url,published_at=excluded.published_at,fetched_at=excluded.fetched_at,
+                net=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.net,scraped_observations.net) ELSE excluded.net END,
+                payout_percent=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.payout_percent,scraped_observations.payout_percent) ELSE excluded.payout_percent END,
+                source_url=excluded.source_url,published_at=excluded.published_at,fetched_at=excluded.fetched_at,
                 bonus_source_url=CASE WHEN excluded.model=scraped_observations.model AND excluded.games IS scraped_observations.games THEN COALESCE(excluded.bonus_source_url,scraped_observations.bonus_source_url) ELSE excluded.bonus_source_url END''',
                 [(r['date'],r['seat'],r['model'],r['games'],r['bb'],r['rb'],r.get('combined'),r['net'],r['payout_percent'],r['source_url'],r['published_at'],r['fetched_at'],r.get('bonus_source_url')) for r in rows])
