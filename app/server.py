@@ -126,7 +126,11 @@ class Store:
     def state(self):
         with self.connect() as db:
             summary = dict(db.execute("""SELECT COUNT(*) records,COUNT(DISTINCT day) days,COUNT(DISTINCT seat) seats,MIN(day) first,MAX(day) last,
-                SUM(bb IS NOT NULL AND rb IS NOT NULL) withBonus FROM scraped_observations""").fetchone())
+                SUM(bb IS NOT NULL AND rb IS NOT NULL) withBonus,
+                IFNULL(SUM(model!='' AND games IS NOT NULL AND bb IS NOT NULL AND rb IS NOT NULL AND combined IS NOT NULL AND net IS NOT NULL AND payout_percent IS NOT NULL),0) complete,
+                IFNULL(SUM(bb IS NOT NULL AND rb IS NOT NULL AND (model='' OR games IS NULL OR combined IS NULL OR net IS NULL OR payout_percent IS NULL)),0) withDash,
+                IFNULL(SUM(bb IS NULL OR rb IS NULL),0) notYetRead FROM scraped_observations""").fetchone())
+            # 曜日・ジャグラーか are derived and 日付・台番号 are the key: the other 7 columns decide whether all 11 are filled.
             latest = self.periods[-1] if self.periods else None
             map_count = latest["seatCount"] if latest else 0
             positioned = (WEB / "fixed-floor.json").is_file() or db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
