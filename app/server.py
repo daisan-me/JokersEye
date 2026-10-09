@@ -35,6 +35,9 @@ START = "2023-04-27"
 DB_NAME = "GothamDataBase.sqlite"
 LEGACY_DB_NAME = "jokers-eye.sqlite3"  # renamed to DB_NAME on first start
 GDB_START = "2024-03-01"
+# A record with all 11 columns: 日付・台番号 are the key, 曜日・ジャグラーか are derived, these 7 must all have a value.
+COMPLETE_ROW = ("model!='' AND games IS NOT NULL AND bb IS NOT NULL AND rb IS NOT NULL AND combined IS NOT NULL"
+                " AND net IS NOT NULL AND payout_percent IS NOT NULL")
 GDB_COLUMNS = ["日付", "曜日", "台番号", "機種", "ジャグラーかジャグラーじゃないか", "ゲーム数", "BB数", "RB数", "合成", "差枚", "出率"]
 JAPANESE_WEEKDAYS = ("月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日")
 SCHEMA = """
@@ -127,10 +130,10 @@ class Store:
         with self.connect() as db:
             summary = dict(db.execute("""SELECT COUNT(*) records,COUNT(DISTINCT day) days,COUNT(DISTINCT seat) seats,MIN(day) first,MAX(day) last,
                 SUM(bb IS NOT NULL AND rb IS NOT NULL) withBonus,
-                IFNULL(SUM(model!='' AND games IS NOT NULL AND bb IS NOT NULL AND rb IS NOT NULL AND combined IS NOT NULL AND net IS NOT NULL AND payout_percent IS NOT NULL),0) complete,
-                IFNULL(SUM(bb IS NOT NULL AND rb IS NOT NULL AND (model='' OR games IS NULL OR combined IS NULL OR net IS NULL OR payout_percent IS NULL)),0) withDash,
-                IFNULL(SUM(bb IS NULL OR rb IS NULL),0) notYetRead FROM scraped_observations""").fetchone())
-            # 曜日・ジャグラーか are derived and 日付・台番号 are the key: the other 7 columns decide whether all 11 are filled.
+                IFNULL(SUM(%s),0) complete,
+                IFNULL(SUM(bb IS NOT NULL AND rb IS NOT NULL AND NOT (%s)),0) withDash,
+                IFNULL(SUM(bb IS NULL OR rb IS NULL),0) notYetRead FROM scraped_observations""" % (COMPLETE_ROW, COMPLETE_ROW)).fetchone())
+            summary["lockedRows"] = db.execute("SELECT COUNT(*) FROM gdb_locked_rows").fetchone()[0]
             latest = self.periods[-1] if self.periods else None
             map_count = latest["seatCount"] if latest else 0
             positioned = (WEB / "fixed-floor.json").is_file() or db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
@@ -229,6 +232,7 @@ class Store:
             "missingBonusRows": sum(row["BB数"] == "" or row["RB数"] == "" for row in rows),
             "missingJugglerBonusRows": sum((row["BB数"] == "" or row["RB数"] == "") and row["ジャグラーかジャグラーじゃないか"] == "ジャグラー" for row in rows),
             "lockedDates": self.gdb_locked_days(),
+            "lockedRows": self.gdb_locked_row_count(),
         }
 
     def gdb_today_plan(self):
@@ -250,6 +254,22 @@ class Store:
         return {"start": start, "targetEnd": end, "missingDates": [row[0] for row in days], "missingDateCount": len(days),
                 "missingRows": sum(row[1] for row in days)}
 
+    def gdb_locked_row_count(self):
+        with self.connect() as db:
+            return db.execute("SELECT COUNT(*) FROM gdb_locked_rows").fetchone()[0]
+
+    def gdb_lock_complete_rows(self):
+        """Lock every record whose 11 columns all have a value: it is then never overwritten or deleted."""
+        with self.connect() as db:
+            added = db.execute("INSERT OR IGNORE INTO gdb_locked_rows SELECT day,seat,? FROM scraped_observations WHERE " + COMPLETE_ROW,
+                               (now(),)).rowcount
+        return {"added": added, "lockedRows": self.gdb_locked_row_count()}
+
+    def gdb_unlock_rows(self):
+        with self.connect() as db:
+            removed = db.execute("DELETE FROM gdb_locked_rows").rowcount
+        return {"removed": removed, "lockedRows": 0}
+
     def gdb_locked_days(self):
         with self.connect() as db:
             return [row[0] for row in db.execute("SELECT day FROM gdb_locked_days ORDER BY day")]
@@ -265,19 +285,21 @@ class Store:
 
     def gdb_delete(self, start, end):
         """Delete every seat of the days in [start, end] so they are empty (未取得). They are fetched again by
-        「期間を指定して取得」, or by 「本日までの分を更新」 when no later day is recorded. Locked days are kept."""
+        「期間を指定して取得」, or by 「本日までの分を更新」 when no later day is recorded. Locked days and locked rows are kept."""
         days = self._gdb_day_range(start, end, "削除")
         locked = set(self.gdb_locked_days())
         targets = [day for day in days if day not in locked]
         with self.connect() as db:
-            rows = 0
+            rows = kept_rows = 0
             for day in targets:
-                rows += db.execute("DELETE FROM scraped_observations WHERE day=?", (day,)).rowcount
+                rows += db.execute("DELETE FROM scraped_observations WHERE day=? AND seat NOT IN (SELECT seat FROM gdb_locked_rows WHERE day=?)",
+                                   (day, day)).rowcount
+                kept_rows += db.execute("SELECT COUNT(*) FROM gdb_locked_rows WHERE day=?", (day,)).fetchone()[0]
                 for table in ("scrape_days", "scrape_bonus_days", "scrape_bonus_targets"):
                     db.execute("DELETE FROM %s WHERE day=?" % table, (day,))
         logging.info("GDB delete %s..%s: %d rows, %d locked days kept", start, end, rows, len(days) - len(targets))
         return {"start": start, "end": end, "deletedRows": rows, "deletedDays": len(targets),
-                "lockedKept": [day for day in days if day in locked]}
+                "lockedKept": [day for day in days if day in locked], "lockedRowsKept": kept_rows}
 
     def gdb_lock(self, start, end, locked):
         """Lock (confirm) or unlock the days in [start, end]. A locked day cannot be deleted, overwritten or fetched."""
@@ -672,10 +694,14 @@ class Handler(BaseHTTPRequestHandler):
                     # New dates get the full table plus BB/RB; saved dates only their missing BB/RB.
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
                     result.update({'plan':plan})
-            elif path in ("/api/gdb/delete","/api/gdb/lock","/api/gdb/unlock"):
+            elif path in ("/api/gdb/delete","/api/gdb/lock","/api/gdb/unlock","/api/gdb/lock-complete-rows","/api/gdb/unlock-rows"):
                 with self.server.store.collector.idle():  # refused while a run is going; no run starts meanwhile
                     if path=="/api/gdb/delete":
                         result=self.server.store.gdb_delete(payload.get("start"),payload.get("end"))
+                    elif path=="/api/gdb/lock-complete-rows":
+                        result=self.server.store.gdb_lock_complete_rows()
+                    elif path=="/api/gdb/unlock-rows":
+                        result=self.server.store.gdb_unlock_rows()
                     else:
                         result=self.server.store.gdb_lock(payload.get("start"),payload.get("end"),path=="/api/gdb/lock")
             elif path=="/api/scrape/stop":

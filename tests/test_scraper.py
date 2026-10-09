@@ -396,6 +396,26 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(self.day_rows('2026-09-01'),2)
         self.assertEqual(self.store.gdb_lock('2026-09-01','2026-09-01',False)['lockedDates'],[])
         self.assertEqual(self.store.gdb_delete('2026-09-01','2026-09-01')['deletedRows'],2)
+    def test_rows_with_all_11_columns_can_be_locked_and_stay_as_they_are(self):
+        self.save_day('2026-09-01',seats=3)  # 3 seats with every column
+        with self.store.connect() as db:db.execute("UPDATE scraped_observations SET net=NULL WHERE day='2026-09-01' AND seat='3'")  # seat 3 has a "-"
+        result=self.store.gdb_lock_complete_rows()
+        self.assertEqual((result['added'],result['lockedRows']),(2,2))
+        self.assertEqual(self.store.gdb_lock_complete_rows()['added'],0)  # already locked
+        self.assertEqual((self.store.gdb_status()['lockedRows'],self.store.state()['summary']['lockedRows']),(2,2))
+        collector=self.store.collector
+        changed=lambda seat:{'date':'2026-09-01','seat':seat,'model':'OTHER','games':5,'bb':None,'rb':None,'combined':None,'net':None,'payout_percent':None,
+                             'source_url':'x','published_at':None,'fetched_at':'2026-10-09'}
+        collector.save_rows([changed('1'),changed('3')])  # the locked seat 1 is left, the rest of the day is saved
+        shown={r['台番号']:r['機種'] for r in self.store.observations('2026-09-01')['rows']}
+        self.assertEqual((shown['1'],shown['2'],shown['3']),('TEST ONLY','TEST ONLY','OTHER'))
+        with self.assertRaises(ValueError),scraper.locked_guard(),self.store.connect() as db:
+            db.execute("UPDATE scraped_observations SET net=1 WHERE day='2026-09-01' AND seat='2'")  # no write path can change a locked row
+        result=self.store.gdb_delete('2026-09-01','2026-09-01')
+        self.assertEqual((result['deletedRows'],result['lockedRowsKept']),(1,2))
+        self.assertEqual(self.day_rows('2026-09-01'),2)
+        self.assertEqual(self.store.gdb_unlock_rows(),{'removed':2,'lockedRows':0})
+        self.assertEqual(self.store.gdb_delete('2026-09-01','2026-09-01')['deletedRows'],2)
     def test_no_run_starts_while_days_are_deleted_or_locked(self):
         collector=self.store.collector
         with collector.idle():

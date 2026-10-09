@@ -234,6 +234,16 @@ class ApiTests(unittest.TestCase):
                 self.assertIn('取得中',json.load(ex.exception)['error'])
         finally:
             self.host.store.collector.active=False
+        self.assertEqual(self.post('gdb/lock-complete-rows',{})['lockedRows'],0)
+        self.assertEqual(self.post('gdb/unlock-rows',{})['lockedRows'],0)
+        self.host.store.collector.active=True
+        try:
+            for path in ('gdb/lock-complete-rows','gdb/unlock-rows'):
+                with self.assertRaises(urllib.error.HTTPError) as ex:
+                    self.post(path,{})
+                self.assertIn('取得中',json.load(ex.exception)['error'])
+        finally:
+            self.host.store.collector.active=False
         for path in ('scrape/settings',):
             with self.assertRaises(urllib.error.HTTPError) as ex:
                 self.post(path,{})
