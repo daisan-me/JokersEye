@@ -94,6 +94,7 @@ class StoreTests(unittest.TestCase):
         self.assertEqual((result['rows'][0]['BB数'],result['rows'][0]['ジャグラーかジャグラーじゃないか']),('','ジャグラー'))
         summary=self.store.state()['summary']
         self.assertEqual((summary['records'],summary['withBonus']),(2,1))
+        self.assertEqual((summary['complete'],summary['withDash'],summary['notYetRead']),(1,0,1))  # 11列そろい / 「-」あり / 未取得あり
         self.assertNotIn('main',summary)
     def test_lending_rate_is_removed_from_an_old_database(self):
         with tempfile.TemporaryDirectory() as folder:
