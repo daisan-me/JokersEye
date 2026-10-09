@@ -1,5 +1,14 @@
 # 引き継ぎメモ
 
+## 再スクレイプ（2026-10-10、ブランチ `feature/rescrape`）
+
+- ユーザー指示：ロックされていない行のみ再取得、ハイフンのセルのみ書き換え（値のあるセルは上書きしない）、期間指定はこれまでどおり。
+- `POST /api/gdb/rescrape {start,end}` → `Store.gdb_rescrape_plan`（期間内で、ロックしていない日の、ロックしていない行のうち `COMPLETE_ROW` を満たさない行がある日）→ `Collector.start(..., only_dates=日, fill_dashes=True)`。
+- `Collector.rescrape_day`：対象行に差枚・出率の空があれば全台表を読み、`fill_values`（`COALESCE`、同じ台・機種・ゲーム数のみ）。まだ空があれば `collect_bonuses(fill_dashes=True)`（ロック中の行と5項目そろった行は完了扱い。`save_bonus_values` はもともと `COALESCE`）。前後を `record_refill` で記録（`FILL_KEYS` の埋まった数）。日の取得状況（`scrape_days`）は変えない。失敗は日ごとに記録して次の日へ。停止事由3・4は従来どおり全体を止める。
+- 回されていない台の出率や、BB・RBが0回の台の合成のように、本当に値がない「-」も対象に入るので、そうした台を含む機種のページは再スクレイプのたびに1回読む。
+- コードレビューの指摘で直したこと：`collect_bonuses(fill_dashes=True)` は、ページを読めた行（`read`）を完了とみなし、ページが「-」を示す行で2回目の読み直しや個別台ページへの切り替えをしない。BB/RBの取得状況（`scrape_bonus_days`）を書かない。日別ページの機種リンクを先に記録し、日別ページを二度読まない。`fill_values`・`save_bonus_values` は、空のセルが実際に埋まるときだけ `fetched_at`（と取得元）を更新する。計画（`gdb_rescrape_plan`）は `FILL_KEYS` の空で数え、1回の集計で日と行数を出す。取得の種類を `scrape_runs.mode`（fetch / rescrape）に保存し、履歴の「種類」列と前回の表示に出す。
+- 詳細ページの値が保存済みの値と食い違うと、その機種のページは従来どおりエラー（`parse_bonuses` の一致確認）になり、その機種の行は埋まらない。
+
 ## 11列そろいの行をまとめてロック（2026-10-09、ブランチ `feature/lock-complete-rows`）
 
 - ユーザー指示：11列すべてそろっている行を、すべてロックする機能。

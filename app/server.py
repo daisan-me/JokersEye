@@ -21,7 +21,7 @@ from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scraper import Collector, today as source_today
+from scraper import Collector, FILL_KEYS, today as source_today
 from platform_support import default_data_dir, launch_browser, show_error
 from versions import VersionManager
 
@@ -137,7 +137,7 @@ class Store:
             latest = self.periods[-1] if self.periods else None
             map_count = latest["seatCount"] if latest else 0
             positioned = (WEB / "fixed-floor.json").is_file() or db.execute("SELECT COUNT(*) FROM physical_positions WHERE period=? AND image_revision=?", (latest["id"] if latest else "", self.floor_revision)).fetchone()[0]
-            return {"app": APP, "version": VERSION, "summary": summary, "dataPath": str(self.folder), "settings": {r[0]:r[1] for r in db.execute("SELECT key,value FROM settings WHERE key NOT LIKE 'public_map_%'")}, "databaseFile": self.path.name, "runs": [dict(r) for r in db.execute("SELECT state,start_day,end_day,started_at,finished_at,message,stop_reason,stop_code,elapsed_seconds,days_done,seconds_per_day,refill_summary FROM scrape_runs ORDER BY started_at DESC LIMIT 100")], "mapRegistered": bool(positioned), "mapSeats": map_count, "mapReportDate": self.history_source.get("lastObservedDate"), "mapPeriods": len(self.periods), "mapReports": self.history_source.get("reportCount",0)}
+            return {"app": APP, "version": VERSION, "summary": summary, "dataPath": str(self.folder), "settings": {r[0]:r[1] for r in db.execute("SELECT key,value FROM settings WHERE key NOT LIKE 'public_map_%'")}, "databaseFile": self.path.name, "runs": [dict(r) for r in db.execute("SELECT state,start_day,end_day,started_at,finished_at,message,stop_reason,stop_code,elapsed_seconds,days_done,seconds_per_day,refill_summary,mode FROM scrape_runs ORDER BY started_at DESC LIMIT 100")], "mapRegistered": bool(positioned), "mapSeats": map_count, "mapReportDate": self.history_source.get("lastObservedDate"), "mapPeriods": len(self.periods), "mapReports": self.history_source.get("reportCount",0)}
 
     @staticmethod
     def _weekday(day):
@@ -310,6 +310,21 @@ class Store:
             else:
                 db.executemany("DELETE FROM gdb_locked_days WHERE day=?", [(day,) for day in days])
         return {"start": start, "end": end, "days": len(days), "lockedDates": self.gdb_locked_days()}
+
+    def gdb_rescrape_plan(self, start, end):
+        """「再スクレイプ」: saved days in [start, end] with an unlocked row that has an empty ("-") cell among the
+        cells a re-read fills (FILL_KEYS, as Collector.rescrape_day). Locked days and rows are left out."""
+        if not start or not end:
+            raise ValueError("再スクレイプする期間の開始日と終了日を指定してください。")
+        days = self._gdb_day_range(start, end, "再スクレイプ")
+        empty = " OR ".join("o.%s IS NULL" % key for key in FILL_KEYS)
+        with self.connect() as db:
+            found = db.execute("""SELECT o.day,COUNT(*) FROM scraped_observations o WHERE o.day BETWEEN ? AND ? AND (%s)
+                AND o.day NOT IN (SELECT day FROM gdb_locked_days)
+                AND NOT EXISTS(SELECT 1 FROM gdb_locked_rows l WHERE l.day=o.day AND l.seat=o.seat)
+                GROUP BY o.day ORDER BY o.day""" % empty, (days[0], days[-1])).fetchall()
+        return {"start": start, "targetEnd": end, "dates": [row[0] for row in found], "dateCount": len(found),
+                "rows": sum(row[1] for row in found)}
 
     def gdb_range_plan(self, start, end, retry_unpublished_after=None):
         """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out,
@@ -693,6 +708,15 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     # New dates get the full table plus BB/RB; saved dates only their missing BB/RB.
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
+                    result.update({'plan':plan})
+            elif path=="/api/gdb/rescrape":
+                if self.server.store.collector.active:
+                    raise ValueError("現在スクレイピング中です。完了後に再スクレイプしてください。")
+                plan=self.server.store.gdb_rescrape_plan(payload.get('start'),payload.get('end'))
+                if not plan['dates']:
+                    result={'status':'up-to-date','plan':plan}
+                else:
+                    result=self.server.store.collector.start(plan['targetEnd'],plan['dates'][0],True,plan['dates'],fill_dashes=True)
                     result.update({'plan':plan})
             elif path in ("/api/gdb/delete","/api/gdb/lock","/api/gdb/unlock","/api/gdb/lock-complete-rows","/api/gdb/unlock-rows"):
                 with self.server.store.collector.idle():  # refused while a run is going; no run starts meanwhile

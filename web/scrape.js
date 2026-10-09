@@ -11,7 +11,7 @@
   function runRecord(status,running){
     if(running)return `経過 ${duration(status.elapsedSeconds)} · ${number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}${status.remainingSeconds?` · 残り約 ${duration(status.remainingSeconds)}`:''}`;
     if(!status.state||status.state==='idle')return '';
-    return `前回の取得：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}`;
+    return `前回の${status.mode==='rescrape'?'再スクレイプ':'取得'}：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}`;
   }
   let timer=null, busy=false;
   function mount(){
@@ -22,8 +22,9 @@
       <p>取得したデータはGDB（GothamDataBase）に保存し、下の「登録した観測」で確認できます。BB・RBも取得します。公開ページを読む処理にOpenAI APIは使用しません。</p>
       <div class="actions"><button id="scrape-today" class="primary">本日までの分を更新</button><button id="scrape-stop" class="secondary" disabled>取得を停止</button></div>
       <p class="hint">GDBに記録されている最後の日から本日（日本時間）までを取得します。記録がまだない場合は2024/03/01から取得します。</p>
-      <div class="toolbar scrape-range"><label>開始日<input id="scrape-from" type="date" min="2024-03-01"></label><label>終了日<input id="scrape-to" type="date" min="2024-03-01"></label><button id="scrape-range-start" class="secondary">期間を指定して取得</button></div>
+      <div class="toolbar scrape-range"><label>開始日<input id="scrape-from" type="date" min="2024-03-01"></label><label>終了日<input id="scrape-to" type="date" min="2024-03-01"></label><button id="scrape-range-start" class="secondary">期間を指定して取得</button><button id="scrape-rescrape" class="secondary">再スクレイプ</button></div>
       <p class="hint">期間内で、記録がない日は全台表とBB・RBを取得し、BB・RBが空の日はそこだけ補完します。揃っている日・機種は再取得しません。まず1週間ほどで試してから広げると、取り方の問題に早く気づけます。</p>
+      <p class="hint">「再スクレイプ」は、同じ期間の保存済みの日を読み直し、ロックしていない行の「-」のセルだけを埋めます。値が入っているセルは書き換えません。ロックした日・行は読みません。</p>
       <p id="scrape-progress" role="status">取得状況を確認中…</p><p id="scrape-run" class="hint"></p><div id="scrape-stop-reason" hidden></div>
 <progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
       <details id="scrape-failures"><summary>欠落・未掲載・失敗（最新40日）</summary><div></div></details>
@@ -33,6 +34,7 @@
     panel.querySelectorAll('#scrape-from,#scrape-to').forEach(input=>{input.max=today;});
     panel.querySelector('#scrape-today').addEventListener('click',()=>start('gdb/update',{}));
     panel.querySelector('#scrape-range-start').addEventListener('click',()=>start('gdb/range',{start:panel.querySelector('#scrape-from').value||null,end:panel.querySelector('#scrape-to').value||null}));
+    panel.querySelector('#scrape-rescrape').addEventListener('click',()=>start('gdb/rescrape',{start:panel.querySelector('#scrape-from').value||null,end:panel.querySelector('#scrape-to').value||null}));
     panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{reason:'button'});await poll();}catch(e){showError(e);}});
     poll();
     if(!timer)timer=setInterval(poll,2000);
@@ -46,10 +48,11 @@
   }
   async function start(path,payload){
     if(busy)return;busy=true;
-    document.querySelectorAll('#scrape-today,#scrape-range-start').forEach(b=>b.disabled=true);
+    document.querySelectorAll('#scrape-today,#scrape-range-start,#scrape-rescrape').forEach(b=>b.disabled=true);
     try{
       const result=await api(path,payload);
-      if(result.status==='up-to-date'){busy=false;notice(path==='gdb/update'?'本日まで取得済みです。新しく取得する日はありません。':'指定した期間に取得が必要な日はありません（揃っている日は再取得しません）。');}
+      if(result.status==='up-to-date'){busy=false;notice(path==='gdb/update'?'本日まで取得済みです。新しく取得する日はありません。':path==='gdb/rescrape'?'指定した期間に、ロックしていない行の「-」はありません。':'指定した期間に取得が必要な日はありません（揃っている日は再取得しません）。');}
+      else if(path==='gdb/rescrape')notice(`再スクレイプを始めました：${result.plan.dateCount}日・「-」を含む${result.plan.rows}行が対象です。`);
       await poll();
     }catch(e){showError(e);busy=false;await poll();}
   }
@@ -58,7 +61,7 @@
     try{
       const status=await api('scrape/status'),running=status.active || status.state==='running';
       busy=running;
-      panel.querySelectorAll('#scrape-today,#scrape-range-start').forEach(b=>b.disabled=running);
+      panel.querySelectorAll('#scrape-today,#scrape-range-start,#scrape-rescrape').forEach(b=>b.disabled=running);
       panel.querySelector('#scrape-stop').disabled=!running;
       panel.querySelector('#scrape-progress').textContent=status.message||'取得待機中';
       panel.querySelector('#scrape-run').textContent=[runRecord(status,running),refillRecord(status)].filter(Boolean).join(' / ');
