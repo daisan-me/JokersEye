@@ -11,7 +11,7 @@
   function runRecord(status,running){
     if(running)return `経過 ${duration(status.elapsedSeconds)} · ${number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}${status.remainingSeconds?` · 残り約 ${duration(status.remainingSeconds)}`:''}`;
     if(!status.state||status.state==='idle')return '';
-    return `前回の取得：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}`;
+    return `前回の${status.mode==='rescrape'?'再スクレイプ':'取得'}：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}`;
   }
   let timer=null, busy=false;
   function mount(){

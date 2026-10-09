@@ -437,14 +437,24 @@ class ScraperTests(unittest.TestCase):
         with self.store.connect() as db:db.execute("INSERT INTO gdb_locked_rows VALUES('2026-09-01','2',?)",('2026-10-10',))
         plan=self.store.gdb_rescrape_plan('2026-09-01','2026-09-01')
         self.assertEqual((plan['dates'],plan['rows']),(['2026-09-01'],1))  # the locked row is not a target
-        self.rescrape()
+        calls=self.rescrape()
         self.assertEqual(self.store.collector.progress['state'],'complete')
+        # each page once: seat 1 keeps its "-" (出率, 合成) because its page shows "-", and is not tried again per seat
+        self.assertEqual(calls,['https://min-repo.com/3326458/','https://min-repo.com/3326458/?kishu=all','https://min-repo.com/3326458/?kishu=TEST%20ONLY'])
+        with self.store.connect() as db:
+            self.assertIsNone(db.execute("SELECT 1 FROM scrape_bonus_days WHERE day='2026-09-01'").fetchone())  # BB/RB status untouched
+            self.assertEqual(db.execute("SELECT mode FROM scrape_runs ORDER BY started_at DESC LIMIT 1").fetchone()[0],'rescrape')
         self.assertEqual(self.saved('1'),{'bb':0,'rb':0,'combined':None,'net':0,'payout_percent':None})  # "-" cells filled where a page had a number
         self.assertIsNone(self.saved('2')['net'])  # locked: not filled
         with self.store.connect() as db:db.execute("DELETE FROM gdb_locked_rows")
         self.rescrape()
         self.assertEqual(self.saved('2'),{'bb':10,'rb':5,'combined':'1/156','net':-1234,'payout_percent':77.7})  # a cell with a value is never overwritten
         self.assertEqual(self.store.collector.progress['refill']['filled'],1)
+        with self.store.connect() as db:
+            stamp=db.execute("SELECT fetched_at FROM scraped_observations WHERE day='2026-09-01' AND seat='1'").fetchone()[0]
+        self.rescrape()  # nothing left to fill: the rows' fetched_at stays
+        with self.store.connect() as db:
+            self.assertEqual(db.execute("SELECT fetched_at FROM scraped_observations WHERE day='2026-09-01' AND seat='1'").fetchone()[0],stamp)
         with self.store.connect() as db:db.execute("INSERT INTO gdb_locked_days VALUES('2026-09-01',?)",('2026-10-10',))
         self.assertEqual(self.store.gdb_rescrape_plan('2026-09-01','2026-09-01')['dates'],[])  # a locked day is not read
         with self.assertRaises(ValueError):self.store.collector.start('2026-09-01','2026-09-01',True,None,False,True)  # needs the dates
