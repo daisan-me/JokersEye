@@ -311,6 +311,22 @@ class Store:
                 db.executemany("DELETE FROM gdb_locked_days WHERE day=?", [(day,) for day in days])
         return {"start": start, "end": end, "days": len(days), "lockedDates": self.gdb_locked_days()}
 
+    def gdb_rescrape_plan(self, start, end):
+        """「再スクレイプ」: saved days in [start, end] with an unlocked row that has an empty ("-") cell.
+        Locked days and locked rows are left out; only empty cells are written."""
+        if not start or not end:
+            raise ValueError("再スクレイプする期間の開始日と終了日を指定してください。")
+        days = self._gdb_day_range(start, end, "再スクレイプ")
+        with self.connect() as db:
+            found = [row[0] for row in db.execute("""SELECT DISTINCT o.day FROM scraped_observations o
+                WHERE o.day BETWEEN ? AND ? AND NOT (""" + COMPLETE_ROW + """)
+                AND o.day NOT IN (SELECT day FROM gdb_locked_days)
+                AND NOT EXISTS(SELECT 1 FROM gdb_locked_rows l WHERE l.day=o.day AND l.seat=o.seat) ORDER BY o.day""", (days[0], days[-1]))]
+            rows = db.execute("""SELECT COUNT(*) FROM scraped_observations o WHERE o.day BETWEEN ? AND ? AND NOT (""" + COMPLETE_ROW + """)
+                AND o.day NOT IN (SELECT day FROM gdb_locked_days)
+                AND NOT EXISTS(SELECT 1 FROM gdb_locked_rows l WHERE l.day=o.day AND l.seat=o.seat)""", (days[0], days[-1])).fetchone()[0]
+        return {"start": start, "targetEnd": end, "dates": found, "dateCount": len(found), "rows": rows}
+
     def gdb_range_plan(self, start, end, retry_unpublished_after=None):
         """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out,
         except those after retry_unpublished_after), or a saved record whose BB or RB is empty.
@@ -693,6 +709,15 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     # New dates get the full table plus BB/RB; saved dates only their missing BB/RB.
                     result=self.server.store.collector.start(plan['targetEnd'],min(plan['missingDates']),True,plan['missingDates'])
+                    result.update({'plan':plan})
+            elif path=="/api/gdb/rescrape":
+                if self.server.store.collector.active:
+                    raise ValueError("現在スクレイピング中です。完了後に再スクレイプしてください。")
+                plan=self.server.store.gdb_rescrape_plan(payload.get('start'),payload.get('end'))
+                if not plan['dates']:
+                    result={'status':'up-to-date','plan':plan}
+                else:
+                    result=self.server.store.collector.start(plan['targetEnd'],plan['dates'][0],True,plan['dates'],fill_dashes=True)
                     result.update({'plan':plan})
             elif path in ("/api/gdb/delete","/api/gdb/lock","/api/gdb/unlock","/api/gdb/lock-complete-rows","/api/gdb/unlock-rows"):
                 with self.server.store.collector.idle():  # refused while a run is going; no run starts meanwhile

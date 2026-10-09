@@ -416,6 +416,38 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(self.day_rows('2026-09-01'),2)
         self.assertEqual(self.store.gdb_unlock_rows(),{'removed':2,'lockedRows':0})
         self.assertEqual(self.store.gdb_delete('2026-09-01','2026-09-01')['deletedRows'],2)
+    def rescrape(self,day='2026-09-01'):
+        collector=self.store.collector; url='https://min-repo.com/3326458/'
+        model=('<h1>9/1(火) ゴッサムシティ</h1><time datetime="2026-09-02">9/2</time><table><tr><th>台番</th><th>差枚</th><th>G数</th><th>出率</th><th>BB</th><th>RB</th><th>合成</th></tr>'
+               '<tr><td>1</td><td>0</td><td>0</td><td>-</td><td>0</td><td>0</td><td>-</td></tr><tr><td>2</td><td>-1,234</td><td>2,345</td><td>-</td><td>10</td><td>5</td><td>1/156</td></tr></table>')
+        pages={url:FIXTURE+'<a href="?kishu=all">全台データ一覧</a><a href="?kishu=TEST%20ONLY">TEST ONLY</a>',url+'?kishu=all':FIXTURE,url+'?kishu=TEST%20ONLY':model}
+        calls=[]
+        collector.seed=[{'day':day,'url':url}]
+        collector.fetch=lambda target:calls.append(target) or pages[target]
+        collector.progress={'id':'test-rescrape-%d'%time.monotonic_ns(),'state':'running','added':0,'completed':0,'total':0,'failures':[]}
+        collector.run(day,day,True,[day],False,True)
+        return calls
+    def saved(self,seat,day='2026-09-01'):
+        with self.store.connect() as db:
+            return dict(db.execute('SELECT bb,rb,combined,net,payout_percent FROM scraped_observations WHERE day=? AND seat=?',(day,seat)).fetchone())
+    def test_rescrape_fills_only_dash_cells_of_unlocked_rows(self):
+        base={'date':'2026-09-01','model':'TEST ONLY','source_url':'x','published_at':None,'fetched_at':'2026-10-01'}
+        self.store.collector.save_rows([dict(base,seat='1',games=0,bb=0,rb=0,combined=None,net=None,payout_percent=None),
+                                        dict(base,seat='2',games=2345,bb=10,rb=5,combined='1/156',net=None,payout_percent=77.7)])
+        with self.store.connect() as db:db.execute("INSERT INTO gdb_locked_rows VALUES('2026-09-01','2',?)",('2026-10-10',))
+        plan=self.store.gdb_rescrape_plan('2026-09-01','2026-09-01')
+        self.assertEqual((plan['dates'],plan['rows']),(['2026-09-01'],1))  # the locked row is not a target
+        self.rescrape()
+        self.assertEqual(self.store.collector.progress['state'],'complete')
+        self.assertEqual(self.saved('1'),{'bb':0,'rb':0,'combined':None,'net':0,'payout_percent':None})  # "-" cells filled where a page had a number
+        self.assertIsNone(self.saved('2')['net'])  # locked: not filled
+        with self.store.connect() as db:db.execute("DELETE FROM gdb_locked_rows")
+        self.rescrape()
+        self.assertEqual(self.saved('2'),{'bb':10,'rb':5,'combined':'1/156','net':-1234,'payout_percent':77.7})  # a cell with a value is never overwritten
+        self.assertEqual(self.store.collector.progress['refill']['filled'],1)
+        with self.store.connect() as db:db.execute("INSERT INTO gdb_locked_days VALUES('2026-09-01',?)",('2026-10-10',))
+        self.assertEqual(self.store.gdb_rescrape_plan('2026-09-01','2026-09-01')['dates'],[])  # a locked day is not read
+        with self.assertRaises(ValueError):self.store.collector.start('2026-09-01','2026-09-01',True,None,False,True)  # needs the dates
     def test_no_run_starts_while_days_are_deleted_or_locked(self):
         collector=self.store.collector
         with collector.idle():

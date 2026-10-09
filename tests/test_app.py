@@ -249,6 +249,17 @@ class ApiTests(unittest.TestCase):
                 self.post(path,{})
             self.assertEqual(ex.exception.code,404,path)
 
+    def test_rescrape_requests_only_the_plan_dates_in_fill_mode(self):
+        start=Mock(return_value={'state':'running'})
+        self.host.store.collector.start=start
+        self.host.store.gdb_rescrape_plan=Mock(return_value={'targetEnd':'2024-03-07','dates':['2024-03-02','2024-03-05'],'dateCount':2,'rows':3})
+        self.post('gdb/rescrape',{'start':'2024-03-01','end':'2024-03-07'})
+        start.assert_called_once_with('2024-03-07','2024-03-02',True,['2024-03-02','2024-03-05'],fill_dashes=True)
+        self.host.store.gdb_rescrape_plan.return_value={'targetEnd':'2024-03-07','dates':[],'dateCount':0,'rows':0}
+        start.reset_mock()
+        self.assertEqual(self.post('gdb/rescrape',{'start':'2024-03-01','end':'2024-03-07'})['status'],'up-to-date')
+        start.assert_not_called()
+
     def test_fixed_floor_assets_and_registration(self):
         with urllib.request.urlopen(self.base+'/fixed-floor.json') as response:
             floor = json.load(response)

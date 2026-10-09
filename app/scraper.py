@@ -65,6 +65,10 @@ def locked_guard():
         raise
 
 
+# The cells a re-read may fill (in parse_bonuses' order); a cell with a value is never overwritten.
+FILL_KEYS = ('bb', 'rb', 'combined', 'net', 'payout_percent')
+
+
 def stop_reason(message, cancelled_by=None):
     """The category shown as 停止事由 (the message keeps the details)."""
     if cancelled_by:
@@ -406,8 +410,9 @@ class Collector:
             result['bonusFailures']=[dict(r) for r in db.execute("SELECT day,status,message,rows FROM scrape_bonus_days WHERE status!='complete' ORDER BY day DESC LIMIT 40")]
         return result
 
-    def start(self,end=None,start=None,include_bonus=True,only_dates=None,bonus_only=False):
+    def start(self,end=None,start=None,include_bonus=True,only_dates=None,bonus_only=False,fill_dashes=False):
         if not isinstance(include_bonus,bool):raise ValueError('BB/RB取得の指定が不正です。')
+        if not isinstance(fill_dashes,bool) or (fill_dashes and only_dates is None):raise ValueError('再スクレイプの指定が不正です。')
         if not isinstance(bonus_only,bool) or (bonus_only and not include_bonus):raise ValueError('BB/RB補完の指定が不正です。')
         end=end or today(); date.fromisoformat(end)
         if not START<=end<=today(): raise ValueError('取得終了日が対象範囲外です。')
@@ -423,8 +428,9 @@ class Collector:
             if self.maintenance:raise ValueError('データの削除・ロックの処理中です。終わってから取得してください。')
             self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=START_PARALLEL; self.quick_streak=0
             self.cancelled_by=None; self.run_started=time.monotonic()
-            self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[]}
-        threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only),daemon=True).start()
+            self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[],
+                           'mode':'rescrape' if fill_dashes else 'fetch'}
+        threading.Thread(target=self.run,args=(end,start,include_bonus,only_dates,bonus_only,fill_dashes),daemon=True).start()
         return self.status()
 
     @contextmanager
@@ -450,7 +456,7 @@ class Collector:
             self.tasks.clear(); self.ready.notify_all()
         return {'ok':True}
 
-    def run(self,end,start,include_bonus=False,only_dates=None,bonus_only=False):
+    def run(self,end,start,include_bonus=False,only_dates=None,bonus_only=False,fill_dashes=False):
         run_id=self.progress['id']
         requested_start=start
         try:
@@ -514,6 +520,10 @@ class Collector:
                 with self.store.connect() as db:
                     done=db.execute('SELECT status FROM scrape_days WHERE day=?',(day,)).fetchone()
                     existing=[dict(r) for r in db.execute('SELECT *,day AS date FROM scraped_observations WHERE day=? ORDER BY CAST(seat AS INTEGER)',(day,))]
+                if fill_dashes:
+                    # 再スクレイプ: only the "-" cells of saved, unlocked rows; saved values are never overwritten.
+                    self.rescrape_day(day,reports.get(day),run_id,existing)
+                    continue
                 # A day is complete once every seat was read from the all-seat table (a "-" there is
                 # recorded as it is, whatever its cause; user decision, 2026-10-09) and has BB/RB.
                 base_complete=bool(done and done[0]=='complete' and {r['seat'] for r in existing}=={str(n) for n in range(1,self.expected_count(day)+1)})
@@ -574,7 +584,7 @@ class Collector:
                     continue
             with self.store.connect() as db:
                 missing=sum(db.execute('SELECT COUNT(*) FROM scraped_observations WHERE day=? AND (bb IS NULL OR rb IS NULL)',(day,)).fetchone()[0] for day in days)
-            with self.lock: self.progress.update(state='complete',missingBonusRows=missing,message='取得処理が終了しました。対象日のBB/RB不足: '+str(missing)+'台。未掲載・失敗は取得状況を確認してください。')
+            with self.lock: self.progress.update(state='complete',missingBonusRows=missing,message=('再スクレイプが終了しました。' if fill_dashes else '取得処理が終了しました。')+'対象日のBB/RB不足: '+str(missing)+'台。未掲載・失敗は取得状況を確認してください。')
         except Exception as ex:
             with self.lock: self.progress.update(state='stopped' if self.cancelled.is_set() else 'failed',message=str(ex),
                                                  stopReason=stop_reason(ex,self.cancelled_by if self.cancelled.is_set() else None))
@@ -600,7 +610,42 @@ class Collector:
         with self.store.connect() as db:
             db.execute('INSERT INTO scrape_days VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET url=excluded.url,status=excluded.status,rows=excluded.rows,message=excluded.message,checked_at=excluded.checked_at',(day,url,status,count,message,now()))
 
-    def collect_bonuses(self,html,day,url,rows):
+    def rescrape_day(self,day,url,run_id,existing):
+        """Read a saved day again and fill only its empty ("-") cells: 差枚・出率 from the all-seat table, then
+        BB・RB・合成・差枚・出率 from the model/seat pages. Locked rows and cells with a value are left as they are."""
+        try:
+            with self.store.connect() as db:
+                locked_rows={r[0] for r in db.execute('SELECT seat FROM gdb_locked_rows WHERE day=?',(day,))}
+            targets=[r for r in existing if r['seat'] not in locked_rows and any(r[k] is None for k in FILL_KEYS)]
+            if not targets:return
+            if not url:raise ValueError('公開一覧に当日のログが見つかりません。')
+            before={r['seat']:dict(r) for r in existing}
+            all_html=None
+            if any(r['net'] is None or r['payout_percent'] is None for r in targets):
+                with self.lock: self.progress.update(currentDay=day,message=day+' の全台表で「-」を取り直しています。')
+                all_url=all_data_link(self.fetch(url),day,url)
+                all_html=self.fetch(all_url)
+                self.fill_values(day,parse_report(all_html,day,all_url),locked_rows)
+            with self.store.connect() as db:
+                rows=[dict(r) for r in db.execute('SELECT *,day AS date FROM scraped_observations WHERE day=? ORDER BY CAST(seat AS INTEGER)',(day,))]
+            if any(r['seat'] not in locked_rows and any(r[k] is None for k in FILL_KEYS) for r in rows):
+                self.collect_bonuses(all_html,day,url,rows,fill_dashes=True)
+            self.record_refill(day,run_id,before)
+        except (ValueError,RuntimeError) as ex:
+            message=str(ex)
+            with self.lock:self.progress.setdefault('failures',[]).append({'day':day,'status':'partial','message':message})
+            if self.cancelled.is_set() or stops_everything(message):raise
+        finally:
+            with self.lock:self.progress['completed']+=1
+
+    def fill_values(self,day,rows,locked_rows):
+        """差枚・出率 of the all-seat table into the cells that are empty, for the same seat, machine and games only."""
+        with locked_guard(),self.store.connect() as db:
+            db.executemany('''UPDATE scraped_observations SET net=COALESCE(net,?),payout_percent=COALESCE(payout_percent,?),fetched_at=?
+                WHERE day=? AND seat=? AND model=? AND games IS ? AND (net IS NULL OR payout_percent IS NULL)''',
+                [(r['net'],r['payout_percent'],now(),day,r['seat'],r['model'],r['games']) for r in rows if r['seat'] not in locked_rows])
+
+    def collect_bonuses(self,html,day,url,rows,fill_dashes=False):
         groups={model:[r for r in rows if r['model']==model] for model in {r['model'] for r in rows}}
         failures=[]
         if html:self.cache_bonus_targets(html,day,url,rows)
@@ -614,7 +659,13 @@ class Collector:
             targets=self.get_bonus_targets(day)
         with self.store.connect() as db:
             saved={r['seat']:dict(r) for r in db.execute('SELECT * FROM scraped_observations WHERE day=?',(day,))}
-        complete=lambda r:saved.get(r['seat'],{}).get('bb') is not None and saved.get(r['seat'],{}).get('rb') is not None
+        has_bonus=lambda r:saved.get(r['seat'],{}).get('bb') is not None and saved.get(r['seat'],{}).get('rb') is not None
+        if fill_dashes:
+            with self.store.connect() as db:
+                locked_rows={r[0] for r in db.execute('SELECT seat FROM gdb_locked_rows WHERE day=?',(day,))}
+            complete=lambda r:r['seat'] in locked_rows or all(saved.get(r['seat'],{}).get(k) is not None for k in FILL_KEYS)
+        else:
+            complete=has_bonus
         pending=[m for m in groups if not all(complete(r) for r in groups[m])]
         if any(not any(t['model']==m for t in targets) for m in pending):
             report_html=self.fetch(url)
@@ -635,7 +686,7 @@ class Collector:
                     if complete(base):continue
                     self.save_bonus_values(day,base,value,link)
                     old=saved.get(number_text,{})
-                    saved[number_text]=dict(old,bb=value[0] if old.get('bb') is None else old['bb'],rb=value[1] if old.get('rb') is None else old['rb'])
+                    saved[number_text]=dict(old,**{k:v if old.get(k) is None else old[k] for k,v in zip(FILL_KEYS,value)})
         def stop_now(ex):
             if stops_everything(ex):self.halted=str(ex)  # the other windows' jobs stop before reading
             return self.cancelled.is_set() or stops_everything(ex)
@@ -673,9 +724,9 @@ class Collector:
                 for future in futures:
                     try:future.result()
                     except (ValueError,RuntimeError) as ex:errors.append(ex)
-            self.bonus_status(day,'partial',sum(complete(r) for r in rows),'BB/RB実値を補完中。揃っている台・機種は再取得しません。')
+            self.bonus_status(day,'partial',sum(has_bonus(r) for r in rows),'BB/RB実値を補完中。揃っている台・機種は再取得しません。')
             if errors:raise next((ex for ex in errors if stops_everything(ex)),errors[0])
-        covered={r['seat'] for r in rows if complete(r)}
+        covered={r['seat'] for r in rows if has_bonus(r)}
         status='complete' if covered=={r['seat'] for r in rows} else 'partial'
         message='' if status=='complete' else '一部機種のBB/RB取得が未完了です。'+(' '+ ' / '.join(failures[:3]) if failures else '')
         self.bonus_status(day,status,len(covered),message)
@@ -713,8 +764,9 @@ class Collector:
         filled=changed=kept=reset=0
         for seat,old in before.items():
             new=after.get(seat,{})
-            for key in ('net','payout_percent'):
+            for key in FILL_KEYS:
                 if old.get(key) is None and new.get(key) is not None:filled+=1
+                elif key in ('bb','rb','combined'):continue  # a re-read keeps these; kept/reset below
                 elif old.get(key) is not None and new.get(key)!=old.get(key):changed+=1
             for key in ('model','games'):
                 if old.get(key) is not None and new.get(key)!=old.get(key):changed+=1
