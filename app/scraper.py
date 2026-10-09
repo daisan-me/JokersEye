@@ -61,7 +61,7 @@ def locked_guard():
     try:
         yield
     except sqlite3.IntegrityError as ex:
-        if 'GDB_LOCKED_DAY' in str(ex):raise ValueError('ロックされた日のデータは書き換えません。') from ex
+        if 'GDB_LOCKED_DAY' in str(ex):raise ValueError('ロックされた日・行のデータは書き換えません。') from ex
         raise
 
 
@@ -96,6 +96,13 @@ CREATE TRIGGER IF NOT EXISTS gdb_locked_update BEFORE UPDATE ON scraped_observat
   WHEN EXISTS(SELECT 1 FROM gdb_locked_days WHERE day IN (OLD.day,NEW.day)) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
 CREATE TRIGGER IF NOT EXISTS gdb_locked_delete BEFORE DELETE ON scraped_observations
   WHEN EXISTS(SELECT 1 FROM gdb_locked_days WHERE day=OLD.day) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
+CREATE TABLE IF NOT EXISTS gdb_locked_rows(day TEXT,seat TEXT,locked_at TEXT NOT NULL,PRIMARY KEY(day,seat));
+CREATE TRIGGER IF NOT EXISTS gdb_locked_row_insert BEFORE INSERT ON scraped_observations
+  WHEN EXISTS(SELECT 1 FROM gdb_locked_rows WHERE day=NEW.day AND seat=NEW.seat) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
+CREATE TRIGGER IF NOT EXISTS gdb_locked_row_update BEFORE UPDATE ON scraped_observations
+  WHEN EXISTS(SELECT 1 FROM gdb_locked_rows WHERE (day=OLD.day AND seat=OLD.seat) OR (day=NEW.day AND seat=NEW.seat)) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
+CREATE TRIGGER IF NOT EXISTS gdb_locked_row_delete BEFORE DELETE ON scraped_observations
+  WHEN EXISTS(SELECT 1 FROM gdb_locked_rows WHERE day=OLD.day AND seat=OLD.seat) BEGIN SELECT RAISE(ABORT,'GDB_LOCKED_DAY'); END;
 CREATE TABLE IF NOT EXISTS scrape_bonus_targets(day TEXT,model TEXT,seat TEXT,kind TEXT,url TEXT NOT NULL,PRIMARY KEY(day,model,seat,kind));
 '''
 
@@ -726,6 +733,11 @@ class Collector:
             db.execute('INSERT INTO scrape_bonus_days VALUES(?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET status=excluded.status,rows=excluded.rows,message=excluded.message,checked_at=excluded.checked_at',(day,status,count,message,now()))
 
     def save_rows(self,rows):
+        with self.store.connect() as db:
+            # A locked row (11 columns confirmed) is left as it is; the rest of its day is still saved.
+            days=sorted({r['date'] for r in rows})
+            locked={(r[0],r[1]) for r in db.execute('SELECT day,seat FROM gdb_locked_rows WHERE day IN (%s)'%','.join('?'*len(days)),days)} if days else set()
+        rows=[r for r in rows if (r['date'],r['seat']) not in locked]
         with locked_guard(),self.store.connect() as db:
             db.executemany('''INSERT INTO scraped_observations(day,seat,model,games,bb,rb,combined,net,payout_percent,source_url,published_at,fetched_at,bonus_source_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(day,seat) DO UPDATE SET model=excluded.model,games=excluded.games,

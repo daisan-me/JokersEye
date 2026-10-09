@@ -29,11 +29,14 @@
       <div class="card-header"><div><div class="kicker">MIN-REPO / GOTHAM DATABASE</div><h2>GothamDataBase（GDB）</h2></div><span class="tag" id="gdb-tag">0行</span></div>
       <p>GDBに保存したみんレポ ゴッサムシティの台別記録（2024/03/01以降、日付・台番号ごとに1行）を、条件で絞り込んで閲覧します。「-」は公開ページで「-」と表示された値（理由は区別しません）、「未取得」はまだ取得していない値です。</p>
       <p class="hint" id="gdb-status">状態を確認中…</p>
-      <details class="gdb-manage" id="gdb-manage"><summary>日付ごとの削除・ロック</summary>
+      <details class="gdb-manage" id="gdb-manage"><summary>削除・ロック</summary>
         <p class="hint">期間内の全台のデータを削除して空欄（未取得）に戻せます。削除した日は「期間を指定して取得」で取り直せます（「本日までの分を更新」はGDBの最後の日より後だけを取るため、それより前の削除した日は取り直しません）。目視で問題がないと確認した日はロックすると、削除・上書き・取得の対象から外れます。取得中は操作できません。</p>
         <div class="toolbar"><label>開始日<input id="gdb-manage-from" type="date" min="2024-03-01"></label><label>終了日<input id="gdb-manage-to" type="date" min="2024-03-01"></label>
           <button class="danger" id="gdb-delete">期間のデータを削除</button><button class="secondary" id="gdb-lock">期間をロック</button><button class="secondary" id="gdb-unlock">ロックを解除</button></div>
         <p class="hint" id="gdb-locked">ロック中の日: —</p>
+        <div class="toolbar"><button class="secondary" id="gdb-lock-rows">11列そろいの行をすべてロック</button><button class="secondary" id="gdb-unlock-rows">行のロックをすべて解除</button></div>
+        <p class="hint">11列すべてに数値がある行（日付×台番号）をまとめてロックします。ロックした行は上書き・削除されません（その日のほかの行は取得・削除できます）。押した時点でそろっている行が対象で、あとからそろった行は、もう一度押すとロックされます。</p>
+        <p class="hint" id="gdb-locked-rows">ロック中の行: —</p>
       </details>
       <div class="gdb-filters">
         <div><label class="label" for="gdb-from">日付（開始）</label><input id="gdb-from" type="date"></div>
@@ -56,6 +59,8 @@
     app.querySelector('#gdb-delete').addEventListener('click', () => manage('delete').catch(showError));
     app.querySelector('#gdb-lock').addEventListener('click', () => manage('lock').catch(showError));
     app.querySelector('#gdb-unlock').addEventListener('click', () => manage('unlock').catch(showError));
+    app.querySelector('#gdb-lock-rows').addEventListener('click', () => manageRows('lock-complete-rows').catch(showError));
+    app.querySelector('#gdb-unlock-rows').addEventListener('click', () => manageRows('unlock-rows').catch(showError));
     app.querySelector('#gdb-apply').addEventListener('click', () => { offset = 0; loadRows().catch(showError); });
     app.querySelector('#gdb-reset').addEventListener('click', () => { app.querySelectorAll('.gdb-filters input').forEach(input => { input.value = ''; }); app.querySelector('#gdb-juggler').value = 'all'; app.querySelector('#gdb-weekday').value = ''; offset = 0; loadRows().catch(showError); });
     app.querySelector('#gdb-prev').addEventListener('click', () => { offset = Math.max(0, offset - limit); loadRows().catch(showError); });
@@ -82,8 +87,16 @@
     if (action === 'delete' && !confirm(`${span} の全台のデータを削除します。ロック中の日は残します。削除すると元に戻せません（「期間を指定して取得」で取り直せます）。削除しますか？`)) return;
     if (action === 'unlock' && !confirm(`${span} のロックを解除しますか？解除した日は削除・上書き・取得の対象に戻ります。`)) return;
     const result = await api('gdb/' + action, {start, end});
-    if (action === 'delete') notice(`${span}：${count(result.deletedDays)}日・${count(result.deletedRows)}行を削除しました。${result.lockedKept.length ? `ロック中の${count(result.lockedKept.length)}日は残しました。` : ''}`);
+    if (action === 'delete') notice(`${span}：${count(result.deletedDays)}日・${count(result.deletedRows)}行を削除しました。${result.lockedKept.length ? `ロック中の${count(result.lockedKept.length)}日は残しました。` : ''}${result.lockedRowsKept ? `ロック中の${count(result.lockedRowsKept)}行は残しました。` : ''}`);
     else notice(`${span}（${count(result.days)}日）を${action === 'lock' ? 'ロックしました' : 'ロック解除しました'}。`);
+    await loadStatus(); await loadRows();
+    document.dispatchEvent(new CustomEvent('jokers:data-changed'));
+  }
+
+  async function manageRows(action) {
+    if (action === 'unlock-rows' && !confirm('ロック中の行をすべて解除しますか？解除した行は上書き・削除の対象に戻ります。')) return;
+    const result = await api('gdb/' + action, {});
+    notice(action === 'lock-complete-rows' ? `11列そろいの行を${count(result.added)}行ロックしました（ロック中 ${count(result.lockedRows)}行）。` : `行のロックを${count(result.removed)}行解除しました。`);
     await loadStatus(); await loadRows();
     document.dispatchEvent(new CustomEvent('jokers:data-changed'));
   }
@@ -105,6 +118,8 @@
     status.textContent = `保存先: ${result.path} / ${count(result.dayCount)}日分（${result.firstDate || '—'} ～ ${result.lastDate || '—'}） / 記録がない日: ${count(result.actionableMissingDates.length)}日 / 未掲載: ${count(result.unpublishedDates.length)}日 / BB・RB未取得: ${count(result.missingBonusRows)}行（ジャグラー ${count(result.missingJugglerBonusRows)}行） / ロック中: ${count(result.lockedDates.length)}日`;
     const locked = document.querySelector('#gdb-locked');
     if (locked) locked.textContent = `ロック中の日（${count(result.lockedDates.length)}日）: ${result.lockedDates.length ? ranges(result.lockedDates) : 'なし'}`;
+    const lockedRows = document.querySelector('#gdb-locked-rows');
+    if (lockedRows) lockedRows.textContent = `ロック中の行: ${count(result.lockedRows)}行`;
     return result;
   }
 
@@ -130,7 +145,7 @@
   }
 
   // Deleting or locking is refused while a run is going: disable the buttons meanwhile.
-  document.addEventListener('jokers:scrape-state', event => { document.querySelectorAll('#gdb-delete,#gdb-lock,#gdb-unlock').forEach(button => { button.disabled = event.detail.running; }); });
+  document.addEventListener('jokers:scrape-state', event => { document.querySelectorAll('#gdb-delete,#gdb-lock,#gdb-unlock,#gdb-lock-rows,#gdb-unlock-rows').forEach(button => { button.disabled = event.detail.running; }); });
   // A finished scraping run changes GDB: show the new rows without reopening the page.
   document.addEventListener('jokers:data-changed', () => { if (document.querySelector('#gdb-app')) loadStatus().then(loadRows).catch(showError); });
   const observer = new MutationObserver(() => { mounted = false; mount(); });

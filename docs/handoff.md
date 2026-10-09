@@ -1,5 +1,13 @@
 # 引き継ぎメモ
 
+## 11列そろいの行をまとめてロック（2026-10-09、ブランチ `feature/lock-complete-rows`）
+
+- ユーザー指示：11列すべてそろっている行を、すべてロックする機能。
+- 日単位の `gdb_locked_days` とは別に、行単位の `gdb_locked_rows(day, seat)` を追加。トリガー `gdb_locked_row_insert/update/delete` がDBへの書き込みを拒否する（エラーは `GDB_LOCKED_DAY` を共用し、`locked_guard` が「ロックされた日・行のデータは書き換えません。」にする）。
+- `Collector.save_rows` はその日のロック中の行を除いてから保存する（全台表の読み直しで日全体が失敗しないように）。BB・RBがそろった行は機種別ページで上書きしないので、`save_bonus_values` はロック中の行に届かない。
+- `Store.gdb_lock_complete_rows()`（押した時点で `COMPLETE_ROW` を満たす行をすべて追加）／`gdb_unlock_rows()`（すべて解除）、`POST /api/gdb/lock-complete-rows`・`/api/gdb/unlock-rows`（`Collector.idle` の中）。`gdb_delete` はロック中の行を残し `lockedRowsKept` を返す。`gdb_status.lockedRows`・`state().summary.lockedRows`。
+- このブランチは `feature/complete-rows-card`（ダッシュボードの「11列そろい」、#13）の上に作った。`COMPLETE_ROW`（server.py）を両方で共用する。
+
 ## ダッシュボードの「11列そろい」（2026-10-09、ブランチ `feature/complete-rows-card`）
 
 - ユーザー指示：「BB・RB取得済み」の件数を、11列すべてのデータがそろった件数に差し替える。
