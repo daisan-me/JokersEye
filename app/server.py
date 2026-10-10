@@ -326,9 +326,18 @@ class Store:
         return {"start": start, "targetEnd": end, "dates": [row[0] for row in found], "dateCount": len(found),
                 "rows": sum(row[1] for row in found)}
 
+    def gdb_unread_days(self, start, end):
+        """Saved days whose all-seat table has not been read since: they have rows but no result in scrape_days. A
+        delete removes that result and keeps the locked rows, so their other seats are fetched again. A day read
+        with fewer seats than expected keeps its 'partial' result and is not requested again on every run."""
+        with self.connect() as db:
+            return [row[0] for row in db.execute("""SELECT DISTINCT o.day FROM scraped_observations o
+                WHERE o.day BETWEEN ? AND ? AND NOT EXISTS(SELECT 1 FROM scrape_days d WHERE d.day=o.day) ORDER BY o.day""", (start, end))]
+
     def gdb_range_plan(self, start, end, retry_unpublished_after=None):
         """Dates in [start, end] that still need work: no record yet (dates seen as unpublished are left out,
-        except those after retry_unpublished_after), or a saved record whose BB or RB is empty.
+        except those after retry_unpublished_after), a saved day whose all-seat table has not been read since
+        (e.g. only locked rows are left after a delete), or a saved record whose BB or RB is empty.
         Complete dates are not requested again."""
         if not start or not end:
             raise ValueError("取得する期間の開始日と終了日を指定してください。")
@@ -337,12 +346,11 @@ class Store:
         status = self.gdb_status()
         retry = {day for day in status["unpublishedDates"] if retry_unpublished_after and day > retry_unpublished_after}
         new_days = [day for day in status["missingDates"] if start <= day <= end and (day in status["actionableMissingDates"] or day in retry)]
-        bonus_days = self.gdb_bonus_plan(start, end)["missingDates"]
         locked = set(status["lockedDates"])  # a locked (confirmed) day is never fetched again
-        new_days = [day for day in new_days if day not in locked]
-        bonus_days = [day for day in bonus_days if day not in locked]
-        return {"start": start, "targetEnd": end, "missingDates": sorted(set(new_days) | set(bonus_days)),
-                "newDateCount": len(new_days), "bonusDateCount": len(bonus_days),
+        kinds = {"new": new_days, "bonus": self.gdb_bonus_plan(start, end)["missingDates"], "unread": self.gdb_unread_days(start, end)}
+        kinds = {name: [day for day in days if day not in locked] for name, days in kinds.items()}
+        return {"start": start, "targetEnd": end, "missingDates": sorted(set().union(*kinds.values())),
+                "newDateCount": len(kinds["new"]), "bonusDateCount": len(kinds["bonus"]), "unreadDateCount": len(kinds["unread"]),
                 "lockedDates": [day for day in status["lockedDates"] if start <= day <= end],
                 "unpublishedDates": [day for day in status["unpublishedDates"] if start <= day <= end and day not in retry]}
 

@@ -458,6 +458,25 @@ class ScraperTests(unittest.TestCase):
         with self.store.connect() as db:db.execute("INSERT INTO gdb_locked_days VALUES('2026-09-01',?)",('2026-10-10',))
         self.assertEqual(self.store.gdb_rescrape_plan('2026-09-01','2026-09-01')['dates'],[])  # a locked day is not read
         with self.assertRaises(ValueError):self.store.collector.start('2026-09-01','2026-09-01',True,None,False,True)  # needs the dates
+    def test_after_locking_complete_rows_and_deleting_the_day_its_other_seats_are_fetched_again(self):
+        collector=self.store.collector; url='https://min-repo.com/3326458/'
+        rows=parse_report(FIXTURE,'2026-09-01',url+'?kishu=all')
+        collector.save_rows([dict(rows[0],bb=0,rb=0),dict(rows[1],bb=10,rb=5,combined='1/156')])  # seat 2 has all 11 columns
+        collector.expected_count=lambda day:2
+        collector.day_status('2026-09-01',url,'complete',2,'')
+        self.assertEqual(self.store.gdb_lock_complete_rows()['added'],1)
+        self.store.gdb_delete('2026-09-01','2026-09-01')  # seat 1 is deleted, the locked seat 2 stays
+        self.assertEqual(self.day_rows('2026-09-01'),1)
+        plan=self.store.gdb_range_plan('2026-09-01','2026-09-01')
+        self.assertEqual((plan['missingDates'],plan['unreadDateCount']),(['2026-09-01'],1))  # not "nothing to fetch"
+        collector.seed=[{'day':'2026-09-01','url':url}]
+        collector.fetch=lambda target:FIXTURE+'<a href="?kishu=all">全台データ一覧</a>' if target==url else FIXTURE
+        collector.progress={'id':'test-after-delete','state':'running','added':0,'completed':0,'total':0,'failures':[]}
+        collector.run('2026-09-01','2026-09-01',False,plan['missingDates'])
+        self.assertEqual(collector.progress['state'],'complete')
+        self.assertEqual(self.day_rows('2026-09-01'),2)  # seat 1 is back
+        self.assertEqual(self.saved('2'),{'bb':10,'rb':5,'combined':'1/156','net':-1234,'payout_percent':82.1})  # the locked row as it was
+        self.assertEqual(self.store.gdb_range_plan('2026-09-01','2026-09-01')['unreadDateCount'],0)  # every seat read again (its BB/RB come next)
     def test_no_run_starts_while_days_are_deleted_or_locked(self):
         collector=self.store.collector
         with collector.idle():
