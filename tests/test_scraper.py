@@ -468,7 +468,7 @@ class ScraperTests(unittest.TestCase):
         self.store.gdb_delete('2026-09-01','2026-09-01')  # seat 1 is deleted, the locked seat 2 stays
         self.assertEqual(self.day_rows('2026-09-01'),1)
         plan=self.store.gdb_range_plan('2026-09-01','2026-09-01')
-        self.assertEqual((plan['missingDates'],plan['partialDateCount']),(['2026-09-01'],1))  # not "nothing to fetch"
+        self.assertEqual((plan['missingDates'],plan['unreadDateCount']),(['2026-09-01'],1))  # not "nothing to fetch"
         collector.seed=[{'day':'2026-09-01','url':url}]
         collector.fetch=lambda target:FIXTURE+'<a href="?kishu=all">全台データ一覧</a>' if target==url else FIXTURE
         collector.progress={'id':'test-after-delete','state':'running','added':0,'completed':0,'total':0,'failures':[]}
@@ -476,7 +476,7 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(collector.progress['state'],'complete')
         self.assertEqual(self.day_rows('2026-09-01'),2)  # seat 1 is back
         self.assertEqual(self.saved('2'),{'bb':10,'rb':5,'combined':'1/156','net':-1234,'payout_percent':82.1})  # the locked row as it was
-        self.assertEqual(self.store.gdb_range_plan('2026-09-01','2026-09-01')['partialDateCount'],0)  # every seat read again (its BB/RB come next)
+        self.assertEqual(self.store.gdb_range_plan('2026-09-01','2026-09-01')['unreadDateCount'],0)  # every seat read again (its BB/RB come next)
     def test_no_run_starts_while_days_are_deleted_or_locked(self):
         collector=self.store.collector
         with collector.idle():

@@ -81,14 +81,17 @@ class StoreTests(unittest.TestCase):
         plan=self.store.gdb_range_plan('2024-03-01','2024-03-05')
         # 03-01 is complete, 03-02 lacks BB/RB, 03-03 and 03-05 have no record, 03-04 is known unpublished
         self.assertEqual(plan['missingDates'],['2024-03-02','2024-03-03','2024-03-05'])
-        self.assertEqual((plan['newDateCount'],plan['bonusDateCount'],plan['partialDateCount'],plan['unpublishedDates']),(2,1,0,['2024-03-04']))
+        self.assertEqual((plan['newDateCount'],plan['bonusDateCount'],plan['unreadDateCount'],plan['unpublishedDates']),(2,1,0,['2024-03-04']))
         self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['missingDates'],[])
-        # a deleted day that keeps only its locked rows has lost its 'complete' mark: its other seats are fetched again
+        # a deleted day that keeps only its locked rows has lost its result: its other seats are fetched again
         with self.store.connect() as db:db.execute("DELETE FROM scrape_days WHERE day='2024-03-01'")
         self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['missingDates'],['2024-03-01'])
-        self.store.collector.expected_count=lambda day:2  # or a day with fewer rows than seats
-        self.store.collector.day_status('2024-03-01','','complete',1,'TEST ONLY')
-        self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['partialDateCount'],1)
+        # a day the site publishes with fewer seats was read: it stays 'partial' and is not requested on every run
+        self.store.collector.day_status('2024-03-01','','partial',1,'台番号の全台網羅を確認できません。')
+        self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['missingDates'],[])
+        # a locked day is left out whatever its kind
+        self.store.gdb_lock('2024-03-02','2024-03-02',True)
+        self.assertNotIn('2024-03-02',self.store.gdb_range_plan('2024-03-01','2024-03-05')['missingDates'])
         for start,end in ((None,'2024-03-05'),('2024-03-01',''),('2024-02-29','2024-03-05'),('2024-03-05','2024-03-01'),('2024-03-01','2099-01-01'),('2024-3-1','2024-03-05')):
             with self.assertRaises(ValueError):
                 self.store.gdb_range_plan(start,end)
