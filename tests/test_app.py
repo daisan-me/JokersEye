@@ -75,12 +75,20 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.store.gdb_bonus_plan()['missingDates'],[])
     def test_range_plan_takes_new_and_bonus_missing_dates_inside_the_range_only(self):
         self.store.collector.save_rows([ROW,dict(ROW,date='2024-03-02',seat='2',bb=None,rb=None),dict(ROW,date='2024-03-09',seat='3',bb=None)])
+        self.store.collector.expected_count=lambda day:1  # these test days have a single seat
+        for day in ('2024-03-01','2024-03-02'):self.store.collector.day_status(day,'','complete',1,'TEST ONLY')
         self.store.collector.day_status('2024-03-04','','not-published',0,'TEST ONLY')
         plan=self.store.gdb_range_plan('2024-03-01','2024-03-05')
         # 03-01 is complete, 03-02 lacks BB/RB, 03-03 and 03-05 have no record, 03-04 is known unpublished
         self.assertEqual(plan['missingDates'],['2024-03-02','2024-03-03','2024-03-05'])
-        self.assertEqual((plan['newDateCount'],plan['bonusDateCount'],plan['unpublishedDates']),(2,1,['2024-03-04']))
+        self.assertEqual((plan['newDateCount'],plan['bonusDateCount'],plan['partialDateCount'],plan['unpublishedDates']),(2,1,0,['2024-03-04']))
         self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['missingDates'],[])
+        # a deleted day that keeps only its locked rows has lost its 'complete' mark: its other seats are fetched again
+        with self.store.connect() as db:db.execute("DELETE FROM scrape_days WHERE day='2024-03-01'")
+        self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['missingDates'],['2024-03-01'])
+        self.store.collector.expected_count=lambda day:2  # or a day with fewer rows than seats
+        self.store.collector.day_status('2024-03-01','','complete',1,'TEST ONLY')
+        self.assertEqual(self.store.gdb_range_plan('2024-03-01','2024-03-01')['partialDateCount'],1)
         for start,end in ((None,'2024-03-05'),('2024-03-01',''),('2024-02-29','2024-03-05'),('2024-03-05','2024-03-01'),('2024-03-01','2099-01-01'),('2024-3-1','2024-03-05')):
             with self.assertRaises(ValueError):
                 self.store.gdb_range_plan(start,end)
@@ -118,6 +126,8 @@ class StoreTests(unittest.TestCase):
         empty=self.store.gdb_today_plan()
         self.assertEqual((empty['lastDate'],empty['start'],empty['missingDates'][0]),(None,'2024-03-01','2024-03-01'))
         self.store.collector.save_rows([dict(ROW,date='2024-03-05')])
+        self.store.collector.expected_count=lambda day:1
+        self.store.collector.day_status('2024-03-05','','complete',1,'TEST ONLY')
         self.store.collector.day_status('2024-03-02','','not-published',0,'TEST ONLY')  # before the last date: skipped
         self.store.collector.day_status('2024-03-06','','not-published',0,'TEST ONLY')  # after it: tried again
         plan=self.store.gdb_today_plan()
