@@ -3,6 +3,9 @@
 // Preserve the source. Only the explicitly authorized display offsets enlarge clearance.
 const FixedFloor = (() => {
   const WIDTH = 1060, HEIGHT = 665, TILE = 10.75, MAX_ZOOM = 8;
+  // The 50px HTML seat is shrunk to the 10.75-unit square by an SVG transform, not CSS:
+  // WebKit (macOS) paints transformed/positioned HTML inside foreignObject without the viewBox zoom.
+  const SEAT = 50, SEAT_SCALE = TILE / SEAT;
   // macOS: ⌘ is the usual modifier; WKWebView sends trackpad pinch as gesture events, not Ctrl+wheel.
   const MAC = /Mac/.test(globalThis.navigator?.platform || '');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -89,7 +92,7 @@ const FixedFloor = (() => {
         ${positions.map(tile => {
           const number = String(tile.seatNumber), seat = seats.get(number), model = seat?.model || '未掲載';
           const title = `${number}番台${view === 'machine' ? ' · ' + model : ''}${changed.has(number) && view === 'machine' ? ' · この期間の開始時に機種変更' : ''}`;
-          return `<foreignObject class="floor-tile" x="${tile.x - TILE / 2}" y="${tile.y - TILE / 2}" width="${TILE}" height="${TILE}" transform="rotate(${tile.angle} ${tile.x} ${tile.y})" data-face-id="${tile.face}" data-seat-number="${tile.seatNumber}">
+          return `<foreignObject class="floor-tile" width="${SEAT}" height="${SEAT}" transform="rotate(${tile.angle} ${tile.x} ${tile.y}) translate(${tile.x - TILE / 2} ${tile.y - TILE / 2}) scale(${SEAT_SCALE})" data-face-id="${tile.face}" data-seat-number="${tile.seatNumber}">
             <button xmlns="http://www.w3.org/1999/xhtml" type="button" class="machine-seat ${palette(model)} ${changed.has(number) ? 'seat-changed' : ''}" data-seat="${number}" title="${esc(title)}" aria-label="${esc(title)}"><span class="seat-number">${number}</span><span class="seat-model">${esc(model.replace(/^(スマスロ\s*|パチスロ\s*|Lパチスロ\s*|Lスマスロ\s*)/, ''))}</span></button>
           </foreignObject>`;
         }).join('')}

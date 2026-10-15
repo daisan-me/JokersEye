@@ -5,7 +5,10 @@
 - ユーザー報告：Macで店内マップの拡大縮小が正常に動かない。Windows版と同じ操作にする。
 - 原因：Windows（WebView2）はトラックパッドのピンチを Ctrl＋ホイール（`wheel` の `ctrlKey`）として送るが、macOS の WKWebView は `gesturestart`／`gesturechange`／`gestureend`（`event.scale`）として送る。`web/fixed-floor.js` は Ctrl＋ホイールしか見ていなかった。
 - `FixedFloor.bind`：`gesture*` を受けて、ピンチ開始時の倍率 × `event.scale` で、指の位置を中心に拡大縮小する（ページ全体の拡大は `preventDefault` で止める）。ピンチ中のホイールは無視。macOS では ⌘＋ホイールも Ctrl＋ホイールと同じに扱う。画面のヒントは macOS だけ「ピンチ／⌘＋ホイールで拡大」。Windows の動作・表示は変えていない。
-- 検証：`tests/test_floor_plan.cjs` にピンチ・⌘＋ホイールを追加。実機（macOS、pywebview 6.2.1 の WKWebView）で合成イベントを送り、ピンチ・⌘／Ctrl＋ホイールで倍率が変わり、修飾キーなしのホイールでは変わらないことを確認。実際のトラックパッドでのピンチはユーザーの確認待ち。
+- 検証：`tests/test_floor_plan.cjs` にピンチ・⌘＋ホイールを追加。実機（macOS、pywebview 6.2.1 の WKWebView）で合成イベントを送り、ピンチ・⌘／Ctrl＋ホイールで倍率が変わり、修飾キーなしのホイールでは変わらないことを確認。
+- ユーザー報告（同日）：Macでは拡大しても外壁だけが大きくなり、台は100%のときの位置・大きさのまま。原因：台の `<button>` が foreignObject の中で `position:relative` と CSS の `transform:scale(.215)` を持っていた。macOS の WebKit は、こうした要素を SVG の viewBox の拡大を反映しない別レイヤーで描く（WKWebView のスナップショットで再現。どちらか片方を外すだけでは直らず、両方外すと直る）。WebView2（Windows）では起きない。
+- 修正：.215倍の縮小を foreignObject の SVG の transform（`rotate(角度 x y) translate(x-5.375 y-5.375) scale(.215)`、幅・高さ50）に移し、ボタンの CSS の transform をやめた。ボタンは `position:static`。変わった台の点（`:after`）は絶対配置をやめ、グリッドの1行目の右上（`justify-self:end; margin-top:-5px`）に置いた（元の top:3px・right:3px と同じ位置）。画面上の位置・大きさ・角度は以前と同じ。テストは新しい形に合わせた。
+- 確認：WKWebView のスナップショットで100%・300%・800%とも台が外壁と一緒に拡大されることを確認。実際のトラックパッドでのピンチはユーザーの確認待ち。Windows（WebView2）での見た目は未確認。
 
 ## 行のロックのあとに削除した日も取り直す（2026-10-10、ブランチ `fix/plan-partial-days`）
 

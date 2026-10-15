@@ -75,7 +75,9 @@ for(const polygon of polygons) {
   }
 }
 assert(wallClearance > .65/2, 'Account for the wall stroke thickness');
-assert(css.includes('transform:scale(.215)'));
+assert(!/\.physical-floor-svg \.machine-seat\{[^}]*transform:/.test(css), 'No CSS transform inside foreignObject (WebKit drops the viewBox zoom)');
+assert(css.includes('.physical-floor-svg .machine-seat{position:static;'), 'No positioned seat inside foreignObject (WebKit drops the viewBox zoom)');
+assert(/seat-changed:after\{position:static;/.test(css));
 assert(css.includes('width:6.4px;height:6.4px'));
 assert(Math.abs(6.4 * .215 / (4 * .172) - 2) < 1e-12, 'Change dot radius exactly doubles');
 assert(css.includes('outline-offset:-2px'), 'Focus and selection must not overflow enlarged squares');
@@ -144,7 +146,7 @@ class Element extends EventTarget {
     if (!expectedGeometry) expectedGeometry = geometry;
     assert.equal(geometry, expectedGeometry, 'Period switch must not change tile geometry');
     for (const tile of displayTiles) {
-      assert(geometry.includes(`x="${tile.x - size/2}" y="${tile.y - size/2}" width="${size}" height="${size}" transform="rotate(${tile.angle} ${tile.x} ${tile.y})" data-face-id="${tile.face}"`));
+      assert(geometry.includes(`width="50" height="50" transform="rotate(${tile.angle} ${tile.x} ${tile.y}) translate(${tile.x - size/2} ${tile.y - size/2}) scale(${size/50})" data-face-id="${tile.face}"`));
       const seat = seats.find(seat => Number(seat.seat) === tile.seatNumber);
       const model = seat?.model || '未掲載';
       const escaped = model.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

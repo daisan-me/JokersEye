@@ -31,10 +31,15 @@ body.light .machine-seat .seat-number{color:var(--text)}body.light .machine-seat
 .floor-tile{overflow:visible}
 .floor-tile.outside-viewport{visibility:hidden;pointer-events:none}
 /* Keep the original 50px tile's border, padding, fonts and selection design.
-   Uniform 10.75-unit squares are exactly 1.25x the former 8.6-unit squares. */
-.physical-floor-svg .machine-seat{width:50px;height:50px;min-height:0;transform:scale(.215);transform-origin:0 0;cursor:pointer}
-/* 6.4 * .215 = 2 * (4 * .172): exactly twice the former change-dot radius. */
-.physical-floor-svg .machine-seat.seat-changed:after{width:6.4px;height:6.4px}
+   Uniform 10.75-unit squares are exactly 1.25x the former 8.6-unit squares.
+   The .215 shrink is the foreignObject's SVG transform (fixed-floor.js): WebKit on macOS paints
+   CSS-transformed or positioned HTML inside foreignObject without the viewBox zoom. */
+.physical-floor-svg .machine-seat{position:static;width:50px;height:50px;min-height:0;cursor:pointer}
+.physical-floor-svg .machine-seat .seat-number{grid-row:1;grid-column:1}
+.physical-floor-svg .machine-seat .seat-model{grid-row:2;grid-column:1}
+/* 6.4 * .215 = 2 * (4 * .172): exactly twice the former change-dot radius.
+   Same spot as top:3px;right:3px, placed by the grid instead of absolute positioning. */
+.physical-floor-svg .machine-seat.seat-changed:after{position:static;grid-row:1;grid-column:1;justify-self:end;align-self:start;margin:-5px 0 0;width:6.4px;height:6.4px}
 /* Keep selection/focus paint inside the collision-checked square. */
 .physical-floor-svg .machine-seat.selected,.physical-floor-svg .machine-seat:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
 .floor-key{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0;color:var(--muted);font-size:10px}
