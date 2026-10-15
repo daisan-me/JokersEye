@@ -555,8 +555,6 @@ class Store:
         values={k:str(payload[k]) for k in ("notes", "theme") if k in payload}
         if len(values.get("notes",""))>10000:
             raise ValueError("研究メモは10,000文字までです（現在 %s 文字）。" % format(len(values["notes"]),","))
-        if len(values.get("theme",""))>10000:
-            raise ValueError("テーマが不正です。")
         if "theme" in values and values["theme"] not in ("dark", "light"):
             raise ValueError("テーマが不正です。")
         with self.connect() as db:

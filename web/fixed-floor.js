@@ -255,8 +255,8 @@ const FixedFloor = (() => {
       if (event.key === '+' || event.key === '=' || event.key === '-') {
         event.preventDefault(); zoomTo(WIDTH / viewport[2] * (event.key === '-' ? 1 / 1.5 : 1.5));
       } else if (event.key === '0') { viewport = [0, 0, WIDTH, HEIGHT]; schedule(); }
-      else if (PAN_KEYS[event.key]) {
-        // Arrow keys move the zoomed map by a tenth of the view, like dragging.
+      else if (PAN_KEYS[event.key] && viewport[2] < WIDTH - 1e-9) {
+        // Arrow keys move the zoomed map by a tenth of the view, like dragging. At 100% they scroll the page as usual.
         event.preventDefault();
         const [dx, dy] = PAN_KEYS[event.key];
         viewport[0] += dx * viewport[2] / 10; viewport[1] += dy * viewport[3] / 10;

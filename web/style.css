@@ -20,7 +20,8 @@ button.danger:hover:not(:disabled){background:var(--red);color:#fff}
 /* UI review (2026-10-15) */
 /* The rail scrolls when the window is short, so 「アプリを終了」 is always reachable; short windows also get a compact rail. */
 aside{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
-@media(max-height:900px){aside{padding:20px 18px 16px}nav button{padding:10px 12px}.rail-bottom{padding-top:14px}.rail-bottom p{display:none}.rail-bottom button{margin-top:10px}}
+@media(max-height:940px){nav button{padding:12px}}  /* the Mac default window (about 892px inside) fits the whole rail */
+@media(max-height:860px){aside{padding:20px 18px 16px}nav button{padding:10px 12px}.rail-bottom{padding-top:14px}.rail-bottom p{display:none}.rail-bottom button{margin-top:10px}}
 /* Messages stay in view wherever the page is scrolled, and can be closed. */
 #notice{position:sticky;top:12px;z-index:30;display:flex;align-items:flex-start;gap:12px;box-shadow:var(--shadow)}
 #notice[hidden]{display:none}
@@ -30,7 +31,8 @@ aside{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 /* Long model names wrap instead of pushing 差枚・出率 out of the table. */
 td.wrap-cell,th.wrap-cell{white-space:normal;min-width:8em;max-width:16em;overflow-wrap:anywhere}
 th.wrap-head{white-space:normal;min-width:5em}
-/* An empty date field shows nothing: WebKit (macOS) otherwise paints today's date as if it were entered. */
-input.date-empty:not(:focus)::-webkit-datetime-edit,input.date-empty:not(:focus)::-webkit-datetime-edit-fields-wrapper,input.date-empty:not(:focus)::-webkit-datetime-edit-text,input.date-empty:not(:focus)::-webkit-datetime-edit-year-field,input.date-empty:not(:focus)::-webkit-datetime-edit-month-field,input.date-empty:not(:focus)::-webkit-datetime-edit-day-field{color:transparent;-webkit-text-fill-color:transparent}
+/* An empty date field shows nothing in Safari-family WebKit (macOS), which otherwise paints today's date as if it were entered.
+   Chromium (Windows WebView2) shows a 年/月/日 placeholder instead and is left alone (.webkit-dates is set in app.js). */
+.webkit-dates input.date-empty:not(:focus)::-webkit-datetime-edit,.webkit-dates input.date-empty:not(:focus)::-webkit-datetime-edit-fields-wrapper,.webkit-dates input.date-empty:not(:focus)::-webkit-datetime-edit-text,.webkit-dates input.date-empty:not(:focus)::-webkit-datetime-edit-year-field,.webkit-dates input.date-empty:not(:focus)::-webkit-datetime-edit-month-field,.webkit-dates input.date-empty:not(:focus)::-webkit-datetime-edit-day-field{color:transparent;-webkit-text-fill-color:transparent}
 .inline-error{color:var(--red);font-size:12px;margin:8px 0}
 .inline-error[hidden]{display:none}

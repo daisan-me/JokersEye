@@ -68,10 +68,15 @@
     app.querySelector('#gdb-apply').addEventListener('click', apply);
     // Enter in a filter field applies the conditions, like the button.
     app.querySelector('.gdb-filters').addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); apply(); } });
-    app.querySelector('#gdb-reset').addEventListener('click', () => { app.querySelectorAll('.gdb-filters input').forEach(input => { input.value = ''; }); app.querySelector('#gdb-juggler').value = 'all'; app.querySelector('#gdb-weekday').value = ''; offset = 0; loadRows().catch(filterError); });
+    app.querySelector('#gdb-reset').addEventListener('click', () => { app.querySelectorAll('.gdb-filters input').forEach(input => { input.value = ''; }); app.querySelector('#gdb-juggler').value = 'all'; app.querySelector('#gdb-weekday').value = ''; app.querySelectorAll('.gdb-filters input').forEach(input => input.dispatchEvent(new Event('input', {bubbles: true}))); offset = 0; loadRows().catch(filterError); });
     app.querySelector('#gdb-prev').addEventListener('click', () => { offset = Math.max(0, offset - limit); loadRows().catch(filterError); });
     app.querySelector('#gdb-next').addEventListener('click', () => { offset += limit; loadRows().catch(filterError); });
-    loadStatus().then(loadRows).catch(filterError);
+    reload();
+  }
+
+  // Status errors are general (notice); only a rejected filter goes next to the filters.
+  function reload() {
+    return loadStatus().then(() => loadRows().catch(filterError), showError);
   }
 
   // Consecutive locked days shown as ranges: 2024-03-01～2024-03-05, 2024-04-01
@@ -95,15 +100,13 @@
     const result = await api('gdb/' + action, {start, end});
     if (action === 'delete') notice(`${span}：${count(result.deletedDays)}日・${count(result.deletedRows)}行を削除しました。${result.lockedKept.length ? `ロック中の${count(result.lockedKept.length)}日は残しました。` : ''}${result.lockedRowsKept ? `ロック中の${count(result.lockedRowsKept)}行は残しました。` : ''}`);
     else notice(`${span}（${count(result.days)}日）を${action === 'lock' ? 'ロックしました' : 'ロック解除しました'}。`);
-    await loadStatus(); await loadRows();
-    document.dispatchEvent(new CustomEvent('jokers:data-changed'));
+    document.dispatchEvent(new CustomEvent('jokers:data-changed'));  // reloads GDB here, and the counts and 「登録した観測」 in app.js
   }
 
   async function manageRows(action) {
     if (action === 'unlock-rows' && !confirm('ロック中の行をすべて解除しますか？解除した行は上書き・削除の対象に戻ります。')) return;
     const result = await api('gdb/' + action, {});
     notice(action === 'lock-complete-rows' ? `11列そろいの行を${count(result.added)}行ロックしました（ロック中 ${count(result.lockedRows)}行）。` : `行のロックを${count(result.removed)}行解除しました。`);
-    await loadStatus(); await loadRows();
     document.dispatchEvent(new CustomEvent('jokers:data-changed'));
   }
 
@@ -167,7 +170,7 @@
   // Deleting or locking is refused while a run is going: disable the buttons meanwhile.
   document.addEventListener('jokers:scrape-state', event => { document.querySelectorAll('#gdb-delete,#gdb-lock,#gdb-unlock,#gdb-lock-rows,#gdb-unlock-rows').forEach(button => { button.disabled = event.detail.running; }); });
   // A finished scraping run changes GDB: show the new rows without reopening the page.
-  document.addEventListener('jokers:data-changed', () => { if (document.querySelector('#gdb-app')) loadStatus().then(loadRows).catch(filterError); });
+  document.addEventListener('jokers:data-changed', () => { if (document.querySelector('#gdb-app')) reload(); });
   const observer = new MutationObserver(() => { mounted = false; mount(); });
   observer.observe(document.querySelector('#content'), {childList: true});
   mount();

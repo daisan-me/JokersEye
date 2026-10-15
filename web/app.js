@@ -46,6 +46,8 @@ document.querySelector('#notice-close').addEventListener('click',()=>notice(''))
 // Deleting, locking or a finished run changes GDB: refresh the counts and 「登録した観測」 (same day when it still exists).
 document.addEventListener('jokers:data-changed',async()=>{try{await refresh();if(page==='overview')navigate('overview','none');if(page!=='data')return;const tag=document.querySelector('#observations')?.closest('.card')?.querySelector('.card-header .tag');if(tag)tag.textContent=num(state.summary.records)+' RECORDS';await loadObservations(document.querySelector('#day-select')?.value||'');}catch(ex){showError(ex);}});
 // WebKit (macOS) paints today's date in an empty date field: mark empty date/month fields so CSS can blank them.
+// Only Safari-family WebKit does this; Chromium (also on Mac, and WebView2 on Windows) shows a 年/月/日 placeholder.
+document.documentElement.classList.toggle('webkit-dates',/AppleWebKit/.test(navigator.userAgent)&&!/Chrome|Chromium|Edg\//.test(navigator.userAgent));
 const markEmptyDates=root=>root.querySelectorAll('input[type=date],input[type=month]').forEach(i=>i.classList.toggle('date-empty',!i.value));
 ['input','change'].forEach(type=>document.addEventListener(type,e=>{if(e.target.matches?.('input[type=date],input[type=month]'))e.target.classList.toggle('date-empty',!e.target.value);},true));
 new MutationObserver(()=>markEmptyDates(content)).observe(content,{childList:true,subtree:true});

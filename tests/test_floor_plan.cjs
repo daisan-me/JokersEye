@@ -149,6 +149,9 @@ class Element extends EventTarget {
   assert(context.palette('ジャグラーガールズSS').includes('juggler-model'));
   assert(context.palette('北斗の拳').includes('muted-model'));
   assert(context.palette('').includes('muted-model'));
+  // The search folds hiragana, but a model's color comes from its name as is (unchanged by the search rule).
+  const oldColor = model => { let hash = 0; for (const c of (model || '').normalize('NFKC').replace(/\s+/g, '')) hash = (Math.imul(hash, 31) + c.codePointAt(0)) >>> 0; return hash % 12; };
+  for (const model of ['スマスロ ありふれた職業で世界最強', 'まどか☆マギカ', 'ﾏｲｼﾞｬｸﾞﾗｰⅤ']) assert(context.palette(model).startsWith(`model-color-${oldColor(model)} `), model);
   let expectedGeometry;
   const physicalSnapshot = JSON.stringify(shipped);
   for (const period of history.periods) {
@@ -186,6 +189,8 @@ class Element extends EventTarget {
   };
   context.plan.bind(root);
   assert.equal(svg.attributes.viewBox, '0 0 1060 665');
+  const arrowAtFull=new Event('keydown',{cancelable:true});Object.assign(arrowAtFull,{key:'ArrowDown'});svg.dispatchEvent(arrowAtFull);
+  assert(!arrowAtFull.defaultPrevented,'At 100% the arrow keys scroll the page as usual');
   assert(buttons.find(button => button.dataset.zoom === 'out').disabled);
   buttons[0].dispatchEvent(new Event('click'));
   flush();

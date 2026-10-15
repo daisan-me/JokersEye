@@ -10,8 +10,9 @@ const JokersMap = (() => {
   const jumpTarget = entry => data.periods.find(period => period.id === entry.periodId);
   const jumpTitle = entry => { const first = jumpTarget(entry); return first && label(first) !== label(entry) ? `最初の配置期間 ${label(first)} を表示します` : `配置期間 ${label(entry)} を表示します`; };
   const jumpNote = entry => { const first = jumpTarget(entry); return first && label(first) !== label(entry) ? `<small class="jump-note">押すと最初の配置期間 ${label(first)} を表示</small>` : ''; };
-  // NFKC (half-width kana, ⅤとV) and hiragana→katakana, so 「じゃぐらー」 finds ジャグラー.
-  const normalize = model => (model || '').normalize('NFKC').replace(/\s+/g, '').replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+  const normalize = model => (model || '').normalize('NFKC').replace(/\s+/g, '');
+  // Search only (colors keep using normalize): hiragana as katakana, so 「じゃぐらー」 finds ジャグラー.
+  const searchKey = text => normalize(text).replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).toLocaleLowerCase();
   const color = model => {
     let hash = 0;
     for (const c of normalize(model)) hash = (Math.imul(hash, 31) + c.codePointAt(0)) >>> 0;
@@ -93,7 +94,7 @@ const JokersMap = (() => {
       const value = e.target.value;
       if (!value) return;
       // Typed dates are not limited by min/max: dates outside the records have nothing to show.
-      if ((coverage.first && value < coverage.first) || value > today()) { showFailure(new Error(`${day(coverage.first)}〜${day(today())} の日付を選んでください。`)); return; }
+      if ((coverage.first && value < coverage.first) || value > today()) { showFailure(new Error(coverage.first ? `${day(coverage.first)}〜${day(today())} の日付を選んでください。` : `本日（${day(today())}）までの日付を選んでください。`)); return; }
       load({date: value}).catch(showFailure);
     });
     const tabs = [...root.querySelectorAll('[data-period]')];
@@ -156,13 +157,13 @@ const JokersMap = (() => {
   }
 
   function applyFilter() {
-    const q = normalize(mapView === 'numbers' ? numberQuery : query).toLocaleLowerCase(), number = /^\d+$/.test(q) ? String(Number(q)) : null;
+    const q = searchKey(mapView === 'numbers' ? numberQuery : query), number = /^\d+$/.test(q) ? String(Number(q)) : null;
     const changed = new Set(data.period.changes.map(c => c.seat));
     let count = 0;
     const seats = new Map(data.seats.map(s => [s.seat, s]));
     root.querySelectorAll('.machine-seat').forEach(button => {
       const seat = seats.get(button.dataset.seat) || {seat: button.dataset.seat, model: ''};
-      const match = (!q || (number ? seat.seat === number : mapView === 'machine' && normalize(seat.model).toLocaleLowerCase().includes(q))) && (mapView === 'numbers' || !changedOnly || changed.has(seat.seat));
+      const match = (!q || (number ? seat.seat === number : mapView === 'machine' && searchKey(seat.model).includes(q))) && (mapView === 'numbers' || !changedOnly || changed.has(seat.seat));
       button.classList.toggle('dimmed', !match);
       if (match) count++;
     });
