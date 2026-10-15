@@ -8,7 +8,7 @@ const FixedFloor = (() => {
   const SEAT = 50, SEAT_SCALE = TILE / SEAT, PINCH_IDLE = 1000;
   // macOS: ⌘ is the usual modifier; WKWebView sends trackpad pinch as gesture events, not Ctrl+wheel.
   const nav = globalThis.navigator;
-  const MAC = /Mac/.test(nav?.userAgentData?.platform || nav?.platform || nav?.userAgent || '');
+  const MAC = /mac/i.test(nav?.userAgentData?.platform || nav?.platform || nav?.userAgent || '');  // userAgentData says "macOS"
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let reference, pending, positions, byNumber, wallMarkup;
   let viewport = [0, 0, WIDTH, HEIGHT], selected = '';

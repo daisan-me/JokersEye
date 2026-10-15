@@ -281,5 +281,10 @@ class Element extends EventTarget {
   safari.fetch = context.fetch;
   await safari.plan.load();
   assert(safari.plan.render(fixture, 'machine', context.palette).includes('ピンチ／⌘＋ホイールで拡大'), 'Mac is detected even when navigator.platform is empty');
+  const chromium = vm.createContext({navigator: {userAgentData: {platform: 'macOS'}, platform: 'MacIntel'}});
+  vm.runInContext(floor + '\nglobalThis.plan = FixedFloor;', chromium);
+  chromium.fetch = context.fetch;
+  await chromium.plan.load();
+  assert(chromium.plan.render(fixture, 'machine', context.palette).includes('ピンチ／⌘＋ホイールで拡大'), 'userAgentData reports lowercase "macOS"');
   console.log(`Fixed map: 310 equal 1.25x squares, 5 outward offsets, no overlaps, wall clearance ${wallClearance.toFixed(2)}; ${history.periods.length} periods, identities and source preserved. 100 pan/wheel events -> 1 frame, ${paintedCount}/310 tiles painted at 800%.`);
 })().catch(error => {console.error(error); process.exitCode = 1;});
