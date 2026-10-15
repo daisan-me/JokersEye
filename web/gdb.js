@@ -10,6 +10,8 @@
 
   const escLocal = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const display = value => value === '' || value === null || value === undefined ? '未取得' : value;
+  // Same wording as 「登録した観測」 (記入例：3/12 金 114 機種 非ジャグラー …): one-character weekday, 非ジャグラー.
+  const cell = (header, value) => header === '曜日' ? String(value || '').charAt(0) : header === 'ジャグラーかジャグラーじゃないか' && value && value !== 'ジャグラー' ? '非ジャグラー' : display(value);
   const count = value => Number(value || 0).toLocaleString('ja-JP');
 
   function shell() {
@@ -44,13 +46,14 @@
         <div><label class="label" for="gdb-month">月</label><input id="gdb-month" type="month"></div>
         <div><label class="label" for="gdb-weekday">曜日</label><select id="gdb-weekday"><option value="">すべて</option><option value="0">月曜日</option><option value="1">火曜日</option><option value="2">水曜日</option><option value="3">木曜日</option><option value="4">金曜日</option><option value="5">土曜日</option><option value="6">日曜日</option></select></div>
         <div><label class="label" for="gdb-model">機種（部分一致）</label><input id="gdb-model" type="text" placeholder="例：マイジャグラー"></div>
-        <div><label class="label" for="gdb-juggler">系統</label><select id="gdb-juggler"><option value="all">すべて</option><option value="juggler">ジャグラーのみ</option><option value="non-juggler">ジャグラー以外</option></select></div>
+        <div><label class="label" for="gdb-juggler">系統</label><select id="gdb-juggler"><option value="all">すべて</option><option value="juggler">ジャグラーのみ</option><option value="non-juggler">非ジャグラーのみ</option></select></div>
         <div><label class="label" for="gdb-games">ゲーム数 以上</label><input id="gdb-games" type="number" min="0" placeholder="例：5000"></div>
         <div><label class="label" for="gdb-net">差枚 以上</label><input id="gdb-net" type="number" placeholder="例：1000"></div>
-        <div><label class="label" for="gdb-combined">合成 1/n 以下（n）</label><input id="gdb-combined" type="number" min="1" placeholder="例：140"></div>
+        <div><label class="label" for="gdb-combined">合成 分母n以上（1/n以下）</label><input id="gdb-combined" type="number" min="1" placeholder="例：140 → 1/140以下"></div>
         <div><label class="label" for="gdb-payout">出率 以上（%）</label><input id="gdb-payout" type="number" step="0.1" placeholder="例：105"></div>
       </div>
       <div class="actions gdb-filter-actions"><button class="primary" id="gdb-apply">条件を適用</button><button class="secondary" id="gdb-reset">条件をリセット</button></div>
+      <p class="inline-error" id="gdb-filter-error" role="alert" hidden></p>
       <div class="gdb-result-head"><span id="gdb-count">—</span><span class="hint">表示件数は最大100件</span></div>
       <div id="gdb-results"><p class="muted">読み込み中…</p></div>
       <div class="gdb-pagination"><button class="secondary" id="gdb-prev">← 前へ</button><span id="gdb-page">1</span><button class="secondary" id="gdb-next">次へ →</button></div>`;
@@ -61,11 +64,14 @@
     app.querySelector('#gdb-unlock').addEventListener('click', () => manage('unlock').catch(showError));
     app.querySelector('#gdb-lock-rows').addEventListener('click', () => manageRows('lock-complete-rows').catch(showError));
     app.querySelector('#gdb-unlock-rows').addEventListener('click', () => manageRows('unlock-rows').catch(showError));
-    app.querySelector('#gdb-apply').addEventListener('click', () => { offset = 0; loadRows().catch(showError); });
-    app.querySelector('#gdb-reset').addEventListener('click', () => { app.querySelectorAll('.gdb-filters input').forEach(input => { input.value = ''; }); app.querySelector('#gdb-juggler').value = 'all'; app.querySelector('#gdb-weekday').value = ''; offset = 0; loadRows().catch(showError); });
-    app.querySelector('#gdb-prev').addEventListener('click', () => { offset = Math.max(0, offset - limit); loadRows().catch(showError); });
-    app.querySelector('#gdb-next').addEventListener('click', () => { offset += limit; loadRows().catch(showError); });
-    loadStatus().then(loadRows).catch(showError);
+    const apply = () => { offset = 0; loadRows().catch(filterError); };
+    app.querySelector('#gdb-apply').addEventListener('click', apply);
+    // Enter in a filter field applies the conditions, like the button.
+    app.querySelector('.gdb-filters').addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); apply(); } });
+    app.querySelector('#gdb-reset').addEventListener('click', () => { app.querySelectorAll('.gdb-filters input').forEach(input => { input.value = ''; }); app.querySelector('#gdb-juggler').value = 'all'; app.querySelector('#gdb-weekday').value = ''; offset = 0; loadRows().catch(filterError); });
+    app.querySelector('#gdb-prev').addEventListener('click', () => { offset = Math.max(0, offset - limit); loadRows().catch(filterError); });
+    app.querySelector('#gdb-next').addEventListener('click', () => { offset += limit; loadRows().catch(filterError); });
+    loadStatus().then(loadRows).catch(filterError);
   }
 
   // Consecutive locked days shown as ranges: 2024-03-01～2024-03-05, 2024-04-01
@@ -123,17 +129,31 @@
     return result;
   }
 
+  // A rejected condition is shown next to the filters, and the old rows are not left looking like its result.
+  function filterError(error) {
+    const root = document.querySelector('#gdb-app');
+    if (!root) return showError(error);
+    const box = root.querySelector('#gdb-filter-error');
+    box.textContent = error.message || String(error); box.hidden = false;
+    root.querySelector('#gdb-count').textContent = '条件を確認してください';
+    root.querySelector('#gdb-results').innerHTML = '';
+    root.querySelector('#gdb-prev').disabled = root.querySelector('#gdb-next').disabled = true;
+  }
+
   async function loadRows() {
     const root = document.querySelector('#gdb-app');
     if (!root) return;
+    const from = root.querySelector('#gdb-from').value, to = root.querySelector('#gdb-to').value;
+    if (from && to && from > to) throw new Error('日付（開始）は日付（終了）以前にしてください。');
     const result = await api('gdb/rows?' + params());
+    root.querySelector('#gdb-filter-error').hidden = true;
     const target = root.querySelector('#gdb-results');
     root.querySelector('#gdb-count').textContent = `${count(result.total)}件中 ${result.total ? offset + 1 : 0}～${Math.min(offset + limit, result.total)}件`;
     root.querySelector('#gdb-page').textContent = `${Math.floor(offset / limit) + 1} / ${Math.max(1, Math.ceil(result.total / limit))}`;
     root.querySelector('#gdb-prev').disabled = offset === 0;
     root.querySelector('#gdb-next').disabled = offset + limit >= result.total;
     if (!result.rows.length) { target.innerHTML = '<div class="empty"><div class="symbol">▤</div><h2>条件に一致するデータがありません</h2><p>上の「公開データを取得する」でデータを集めるか、絞り込み条件を確認してください。</p></div>'; return; }
-    target.innerHTML = `<div class="table-scroll gdb-table"><table><thead><tr>${headers.map(header => `<th>${escLocal(header)}</th>`).join('')}</tr></thead><tbody>${result.rows.map(row => `<tr>${headers.map(header => `<td>${escLocal(display(row[header]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    target.innerHTML = `<div class="table-scroll gdb-table"><table><thead><tr>${headers.map(header => `<th${header === '機種' ? ' class="wrap-cell"' : header.length > 6 ? ' class="wrap-head"' : ''}>${escLocal(header)}</th>`).join('')}</tr></thead><tbody>${result.rows.map(row => `<tr>${headers.map(header => `<td${header === '機種' ? ' class="wrap-cell"' : ''}>${escLocal(cell(header, row[header]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
 
   function mount() {
@@ -147,7 +167,7 @@
   // Deleting or locking is refused while a run is going: disable the buttons meanwhile.
   document.addEventListener('jokers:scrape-state', event => { document.querySelectorAll('#gdb-delete,#gdb-lock,#gdb-unlock,#gdb-lock-rows,#gdb-unlock-rows').forEach(button => { button.disabled = event.detail.running; }); });
   // A finished scraping run changes GDB: show the new rows without reopening the page.
-  document.addEventListener('jokers:data-changed', () => { if (document.querySelector('#gdb-app')) loadStatus().then(loadRows).catch(showError); });
+  document.addEventListener('jokers:data-changed', () => { if (document.querySelector('#gdb-app')) loadStatus().then(loadRows).catch(filterError); });
   const observer = new MutationObserver(() => { mounted = false; mount(); });
   observer.observe(document.querySelector('#content'), {childList: true});
   mount();

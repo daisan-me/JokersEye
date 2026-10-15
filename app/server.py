@@ -144,6 +144,12 @@ class Store:
         return JAPANESE_WEEKDAYS[date.fromisoformat(day).weekday()]
 
     @staticmethod
+    def _search_key(text):
+        """Model search: NFKC (half-width kana), case-folded, hiragana as katakana (「じゃぐらー」 finds ジャグラー)."""
+        folded = unicodedata.normalize("NFKC", text or "").casefold()
+        return "".join(chr(ord(c) + 0x60) if "\u3041" <= c <= "\u3096" else c for c in folded)
+
+    @staticmethod
     def _is_juggler(model):
         return "ジャグラー" in unicodedata.normalize("NFKC", model or "")
 
@@ -158,7 +164,7 @@ class Store:
         if value is None or value == "":
             return ""
         try:
-            text = f"{float(value):.1f}".rstrip("0").rstrip(".")
+            text = f"{float(value):.1f}"  # always one decimal (97.0%, not 97%) so the column lines up
         except (TypeError, ValueError):
             return str(value)
         return text + "%"
@@ -377,7 +383,7 @@ class Store:
         net_min = self._parse_filter_number(query.get("net_min"), "差枚")
         combined_min = self._parse_filter_number(query.get("combined_n_min"), "合成分母")
         payout_min = self._parse_filter_number(query.get("payout_min"), "出率")
-        model = unicodedata.normalize("NFKC", query.get("model", "")).casefold()
+        model = self._search_key(query.get("model", ""))
         juggler = query.get("juggler", "all")
         if juggler not in ("all", "juggler", "non-juggler"): raise ValueError("ジャグラー判定の指定が不正です。")
         filtered = []
@@ -385,7 +391,7 @@ class Store:
             day = row["日付"]
             if from_day and day < from_day or to_day and day > to_day or month and not day.startswith(month): continue
             if weekday and date.fromisoformat(day).weekday() != int(weekday): continue
-            if model and model not in unicodedata.normalize("NFKC", row["機種"]).casefold(): continue
+            if model and model not in self._search_key(row["機種"]): continue
             is_juggler = row["ジャグラーかジャグラーじゃないか"] == "ジャグラー"
             if juggler == "juggler" and not is_juggler or juggler == "non-juggler" and is_juggler: continue
             def number_or_none(key, percent=False):
@@ -547,8 +553,10 @@ class Store:
 
     def settings(self, payload):
         values={k:str(payload[k]) for k in ("notes", "theme") if k in payload}
-        if any(len(v)>10000 for v in values.values()):
-            raise ValueError("設定値が長すぎます。")
+        if len(values.get("notes",""))>10000:
+            raise ValueError("研究メモは10,000文字までです（現在 %s 文字）。" % format(len(values["notes"]),","))
+        if len(values.get("theme",""))>10000:
+            raise ValueError("テーマが不正です。")
         if "theme" in values and values["theme"] not in ("dark", "light"):
             raise ValueError("テーマが不正です。")
         with self.connect() as db:

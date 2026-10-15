@@ -245,6 +245,12 @@ class Element extends EventTarget {
   assert.equal(frames.size,1,'Pinch events coalesce into one frame');
   flush();
   assert(Math.abs(1060/WIDTH_OF(svg)-1060/pinchFrom*.5)<1e-9,'Pinch scale is relative to the zoom at gesturestart; wheel and late events are ignored');
+  const panFrom=svg.attributes.viewBox.split(' ').map(Number);
+  const arrow=event('keydown',{key:'ArrowRight'});Object.defineProperty(arrow,'target',{value:svg});svg.dispatchEvent(arrow);
+  assert(arrow.defaultPrevented,'Arrow keys pan the map instead of scrolling the page');
+  flush();
+  const panTo=svg.attributes.viewBox.split(' ').map(Number);
+  assert(Math.abs(panTo[0]-panFrom[0]-panFrom[2]/10)<1e-9 && panTo[1]===panFrom[1],'ArrowRight moves the view by a tenth');
   const stuckFrom=WIDTH_OF(svg);
   svg.dispatchEvent(event('gesturestart',{scale:1,clientX:300,clientY:300}));
   const stuckWheel=event('wheel',{ctrlKey:true,deltaY:-100,clientX:300,clientY:300});

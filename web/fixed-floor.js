@@ -6,6 +6,7 @@ const FixedFloor = (() => {
   // The 50px HTML seat is shrunk to the 10.75-unit square by an SVG transform, not CSS:
   // WebKit (macOS) paints transformed/positioned HTML inside foreignObject without the viewBox zoom.
   const SEAT = 50, SEAT_SCALE = TILE / SEAT, PINCH_IDLE = 1000;
+  const PAN_KEYS = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]};
   // macOS: ⌘ is the usual modifier; WKWebView sends trackpad pinch as gesture events, not Ctrl+wheel.
   const nav = globalThis.navigator;
   const MAC = /mac/i.test(nav?.userAgentData?.platform || nav?.platform || nav?.userAgent || '');  // userAgentData says "macOS"
@@ -86,7 +87,7 @@ const FixedFloor = (() => {
         <input class="floor-zoom-slider" type="range" min="100" max="800" step="10" value="${Math.round(WIDTH / viewport[2] * 100)}" aria-label="マップ拡大率">
         <button type="button" data-zoom="reset">全体表示</button>
         <button type="button" data-zoom="selected" ${selected ? '' : 'disabled'}>選択台へ</button>
-        <span class="hint">ドラッグで移動 · ${MAC ? 'ピンチ／⌘＋ホイール' : 'Ctrl＋ホイール'}で拡大</span>
+        <span class="hint">ドラッグ・矢印キーで移動 · ${MAC ? 'ピンチ／⌘＋ホイール' : 'Ctrl＋ホイール'}で拡大</span>
       </div>
       <svg class="physical-floor-svg" xmlns="http://www.w3.org/2000/svg" viewBox="${viewport.join(' ')}" role="group" tabindex="0" aria-label="店内マップ。全310台の物理位置と台番号は固定。${view === 'numbers' ? '台番号' : '選択期間の機種'}を表示。">
         <polygon class="floor-wall" points="${wallMarkup}"/>
@@ -254,6 +255,13 @@ const FixedFloor = (() => {
       if (event.key === '+' || event.key === '=' || event.key === '-') {
         event.preventDefault(); zoomTo(WIDTH / viewport[2] * (event.key === '-' ? 1 / 1.5 : 1.5));
       } else if (event.key === '0') { viewport = [0, 0, WIDTH, HEIGHT]; schedule(); }
+      else if (PAN_KEYS[event.key]) {
+        // Arrow keys move the zoomed map by a tenth of the view, like dragging.
+        event.preventDefault();
+        const [dx, dy] = PAN_KEYS[event.key];
+        viewport[0] += dx * viewport[2] / 10; viewport[1] += dy * viewport[3] / 10;
+        schedule();
+      }
     }, {signal});
     globalThis.addEventListener?.('resize', clearWheel, {signal});
     clamp();

@@ -13,7 +13,8 @@
     if(!status.state||status.state==='idle')return '';
     return `前回の${status.mode==='rescrape'?'再スクレイプ':'取得'}：${states[status.state]||status.state} · 所要 ${duration(status.elapsedSeconds)} · ${status.daysDone===null||status.daysDone===undefined?'—':number(status.daysDone)} 日処理 · 1日あたり ${duration(status.secondsPerDay)}`;
   }
-  let timer=null, busy=false;
+  // finalRun: the last finished run seen. The first poll only records it, so opening the page does not reload everything again.
+  let timer=null, busy=false, finalRun;
   function mount(){
     const content=document.querySelector('#content');
     if(!content.querySelector('#observations')||content.querySelector('#scrape-widget'))return;
@@ -33,8 +34,10 @@
     const today=new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);  // Japan time, as the server
     panel.querySelectorAll('#scrape-from,#scrape-to').forEach(input=>{input.max=today;});
     panel.querySelector('#scrape-today').addEventListener('click',()=>start('gdb/update',{}));
-    panel.querySelector('#scrape-range-start').addEventListener('click',()=>start('gdb/range',{start:panel.querySelector('#scrape-from').value||null,end:panel.querySelector('#scrape-to').value||null}));
-    panel.querySelector('#scrape-rescrape').addEventListener('click',()=>start('gdb/rescrape',{start:panel.querySelector('#scrape-from').value||null,end:panel.querySelector('#scrape-to').value||null}));
+    // Only a start date means that one day, as in 「削除・ロック」.
+    const range=()=>{const start=panel.querySelector('#scrape-from').value||null;return {start,end:panel.querySelector('#scrape-to').value||start};};
+    panel.querySelector('#scrape-range-start').addEventListener('click',()=>start('gdb/range',range()));
+    panel.querySelector('#scrape-rescrape').addEventListener('click',()=>start('gdb/rescrape',range()));
     panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{reason:'button'});await poll();}catch(e){showError(e);}});
     poll();
     if(!timer)timer=setInterval(poll,2000);
@@ -57,7 +60,7 @@
     }catch(e){showError(e);busy=false;await poll();}
   }
   async function poll(){
-    const panel=document.querySelector('#scrape-widget');if(!panel)return;
+    const panel=document.querySelector('#scrape-widget');if(!panel){clearInterval(timer);timer=null;return;}  // no polling outside the data page
     try{
       const status=await api('scrape/status'),running=status.active || status.state==='running';
       busy=running;
@@ -73,11 +76,10 @@
       const s=status.summary;
       panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得 ${number(s.missingBonuses)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 枚':''):''}`;
       panel.querySelector('#scrape-failures>div').innerHTML=[...status.failures.map(f=>`<p>${esc(f.day)} · ${esc(({failed:'取得失敗',partial:'全台未確認','not-published':'公開一覧に未掲載'})[f.status]||f.status)}<br>${esc(f.message)}</p>`),...(status.bonusFailures||[]).map(f=>`<p>${esc(f.day)} · BB/RB追加取得 ${esc(f.status)}（${number(f.rows)}台確認済み）<br>${esc(f.message)}</p>`)].join('')||'<p>記録なし</p>';
-      if(!running && panel.dataset.finalRun!==status.id){
-        panel.dataset.finalRun=status.id;await refresh();
-        const count=document.querySelector('#observations')?.closest('section')?.querySelector('.card-header .tag');if(count)count.textContent=number(state.summary.records)+' RECORDS';
-        await loadObservations();
-        document.dispatchEvent(new CustomEvent('jokers:data-changed'));
+      if(finalRun===undefined)finalRun=running?null:status.id;  // a run going at startup still counts as new when it ends
+      else if(!running && finalRun!==status.id){
+        finalRun=status.id;
+        document.dispatchEvent(new CustomEvent('jokers:data-changed'));  // app.js refreshes the counts and 「登録した観測」, gdb.js the GDB view
       }
       document.dispatchEvent(new CustomEvent('jokers:scrape-state',{detail:{running}}));
     }catch(e){panel.querySelector('#scrape-progress').textContent=e.message;}

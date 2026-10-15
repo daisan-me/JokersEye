@@ -48,3 +48,7 @@ body.light .machine-seat .seat-number{color:var(--text)}body.light .machine-seat
 .floor-key{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0;color:var(--muted);font-size:10px}
 .number-map-view .floor-key span:nth-child(-n+2){display:none}
 @media(max-width:750px){.floor-tools>.hint{flex-basis:100%;margin-left:0}.floor-zoom-slider{width:90px}}
+/* While a search or 「変わった台だけ強調」 is active, the matching seats get an outline (outline does not detach seats from the zoom in WebKit). */
+.physical-floor-svg.filtering .machine-seat:not(.dimmed){outline:3px solid #efbe65;outline-offset:-3px}
+body.light .physical-floor-svg.filtering .machine-seat:not(.dimmed){outline-color:#b36b00}
+.physical-floor-svg.filtering .machine-seat.selected:not(.dimmed){outline-color:var(--green)}
