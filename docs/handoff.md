@@ -1,5 +1,12 @@
 # 引き継ぎメモ
 
+## macOSの店内マップの拡大縮小（2026-10-15、ブランチ `fix/mac-map-zoom`）
+
+- ユーザー報告：Macで店内マップの拡大縮小が正常に動かない。Windows版と同じ操作にする。
+- 原因：Windows（WebView2）はトラックパッドのピンチを Ctrl＋ホイール（`wheel` の `ctrlKey`）として送るが、macOS の WKWebView は `gesturestart`／`gesturechange`／`gestureend`（`event.scale`）として送る。`web/fixed-floor.js` は Ctrl＋ホイールしか見ていなかった。
+- `FixedFloor.bind`：`gesture*` を受けて、ピンチ開始時の倍率 × `event.scale` で、指の位置を中心に拡大縮小する（ページ全体の拡大は `preventDefault` で止める）。ピンチ中のホイールは無視。macOS では ⌘＋ホイールも Ctrl＋ホイールと同じに扱う。画面のヒントは macOS だけ「ピンチ／⌘＋ホイールで拡大」。Windows の動作・表示は変えていない。
+- 検証：`tests/test_floor_plan.cjs` にピンチ・⌘＋ホイールを追加。実機（macOS、pywebview 6.2.1 の WKWebView）で合成イベントを送り、ピンチ・⌘／Ctrl＋ホイールで倍率が変わり、修飾キーなしのホイールでは変わらないことを確認。実際のトラックパッドでのピンチはユーザーの確認待ち。
+
 ## 行のロックのあとに削除した日も取り直す（2026-10-10、ブランチ `fix/plan-partial-days`）
 
 - ユーザー報告：11列そろいの行をロック → 2026/1/1〜9/30を削除 → 同じ期間を「期間を指定して取得」で「取得が必要な日はありません」。ロックした行が残った日は `gdb_status.missingDates` に入らず、BB・RBも欠けていないので、計画（`gdb_range_plan`）から漏れていた。

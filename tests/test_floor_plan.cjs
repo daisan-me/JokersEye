@@ -187,6 +187,7 @@ class Element extends EventTarget {
   const paintedCount=svg.nodes.filter(node=>!node.classes.has('outside-viewport')).length;
   assert(paintedCount < 80, 'Zoomed view should paint only nearby tiles');
   const event=(type,properties)=>{const e=new Event(type,{cancelable:true});Object.assign(e,properties);return e;};
+  const WIDTH_OF=element=>Number(element.attributes.viewBox.split(' ')[2]);
   const reads=svg.matrixReads, writes=svg.writes;
   const panStart=svg.attributes.viewBox.split(' ').map(Number);
   const pointerDown=event('pointerdown',{button:0,clientX:100,clientY:100,pointerId:1});
@@ -210,6 +211,22 @@ class Element extends EventTarget {
   assert.equal(frames.size,1,'100 wheel events coalesce into one frame');
   flush();
   assert(Number(output.textContent.replace('%',''))<800);
+  const metaWheel=event('wheel',{metaKey:true,deltaY:10,clientX:300,clientY:300});
+  svg.dispatchEvent(metaWheel);
+  assert(!metaWheel.defaultPrevented,'Windows keeps Ctrl+wheel only');
+  assert(escaped.includes('Ctrl＋ホイールで拡大'));
+  const pinchFrom=WIDTH_OF(svg), gestureReads=svg.matrixReads;
+  const gestureStart=event('gesturestart',{scale:1,clientX:300,clientY:300});
+  svg.dispatchEvent(gestureStart);
+  assert(gestureStart.defaultPrevented,'Pinch must not magnify the whole page');
+  for(let i=1;i<=50;i++) svg.dispatchEvent(event('gesturechange',{scale:1-i*.01,clientX:300,clientY:300}));
+  svg.dispatchEvent(event('wheel',{ctrlKey:true,deltaY:-400,clientX:300,clientY:300}));
+  svg.dispatchEvent(event('gestureend',{scale:.5}));
+  svg.dispatchEvent(event('gesturechange',{scale:4,clientX:300,clientY:300}));
+  assert.equal(svg.matrixReads-gestureReads,1,'Pinch caches its screen transform');
+  assert.equal(frames.size,1,'Pinch events coalesce into one frame');
+  flush();
+  assert(Math.abs(1060/WIDTH_OF(svg)-1060/pinchFrom*.5)<1e-9,'Pinch scale is relative to the zoom at gesturestart; wheel and late events are ignored');
   buttons[0].dispatchEvent(new Event('click'));
   assert.equal(frames.size,1);
   context.plan.bind(root);
@@ -219,5 +236,18 @@ class Element extends EventTarget {
   assert.equal(svg.attributes.viewBox, '0 0 1060 665');
   assert(svg.nodes.every(node=>!node.classes.has('outside-viewport')),'Reset restores all 310 tiles');
   assert.equal(JSON.stringify(shipped), physicalSnapshot, 'Zoom must not mutate reference');
+  const mac = vm.createContext({fetch: context.fetch, requestAnimationFrame: context.requestAnimationFrame,
+    cancelAnimationFrame: context.cancelAnimationFrame, setTimeout, clearTimeout, AbortController, DOMPoint: context.DOMPoint,
+    navigator: {platform: 'MacIntel'}});
+  vm.runInContext(floor + '\nglobalThis.plan = FixedFloor;', mac);
+  await mac.plan.load();
+  assert(mac.plan.render(fixture, 'machine', context.palette).includes('ピンチ／⌘＋ホイールで拡大'));
+  context.plan.bind({querySelector: () => null});
+  mac.plan.bind(root);
+  const commandWheel=event('wheel',{metaKey:true,deltaY:-100,clientX:300,clientY:300});
+  svg.dispatchEvent(commandWheel);
+  assert(commandWheel.defaultPrevented,'⌘+wheel zooms on macOS');
+  flush();
+  assert(WIDTH_OF(svg) < 1060);
   console.log(`Fixed map: 310 equal 1.25x squares, 5 outward offsets, no overlaps, wall clearance ${wallClearance.toFixed(2)}; ${history.periods.length} periods, identities and source preserved. 100 pan/wheel events -> 1 frame, ${paintedCount}/310 tiles painted at 800%.`);
 })().catch(error => {console.error(error); process.exitCode = 1;});
