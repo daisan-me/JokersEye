@@ -5,9 +5,10 @@ const FixedFloor = (() => {
   const WIDTH = 1060, HEIGHT = 665, TILE = 10.75, MAX_ZOOM = 8;
   // The 50px HTML seat is shrunk to the 10.75-unit square by an SVG transform, not CSS:
   // WebKit (macOS) paints transformed/positioned HTML inside foreignObject without the viewBox zoom.
-  const SEAT = 50, SEAT_SCALE = TILE / SEAT;
+  const SEAT = 50, SEAT_SCALE = TILE / SEAT, PINCH_IDLE = 1000;
   // macOS: ⌘ is the usual modifier; WKWebView sends trackpad pinch as gesture events, not Ctrl+wheel.
-  const MAC = /Mac/.test(globalThis.navigator?.platform || '');
+  const nav = globalThis.navigator;
+  const MAC = /Mac/.test(nav?.userAgentData?.platform || nav?.platform || nav?.userAgent || '');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let reference, pending, positions, byNumber, wallMarkup;
   let viewport = [0, 0, WIDTH, HEIGHT], selected = '';
@@ -190,7 +191,8 @@ const FixedFloor = (() => {
     svg.addEventListener('wheel', event => {
       if (!event.ctrlKey && !(MAC && event.metaKey)) return;
       event.preventDefault();
-      if (drag || pinch) return;
+      // A pinch that never got its gestureend (focus lost mid-gesture) must not block the wheel for good.
+      if (drag || (pinch && event.timeStamp - pinch.at < PINCH_IDLE)) return;
       const fraction = pointer(event);
       if (!fraction) return;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1);
@@ -199,28 +201,28 @@ const FixedFloor = (() => {
       wheelTimer = setTimeout(clearWheel, 180);
     }, {passive: false, signal});
     // Trackpad pinch in WKWebView (macOS). event.scale is relative to the zoom at gesturestart.
+    const endPinch = () => { pinch = null; clearWheel(); };
+    globalThis.addEventListener?.('blur', endPinch, {signal});
     svg.addEventListener('gesturestart', event => {
       event.preventDefault();
       if (drag) return;
       clearWheel();
-      pinch = {zoom: WIDTH / viewport[2]};
+      pinch = {zoom: WIDTH / viewport[2], at: event.timeStamp};
     }, {signal});
     svg.addEventListener('gesturechange', event => {
       event.preventDefault();
       if (!pinch || drag || !(event.scale > 0)) return;
+      pinch.at = event.timeStamp;
       const fraction = pointer(event);
       if (fraction) zoomTo(pinch.zoom * event.scale, ...fraction);
     }, {signal});
-    svg.addEventListener('gestureend', event => {
-      event.preventDefault();
-      pinch = null;
-      clearWheel();
-    }, {signal});
+    svg.addEventListener('gestureend', event => { event.preventDefault(); endPinch(); }, {signal});
     svg.addEventListener('pointerdown', event => {
       if (drag || event.button !== 0 || event.target.closest('[data-seat]')) return;
       const matrix = svg.getScreenCTM();
       if (!matrix) return;
       event.preventDefault();
+      pinch = null;
       clearWheel();
       drag = {x: event.clientX, y: event.clientY, box: [...viewport], inverse: matrix.inverse(), pointerId: event.pointerId};
       svg.setPointerCapture(event.pointerId);

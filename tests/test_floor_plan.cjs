@@ -75,9 +75,25 @@ for(const polygon of polygons) {
   }
 }
 assert(wallClearance > .65/2, 'Account for the wall stroke thickness');
-assert(!/\.physical-floor-svg \.machine-seat\{[^}]*transform:/.test(css), 'No CSS transform inside foreignObject (WebKit drops the viewBox zoom)');
-assert(css.includes('.physical-floor-svg .machine-seat{position:static;'), 'No positioned seat inside foreignObject (WebKit drops the viewBox zoom)');
-assert(/seat-changed:after\{position:static;/.test(css));
+// WebKit (macOS) paints HTML that gets its own layer inside foreignObject without the viewBox zoom.
+// Every layer-creating declaration that reaches a seat must be neutralized for the physical map.
+const LAYER = /(?:^|;)\s*(position|opacity|transform|filter|backdrop-filter|will-change|mix-blend-mode|isolation|clip-path|mask|perspective|contain|animation|transition):\s*([^;]*)/g;
+const NEUTRAL = {position: /^static$/, opacity: /^1$/, transform: /^none$/, filter: /^none$/, 'backdrop-filter': /^none$/, 'will-change': /^auto$/,
+  'mix-blend-mode': /^normal$/, isolation: /^auto$/, 'clip-path': /^none$/, mask: /^none$/, perspective: /^none$/, contain: /^none$/,
+  animation: /^none$/, transition: /^(?!.*(transform|opacity|filter|all)).*$/};
+const cssRules = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .flatMap(([, selectors, body]) => selectors.split(',').map(selector => ({selector: selector.trim(), body})));
+const layered = rule => [...rule.body.matchAll(LAYER)].filter(([, prop, value]) => !NEUTRAL[prop].test(value.trim())).map(([, prop]) => prop);
+const styledSeat = selector => /^[^:(]*\.machine-seat(?![-\w])/.test(selector.split(/\s+/).pop());
+for (const rule of cssRules.filter(rule => styledSeat(rule.selector))) {
+  for (const prop of layered(rule)) {
+    assert(!rule.selector.startsWith('.physical-floor-svg'), `${rule.selector} { ${prop} } would detach seats from the map zoom on macOS`);
+    const override = cssRules.find(other => other.selector === `.physical-floor-svg ${rule.selector}` &&
+      [...other.body.matchAll(LAYER)].some(([, name, value]) => name === prop && NEUTRAL[prop].test(value.trim())));
+    assert(override, `${rule.selector} { ${prop} } needs a neutral .physical-floor-svg override (WebKit drops the viewBox zoom)`);
+  }
+}
+assert(css.includes('.physical-floor-svg .floor-tile:has(.machine-seat.dimmed:not(:focus-visible)){opacity:.2}'), 'Dim on the SVG foreignObject instead');
 assert(css.includes('width:6.4px;height:6.4px'));
 assert(Math.abs(6.4 * .215 / (4 * .172) - 2) < 1e-12, 'Change dot radius exactly doubles');
 assert(css.includes('outline-offset:-2px'), 'Focus and selection must not overflow enlarged squares');
@@ -229,6 +245,15 @@ class Element extends EventTarget {
   assert.equal(frames.size,1,'Pinch events coalesce into one frame');
   flush();
   assert(Math.abs(1060/WIDTH_OF(svg)-1060/pinchFrom*.5)<1e-9,'Pinch scale is relative to the zoom at gesturestart; wheel and late events are ignored');
+  const stuckFrom=WIDTH_OF(svg);
+  svg.dispatchEvent(event('gesturestart',{scale:1,clientX:300,clientY:300}));
+  const stuckWheel=event('wheel',{ctrlKey:true,deltaY:-100,clientX:300,clientY:300});
+  Object.defineProperty(stuckWheel,'timeStamp',{value:stuckWheel.timeStamp+5000});
+  svg.dispatchEvent(stuckWheel);
+  flush();
+  assert(WIDTH_OF(svg)<stuckFrom,'A pinch without gestureend must not block Ctrl+wheel for good');
+  svg.dispatchEvent(event('pointerdown',{button:0,clientX:300,clientY:300,pointerId:2}));
+  svg.dispatchEvent(event('pointerup',{pointerId:2}));
   buttons[0].dispatchEvent(new Event('click'));
   assert.equal(frames.size,1);
   context.plan.bind(root);
@@ -251,5 +276,10 @@ class Element extends EventTarget {
   assert(commandWheel.defaultPrevented,'⌘+wheel zooms on macOS');
   flush();
   assert(WIDTH_OF(svg) < 1060);
+  const safari = vm.createContext({navigator: {platform: '', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15'}});
+  vm.runInContext(floor + '\nglobalThis.plan = FixedFloor;', safari);
+  safari.fetch = context.fetch;
+  await safari.plan.load();
+  assert(safari.plan.render(fixture, 'machine', context.palette).includes('ピンチ／⌘＋ホイールで拡大'), 'Mac is detected even when navigator.platform is empty');
   console.log(`Fixed map: 310 equal 1.25x squares, 5 outward offsets, no overlaps, wall clearance ${wallClearance.toFixed(2)}; ${history.periods.length} periods, identities and source preserved. 100 pan/wheel events -> 1 frame, ${paintedCount}/310 tiles painted at 800%.`);
 })().catch(error => {console.error(error); process.exitCode = 1;});

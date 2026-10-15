@@ -40,6 +40,9 @@ body.light .machine-seat .seat-number{color:var(--text)}body.light .machine-seat
 /* 6.4 * .215 = 2 * (4 * .172): exactly twice the former change-dot radius.
    Same spot as top:3px;right:3px, placed by the grid instead of absolute positioning. */
 .physical-floor-svg .machine-seat.seat-changed:after{position:static;grid-row:1;grid-column:1;justify-self:end;align-self:start;margin:-5px 0 0;width:6.4px;height:6.4px}
+/* Dimming is on the foreignObject (SVG side): opacity on the HTML seat would also detach it from the zoom in WebKit. */
+.physical-floor-svg .machine-seat.dimmed{opacity:1}
+.physical-floor-svg .floor-tile:has(.machine-seat.dimmed:not(:focus-visible)){opacity:.2}
 /* Keep selection/focus paint inside the collision-checked square. */
 .physical-floor-svg .machine-seat.selected,.physical-floor-svg .machine-seat:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
 .floor-key{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0;color:var(--muted);font-size:10px}

@@ -9,6 +9,11 @@
 - ユーザー報告（同日）：Macでは拡大しても外壁だけが大きくなり、台は100%のときの位置・大きさのまま。原因：台の `<button>` が foreignObject の中で `position:relative` と CSS の `transform:scale(.215)` を持っていた。macOS の WebKit は、こうした要素を SVG の viewBox の拡大を反映しない別レイヤーで描く（WKWebView のスナップショットで再現。どちらか片方を外すだけでは直らず、両方外すと直る）。WebView2（Windows）では起きない。
 - 修正：.215倍の縮小を foreignObject の SVG の transform（`rotate(角度 x y) translate(x-5.375 y-5.375) scale(.215)`、幅・高さ50）に移し、ボタンの CSS の transform をやめた。ボタンは `position:static`。変わった台の点（`:after`）は絶対配置をやめ、グリッドの1行目の右上（`justify-self:end; margin-top:-5px`）に置いた（元の top:3px・right:3px と同じ位置）。画面上の位置・大きさ・角度は以前と同じ。テストは新しい形に合わせた。
 - 確認：WKWebView のスナップショットで100%・300%・800%とも台が外壁と一緒に拡大されることを確認。実際のトラックパッドでのピンチはユーザーの確認待ち。Windows（WebView2）での見た目は未確認。
+- コードレビューの指摘で直したこと（同日）：
+  - 検索・「変わった台だけ強調」で薄くする `opacity:.2` も WebKit では別レイヤーになり、薄い台が拡大に追従しなかった（スナップショットで再現）。店内マップでは、ボタンではなく foreignObject に `.floor-tile:has(.machine-seat.dimmed:not(:focus-visible)){opacity:.2}` で付ける。
+  - `tests/test_floor_plan.cjs` に、台（`.machine-seat` とその疑似要素）に効く CSS のうち、別レイヤーになるもの（position・opacity・transform・filter・will-change・transition など）に、店内マップ用の打ち消しがないと失敗する検査を加えた。今後、台に見た目の効果を足すときは foreignObject（`.floor-tile`）側に付ける。
+  - ピンチの途中で gestureend が来ない場合（ピンチ中にアプリを切り替えたなど）に、ホイールでの拡大が止まったままにならないよう、最後のピンチから1秒たてばホイールを受け付け、ウィンドウのフォーカスが外れたときとドラッグ開始時にもピンチを終える。
+  - Mac の判定は `navigator.userAgentData.platform` → `navigator.platform` → `navigator.userAgent` の順に見る。
 
 ## 行のロックのあとに削除した日も取り直す（2026-10-10、ブランチ `fix/plan-partial-days`）
 
