@@ -1,5 +1,12 @@
 # 引き継ぎメモ
 
+## 版数を1.4.0にする（2026-11-02、ブランチ `claude/zealous-archimedes-bwzf6i`）
+
+- ユーザー指示：`fix/ui-review`（#17）を取り込んだ main を1.4.0とする。
+- `VERSION`・`web/index.html` の表示・`README.md` の見出しを1.4.0にした。配布物の名前（`JokersEye-1.4.0-windows`／`-macos`）は `VERSION` から決まる。
+- `CHANGELOG.md`：1.3.1の見出しの下に積んでいた2026-10-05〜10-15の項目を1.4.0の見出しの下に移し、1.3.1（2026-10-04）にはジャグラー関数の検算だけを残した。
+- 「1.3.1までの `jokers-eye.sqlite3`」の記述や、`tests/test_versions.py` の1.3.1は過去の版を指すので変えていない。
+
 ## UIレビューの指摘の修正（2026-10-15、ブランチ `fix/ui-review`。`fix/mac-map-zoom` の上に作成）
 
 - ユーザー指示：全画面のUIレビュー（ボタン・スクロール等）で挙がった問題をすべて直し、Macの画面でも確認する。
