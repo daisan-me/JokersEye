@@ -1,13 +1,14 @@
 'use strict';
 
-// バージョン画面：GitHub上の各ブランチの版を一覧し、本番データのコピーで起動する。
-// サーバー側は app/versions.py。api() / showError() / notice() は app.js のもの。
+// バージョン画面：このアプリをmainの最新版に更新する（app/updater.py）。GitHub上の各ブランチの版を一覧し、
+// 本番データのコピーで起動する（app/versions.py）。api() / showError() / notice() / navigate() は app.js のもの。
 const JokersVersions = (() => {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const short = sha => sha ? String(sha).slice(0, 7) : '不明';
   const when = value => value ? new Date(value).toLocaleString('ja-JP', {dateStyle: 'medium', timeStyle: 'short'}) : '不明';
   const megabytes = bytes => (Number(bytes || 0) / 1048576).toFixed(1) + ' MB';
   let root = null, overview = null, remote = null, remoteError = '', timer = null;
+  let update = null, updateError = '', updateTimer = null;
 
   function label(state) {
     const build = state.build || {}, element = document.querySelector('#build-label');
@@ -15,6 +16,88 @@ const JokersVersions = (() => {
     document.body.classList.toggle('trial', !!state.trial);
     const pill = document.querySelector('#connection');
     if (state.trial && pill) pill.textContent = '● 試用中：' + state.trial.branch + '（' + short(state.trial.sha) + '）';
+  }
+
+  function canCheck(status) { return status && status.mode && (status.mode === 'source' || status.tokenRegistered); }
+
+  function showBadge(status) {
+    const badge = document.querySelector('#update-badge'), latest = status && status.latest;
+    if (!badge) return;
+    badge.hidden = !(latest && latest.newer);
+    if (!badge.hidden) badge.textContent = '新しい版があります（' + (latest.version || 'main') + '）';
+  }
+
+  function resultText(result) {
+    const to = result.to || {};
+    if (result.status === 'ok') return `${to.version || ''}（${short(to.sha)}）に更新しました。` + (result.backup ? `前の版は ${result.backup} に残しています。` : '');
+    if (result.status === 'restarted') return `mainの最新版（${short(to.sha)}）を取り込んで、起動し直しました。`;
+    if (result.status === 'failed') return `更新できませんでした（${result.detail || '原因不明'}）。前の版のまま起動しています。`;
+    if (result.status === 'busy') return 'アプリの終了を確認できなかったため、更新しませんでした。';
+    return '前回の更新は完了しませんでした。前の版のまま起動しています。';
+  }
+
+  // Called once after the app starts: report the last update, then look for a newer build quietly.
+  async function startup(state) {
+    if (state.trial) return;
+    const status = await api('update');
+    if (status.lastResult) { notice(resultText(status.lastResult)); await api('update/acknowledge', {}); }
+    if (canCheck(status)) showBadge(await api('update/check'));
+  }
+
+  function updateCard() {
+    if (!update || overview.trial) return '';
+    if (!update.mode) return `<section class="card"><h2>このアプリの更新</h2><p>${escape(update.reason)}</p></section>`;
+    const task = update.task || {}, latest = update.latest, busy = task.state === 'running';
+    const source = update.mode === 'source';
+    let body;
+    if (!canCheck(update)) body = '<p>更新するには、下の「GitHubのトークンを登録する」で一度だけトークンを登録してください。</p>';
+    else if (updateError) body = `<p class="version-error">${escape(updateError)}</p>`;
+    else if (!latest) body = '<p>mainの最新版を確認しています…</p>';
+    else if (!latest.available) body = latest.message ? `<p>${escape(latest.message)}</p>` : `<p>mainの最新版（${escape(latest.version)} · ${escape(short(latest.sha))}）を使っています。</p>`;
+    else body = `<div class="row"><span>mainの最新版</span><strong>${escape(latest.version)} · <span class="path">${escape(short(latest.sha))}</span></strong></div>
+      <div class="row"><span>作成日時</span><strong>${escape(when(latest.builtAt))}</strong></div>
+      ${latest.blocked ? `<p class="version-error">${escape(latest.blocked)}</p>` : `<p class="hint">${source
+        ? '「更新して再起動」で、このフォルダーにmainの最新版を取り込み（git pull）、アプリを起動し直します。'
+        : '「更新して再起動」で、アプリを終了して新しい版に入れ替え、自動で起動し直します。データはそのまま使います。前の版は' + (update.platform === 'macos'
+          ? 'データフォルダーの updates/previous に' : 'アプリのフォルダーの隣（名前の末尾が .previous）に') + '残します（次の更新で置き換わります）。'}</p>
+      <label class="update-backup"><input type="checkbox" id="update-backup" checked ${busy ? 'disabled' : ''}> 更新の前にGDBのバックアップを作る</label>`}`;
+    const progressBar = task.state === 'running' || task.state === 'failed'
+      ? `<div class="version-progress ${escape(task.state)}" role="status"><p>${escape(task.message || '')}</p>${task.state === 'running'
+        ? `<progress max="1" value="${task.step === 'download' && task.total ? Math.min(1, task.done / task.total) : task.step === 'download' ? 0 : 1}"></progress><p class="hint">${task.step === 'download' && task.total ? megabytes(task.done) + ' / ' + megabytes(task.total) : ''}</p>` : ''}</div>` : '';
+    const ready = latest && latest.available && !latest.blocked && canCheck(update);
+    return `<section class="card update-card"><div class="card-header"><h2>このアプリの更新</h2><span class="tag">${source ? '開発環境（git）' : '配布パッケージ'}</span></div>
+      ${body}${progressBar}<div class="actions">${ready ? `<button class="primary" data-update-action="start" ${busy ? 'disabled' : ''}>更新して再起動</button>` : ''}
+      ${canCheck(update) ? `<button class="secondary" data-update-action="check" ${busy ? 'disabled' : ''}>最新版を確認</button>` : ''}</div></section>`;
+  }
+
+  async function checkUpdate() {
+    updateError = '';
+    try { update = await api('update/check'); showBadge(update); } catch (error) { updateError = error.message; }
+  }
+
+  async function updateAct(button) {
+    const action = button.dataset.updateAction;
+    if (action === 'check') { button.disabled = true; await checkUpdate(); return render(); }
+    if (action === 'start') {
+      if (!confirm('アプリを終了して、新しい版で起動し直します。よろしいですか？')) return;
+      const backup = !!root.querySelector('#update-backup')?.checked;
+      button.disabled = true;
+      update = await api('update/start', {backup});
+      render(); watchUpdate();
+    }
+  }
+
+  // Polls the update until the app shuts itself down (the requests then fail and polling stops).
+  function watchUpdate() {
+    if (updateTimer) return;
+    updateTimer = setInterval(async () => {
+      try {
+        update = await api('update');
+        if (update.task.state !== 'running') { clearInterval(updateTimer); updateTimer = null; }
+        if (update.task.step === 'restart') notice('新しい版で起動し直します。このウィンドウは自動で閉じます。');
+        if (root && root.isConnected) render();
+      } catch (error) { clearInterval(updateTimer); updateTimer = null; }
+    }, 1000);
   }
 
   function current() {
@@ -34,7 +117,7 @@ const JokersVersions = (() => {
         <p>${escape(overview.repo)} の版一覧を読み込めます。</p><div class="actions"><button class="secondary" data-version-action="token-delete">トークンを削除</button></div></section>`;
     }
     return `<section class="card"><div class="kicker">FIRST TIME ONLY</div><h2>GitHubのトークンを登録する</h2>
-      <p>非公開リポジトリの版を読み込むため、最初に一度だけ登録します。トークンはこのPCのデータフォルダーにだけ保存し、GitHub以外には送りません。</p>
+      <p>GitHubの自動ビルド（Actions）の版をダウンロードするため、最初に一度だけ登録します（アプリの更新にも使います）。トークンはこのPCのデータフォルダーにだけ保存し、GitHub以外には送りません。</p>
       <ol class="version-steps"><li><a href="${escape(overview.tokenPage)}">GitHubのトークン作成ページ</a>を開きます。</li>
       <li>「Repository access」で「Only select repositories」→ ${escape(overview.repo)} を選びます。</li>
       <li>「Permissions」の「Actions」を「Read-only」にして作成し、表示されたトークンをコピーします。</li></ol>
@@ -84,7 +167,7 @@ const JokersVersions = (() => {
 
   function render() {
     if (!root || !root.isConnected) return stop();
-    root.innerHTML = progress() + current() + connection() + list();
+    root.innerHTML = updateCard() + progress() + current() + connection() + list();
     const form = root.querySelector('#version-token');
     if (form) form.addEventListener('submit', async event => {
       event.preventDefault();
@@ -93,6 +176,7 @@ const JokersVersions = (() => {
       catch (error) { showError(error); button.disabled = false; }
     });
     root.querySelectorAll('[data-version-action]').forEach(button => button.addEventListener('click', () => act(button).catch(showError)));
+    root.querySelectorAll('[data-update-action]').forEach(button => button.addEventListener('click', () => updateAct(button).catch(error => { showError(error); render(); })));
   }
 
   async function act(button) {
@@ -109,6 +193,9 @@ const JokersVersions = (() => {
 
   async function load(withRemote) {
     overview = await api('versions');
+    if (!overview.trial) update = await api('update');
+    if (withRemote && canCheck(update)) { render(); await checkUpdate(); }
+    if (update && update.task && update.task.state === 'running') watchUpdate();
     if (withRemote && overview.tokenRegistered && !overview.trial && overview.platform) {
       remote = null; remoteError = ''; render();
       try { remote = (await api('versions/remote')).versions; } catch (error) { remoteError = error.message; }
@@ -126,5 +213,5 @@ const JokersVersions = (() => {
     await load(true);
   }
 
-  return {mount, label};
+  return {mount, label, startup};
 })();

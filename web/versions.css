@@ -5,3 +5,5 @@ body.trial .rail-bottom .build-label,body.trial #connection{color:var(--violet);
 .version-buttons{display:flex;gap:10px;align-items:center;justify-content:flex-end}
 .version-progress progress{width:100%;height:10px;accent-color:var(--green)}
 .version-progress.failed,.version-error{border-color:#c0504d;color:#e07a72}
+.rail-bottom #update-badge{color:#7ff2c6;border-color:#1f6b51;background:#0f2e24;margin-top:12px}.rail-bottom #update-badge[hidden]{display:none}
+.update-card .version-progress{margin-top:12px}.update-backup{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:10px}
