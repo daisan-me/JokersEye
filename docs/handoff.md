@@ -1,5 +1,14 @@
 # 引き継ぎメモ
 
+## 左メニューのフォルダー（2026-11-02、ブランチ `claude/zealous-archimedes-bwzf6i`）
+
+- ユーザー指示：データの流れ（一次情報＝スクレイプと店内マップ → 二次情報＝ジャグラーの設定推測 → 三次情報＝設定の入れ方の推測）に沿って、左のタブを Sources（一次）・Analyzer（二次・三次）・Others（履歴・バージョン・設定）の「フォルダー」に入れる。開閉でき、フォルダーごとに色を変える（Sources はアイコン左のエメラルドグリーン、Analyzer はアイコン右のビビッドパープル、Others はアプリの黒を灰色に寄せた色）。タブの中身・表示位置は変えない。
+- ダッシュボードは指示に名前がなかった。中身がスクレイプした記録の件数なので Sources に入れた（判断）。
+- `web/index.html`：`nav` の中に `section.nav-folder.folder-{sources,analyzer,others}`（`data-folder`）、見出しは `button.folder-toggle`（`aria-expanded`・`aria-controls`）、タブは `div.folder-items` の中の従来の `button[data-page]`。
+- `web/style.css`：フォルダーごとの変数（`--folder`・`--folder-text`・`--folder-bg`・`--folder-line`・`--folder-hover`）で見出しと選択中のタブ・ホバーを塗る。`.collapsed` で中身を隠す。高さ940px以下・860px以下でタブの余白を詰め（860px以下は「WORKSPACE」を隠す）、幅750px以下の細いメニューでは見出しは山形の印と上の色線だけ。Chromiumで高さ650・861・890・941・1000pxとも `aside` がスクロールなしで収まることを確認（変更前と同じ）。
+- `web/app.js`：閉じたフォルダーは `localStorage` の `joker-nav-collapsed` に保存（読めない環境でも動く）。`navigate` は `nav [data-page]` だけを選択状態にし、別の画面へ移ったときに、閉じたフォルダーの中なら開く（保存はしない）。閉じたフォルダーに表示中のタブがあれば `.has-active` で見出しを枠で囲む。
+- 確認：Python 103件・JS 4本のテスト通過。ヘッドレスChromiumで、開閉・再読込後の記憶・移動時に開く・ライトテーマ・細いメニューを撮影して確認。Windows（WebView2）とMac（WKWebView）の実機は未確認。
+
 ## 1.4.0のコードレビューの指摘の修正（2026-11-02、ブランチ `claude/zealous-archimedes-bwzf6i`）
 
 - 左下の版数（`#app-version`）は `index.html` に直書きせず、`app.js` の `refresh` が `/api/state` の `version`（`VERSION` ファイル）から表示する。版数を上げるときは `VERSION` だけを変える。`desktop.py --diagnostics` が読む `.rail-bottom small` は同じ要素。
