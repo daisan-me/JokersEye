@@ -92,7 +92,7 @@ class PureFunctionTests(unittest.TestCase):
         folder, exe = updater.install_layout(Path('C:/Apps/JokersEye/%s/%s.exe' % (NAME, NAME)), 'windows')
         self.assertEqual((folder.name, exe.name), (NAME, NAME + '.exe'))
         bundle, _ = updater.install_layout(Path('/Applications/%s.app/Contents/MacOS/%s' % (NAME, NAME)), 'macos')
-        self.assertEqual(str(bundle), '/Applications/%s.app' % NAME)
+        self.assertEqual(bundle.as_posix(), '/Applications/%s.app' % NAME)
         with self.assertRaises(ValueError):
             updater.install_layout(Path('/private/var/folders/x/AppTranslocation/y/d/%s.app/Contents/MacOS/%s' % (NAME, NAME)), 'macos')
         with self.assertRaises(ValueError):

@@ -102,7 +102,7 @@ def install_layout(executable, platform):
         bundle = executable.parents[2] if len(executable.parents) > 2 else None
         if not bundle or bundle.suffix != ".app" or executable.parent.name != "MacOS":
             raise ValueError("アプリの場所を確認できません。")
-        if "/AppTranslocation/" in str(bundle):
+        if "AppTranslocation" in bundle.parts:
             raise ValueError("ダウンロードした場所から直接開いているため更新できません。Finderで「アプリケーション」フォルダーへ移してから開き直してください。")
         return bundle, executable
     if platform == "windows":
