@@ -107,6 +107,16 @@ class StoreTests(unittest.TestCase):
         self.assertEqual((summary['records'],summary['withBonus']),(2,1))
         self.assertEqual((summary['complete'],summary['withDash'],summary['notYetRead']),(1,0,1))  # 11列そろい / 「-」あり / 未取得あり
         self.assertNotIn('main',summary)
+    def test_ui_review_rate_kana_search_and_notes_message(self):
+        # 出率 always has one decimal; the model search folds hiragana and half-width kana (UI review, 2026-10-15)
+        self.store.collector.save_rows([dict(ROW,seat='1',model='マイジャグラーV',payout_percent=97),dict(ROW,seat='2',model='スマスロ北斗の拳',payout_percent=101.25)])
+        rows=self.store.gdb_rows({})['rows']
+        self.assertEqual([row['出率'] for row in rows],['97.0%','101.2%'])
+        for text in ('じゃぐらー','ｼﾞｬｸﾞﾗｰ','ジャグラー','まいじゃぐらーv'):
+            self.assertEqual([row['台番号'] for row in self.store.gdb_rows({'model':text})['rows']],['1'],text)
+        with self.assertRaisesRegex(ValueError,'研究メモは10,000文字までです（現在 10,001 文字）'):
+            self.store.settings({'notes':'あ'*10001})
+        self.store.settings({'notes':'あ'*10000,'theme':'light'})
     def test_lending_rate_is_removed_from_an_old_database(self):
         with tempfile.TemporaryDirectory() as folder:
             with closing(sqlite3.connect(Path(folder)/'GothamDataBase.sqlite')) as db:

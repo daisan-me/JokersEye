@@ -26,6 +26,13 @@ import server  # noqa: E402
 from platform_support import default_data_dir, open_external, show_error  # noqa: E402
 
 APP_TITLE = "Joker's eye"
+# pywebview's own strings (confirm dialogs, Mac menus) in Japanese; the app menu titles are fixed in localize_mac_menu.
+LOCALIZATION = {
+    "global.ok": "OK", "global.cancel": "キャンセル", "global.quit": "終了", "global.quitConfirmation": "終了しますか？",
+    "global.saveFile": "ファイルを保存", "cocoa.menu.services": "サービス", "cocoa.menu.view": "表示", "cocoa.menu.edit": "編集",
+    "cocoa.menu.hideOthers": "ほかを非表示", "cocoa.menu.showAll": "すべてを表示", "cocoa.menu.fullscreen": "フルスクリーンにする",
+    "cocoa.menu.cut": "カット", "cocoa.menu.copy": "コピー", "cocoa.menu.paste": "ペースト", "cocoa.menu.selectAll": "すべてを選択",
+}
 APP_ID = "JokersEye.Desktop"
 SOURCE_TITLE = "Joker's eye · 公開データ取得ブラウザー"
 SOURCE_HOST = "min-repo.com"
@@ -369,13 +376,66 @@ def set_app_identity(root):
             import ctypes
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
         elif sys.platform == "darwin":
-            from AppKit import NSApplication, NSImage
+            from AppKit import NSApplication, NSBundle, NSImage
+            # Started from python, the menu bar says "Python": name the app before the menus are built.
+            bundle = NSBundle.mainBundle()
+            for info in (bundle.localizedInfoDictionary(), bundle.infoDictionary()):
+                if info is not None:
+                    info["CFBundleName"] = APP_TITLE
             image = NSImage.alloc().initWithContentsOfFile_(str(icon_png))
             if image:
                 NSApplication.sharedApplication().setApplicationIconImage_(image)
     except Exception:
         logging.info("App identity could not be applied", exc_info=True)
     return icon_ico
+
+
+def localize_mac_menu():
+    """macOS menu bar in Japanese, with Undo/Redo and a Window menu. pywebview builds it once at startup in
+    English and appends the app name ("About Joker's eye"), which reads wrong in Japanese. Best effort."""
+    if sys.platform != "darwin":
+        return
+    try:
+        from AppKit import NSApplication, NSMenu, NSMenuItem
+        from PyObjCTools import AppHelper
+    except ImportError:
+        return
+
+    def apply():
+        try:
+            app = NSApplication.sharedApplication()
+            main = app.mainMenu()
+            if main is None or app.windowsMenu() is not None:  # not built yet, or already done
+                return
+            names = {"orderFrontStandardAboutPanel:": APP_TITLE + "について", "hide:": APP_TITLE + "を非表示",
+                     "terminate:": APP_TITLE + "を終了"}
+            edit = None
+            for top in main.itemArray():
+                menu = top.submenu()
+                if menu is None:
+                    continue
+                for item in menu.itemArray():
+                    action = item.action()
+                    title = names.get(action.decode() if isinstance(action, bytes) else str(action or ""))
+                    if title:
+                        item.setTitle_(title)
+                if menu.title() == LOCALIZATION["cocoa.menu.edit"]:
+                    edit = menu
+            if edit is not None:
+                edit.insertItem_atIndex_(NSMenuItem.separatorItem(), 0)
+                edit.insertItemWithTitle_action_keyEquivalent_atIndex_("やり直す", "redo:", "Z", 0)
+                edit.insertItemWithTitle_action_keyEquivalent_atIndex_("取り消す", "undo:", "z", 0)
+            window_menu = NSMenu.alloc().initWithTitle_("ウインドウ")
+            window_menu.addItemWithTitle_action_keyEquivalent_("しまう", "performMiniaturize:", "m")
+            window_menu.addItemWithTitle_action_keyEquivalent_("拡大／縮小", "performZoom:", "")
+            holder = NSMenuItem.alloc().init()
+            holder.setSubmenu_(window_menu)
+            main.addItem_(holder)
+            app.setWindowsMenu_(window_menu)
+        except Exception:
+            logging.info("Mac menu could not be localized", exc_info=True)
+
+    AppHelper.callAfter(apply)
 
 
 def apply_windows_icon(icon_ico):
@@ -457,6 +517,7 @@ def main(argv=None):
 
     def on_loaded():
         run_script(window, EXTERNAL_LINK_JS)
+        localize_mac_menu()
 
     def on_closing():
         closing.set()
@@ -496,7 +557,8 @@ def main(argv=None):
                 pass
 
     try:
-        webview.start(background, debug=bool(args.debug), storage_path=str(folder / "WebView2"), private_mode=False)
+        webview.start(background, debug=bool(args.debug), storage_path=str(folder / "WebView2"), private_mode=False,
+                      localization=LOCALIZATION)
     finally:
         closing.set()
         source.dispose()

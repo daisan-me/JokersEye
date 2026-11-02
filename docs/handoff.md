@@ -1,5 +1,39 @@
 # 引き継ぎメモ
 
+## UIレビューの指摘の修正（2026-10-15、ブランチ `fix/ui-review`。`fix/mac-map-zoom` の上に作成）
+
+- ユーザー指示：全画面のUIレビュー（ボタン・スクロール等）で挙がった問題をすべて直し、Macの画面でも確認する。
+- 主な修正：
+  - Mac（WebKit）は空の日付欄に今日の日付を通常の文字色で描く。`app.js` が空の date/month 欄に `date-empty` を付け、`style.css` がフォーカスしていない間は年・月・日を透明にする。
+  - 左メニュー（`aside`）は縦にスクロールし、高さ900px以下では詰めて表示する。最小ウィンドウ（650px）でも「アプリを終了」に届く。
+  - 通知（`#notice`）は画面上部に固定（sticky）し、×で閉じられる。GDBの絞り込みエラーは絞り込み欄の下（`#gdb-filter-error`）に出し、古い結果を残さない。
+  - 削除・ロック・取得の完了は `jokers:data-changed` で通知し、`app.js` が件数（ダッシュボード・「登録した観測」）と表示日を更新する（削除された日を選んでいたら最新の日へ）。`scrape.js` は最初の確認では再読込せず、データ管理画面以外では定期確認を止める。
+  - 画面ごとに `#hash` を付け（`history.pushState`）、戻る・再読込で同じ画面に戻る。接続表示は心拍が戻れば「● ローカル接続」に戻る。
+  - 表：機種名・メッセージの列は折り返す（`wrap-cell`）。既定の幅（1380px）で横スクロールしない。
+  - マップ：ひらがなでも機種検索、日付欄は記録の最初の日〜本日、台を押すと履歴を画面内に出す、履歴の期間ボタンの移動先を表示、矢印キーで移動、絞り込み中の台を枠で強調（`.filtering`）。
+  - 表記：GDBの曜日は1文字・「非ジャグラー」（「登録した観測」の記入例に合わせた）、出率は小数1桁（サーバーの `_gdb_rate`）、ジャグラー機種名はNFKCで表示（マイジャグラーⅤ→V）、合成の絞り込みは「分母n以上（1/n以下）」。
+  - 取得の期間指定・再スクレイプは、開始日だけなら1日として扱う（削除・ロックと同じ）。研究メモの長さエラーは文字数を示す。
+  - Mac：`desktop.py` がアプリ名（`CFBundleName`）を Joker's eye にし、pywebview の文言を日本語化（`LOCALIZATION`）、`localize_mac_menu` がメニューを日本語にして「取り消す／やり直す」と「ウインドウ」メニューを加える。
+- 確認：WKWebView（`takeSnapshot`）で各画面を撮影・数値確認、メニューは NSApp の mainMenu を読み取り、取り消し・やり直しの動作を確認。Windows（WebView2）の見た目は未確認。
+- コードレビューの指摘で直したこと（同日）：削除・ロックのあとはGDBを1回だけ読み直し（`jokers:data-changed` の受け手に任せる）、絞り込みのエラーで削除の結果が消えないようにした。状態取得の失敗は通知に、絞り込みの失敗だけ欄の下に出す。左メニューは高さ940px以下でボタンの余白を詰め（Macの初期サイズで全体が収まる）、860px以下でさらに詰める。空の日付欄を空白にするのは Safari 系 WebKit だけ（`html.webkit-dates`。Chromium は「年/月/日」が出るので対象外）。「条件をリセット」で日付欄の目印も更新する。ひらがな変換は検索だけ（`searchKey`）にし、機種の色は変えない。矢印キーは拡大中だけマップを動かす。
+- 残り：「取り消す」の項目名に WebKit の英語の操作名が付く（「取り消す- Typing」）。Python.app に日本語のローカライズがないため。実害はない。
+- 注意：検証中、開始日だけで「期間を指定して取得」を押した試験で、試験用サーバーが取得を始めた（`ui-verify`、外部通信なし：取得用ブラウザーはデスクトップ側にしかなく、サーバー単体ではページを読まない）。試験では取得が始まらない日（ロック済み）を使うこと。
+
+## macOSの店内マップの拡大縮小（2026-10-15、ブランチ `fix/mac-map-zoom`）
+
+- ユーザー報告：Macで店内マップの拡大縮小が正常に動かない。Windows版と同じ操作にする。
+- 原因：Windows（WebView2）はトラックパッドのピンチを Ctrl＋ホイール（`wheel` の `ctrlKey`）として送るが、macOS の WKWebView は `gesturestart`／`gesturechange`／`gestureend`（`event.scale`）として送る。`web/fixed-floor.js` は Ctrl＋ホイールしか見ていなかった。
+- `FixedFloor.bind`：`gesture*` を受けて、ピンチ開始時の倍率 × `event.scale` で、指の位置を中心に拡大縮小する（ページ全体の拡大は `preventDefault` で止める）。ピンチ中のホイールは無視。macOS では ⌘＋ホイールも Ctrl＋ホイールと同じに扱う。画面のヒントは macOS だけ「ピンチ／⌘＋ホイールで拡大」。Windows の動作・表示は変えていない。
+- 検証：`tests/test_floor_plan.cjs` にピンチ・⌘＋ホイールを追加。実機（macOS、pywebview 6.2.1 の WKWebView）で合成イベントを送り、ピンチ・⌘／Ctrl＋ホイールで倍率が変わり、修飾キーなしのホイールでは変わらないことを確認。
+- ユーザー報告（同日）：Macでは拡大しても外壁だけが大きくなり、台は100%のときの位置・大きさのまま。原因：台の `<button>` が foreignObject の中で `position:relative` と CSS の `transform:scale(.215)` を持っていた。macOS の WebKit は、こうした要素を SVG の viewBox の拡大を反映しない別レイヤーで描く（WKWebView のスナップショットで再現。どちらか片方を外すだけでは直らず、両方外すと直る）。WebView2（Windows）では起きない。
+- 修正：.215倍の縮小を foreignObject の SVG の transform（`rotate(角度 x y) translate(x-5.375 y-5.375) scale(.215)`、幅・高さ50）に移し、ボタンの CSS の transform をやめた。ボタンは `position:static`。変わった台の点（`:after`）は絶対配置をやめ、グリッドの1行目の右上（`justify-self:end; margin-top:-5px`）に置いた（元の top:3px・right:3px と同じ位置）。画面上の位置・大きさ・角度は以前と同じ。テストは新しい形に合わせた。
+- 確認：WKWebView のスナップショットで100%・300%・800%とも台が外壁と一緒に拡大されることを確認。実際のトラックパッドでのピンチはユーザーの確認待ち。Windows（WebView2）での見た目は未確認。
+- コードレビューの指摘で直したこと（同日）：
+  - 検索・「変わった台だけ強調」で薄くする `opacity:.2` も WebKit では別レイヤーになり、薄い台が拡大に追従しなかった（スナップショットで再現）。店内マップでは、ボタンではなく foreignObject に `.floor-tile:has(.machine-seat.dimmed:not(:focus-visible)){opacity:.2}` で付ける。
+  - `tests/test_floor_plan.cjs` に、台（`.machine-seat` とその疑似要素）に効く CSS のうち、別レイヤーになるもの（position・opacity・transform・filter・will-change・transition など）に、店内マップ用の打ち消しがないと失敗する検査を加えた。今後、台に見た目の効果を足すときは foreignObject（`.floor-tile`）側に付ける。
+  - ピンチの途中で gestureend が来ない場合（ピンチ中にアプリを切り替えたなど）に、ホイールでの拡大が止まったままにならないよう、最後のピンチから1秒たてばホイールを受け付け、ウィンドウのフォーカスが外れたときとドラッグ開始時にもピンチを終える。
+  - Mac の判定は `navigator.userAgentData.platform` → `navigator.platform` → `navigator.userAgent` の順に見る。
+
 ## 行のロックのあとに削除した日も取り直す（2026-10-10、ブランチ `fix/plan-partial-days`）
 
 - ユーザー報告：11列そろいの行をロック → 2026/1/1〜9/30を削除 → 同じ期間を「期間を指定して取得」で「取得が必要な日はありません」。ロックした行が残った日は `gdb_status.missingDates` に入らず、BB・RBも欠けていないので、計画（`gdb_range_plan`）から漏れていた。

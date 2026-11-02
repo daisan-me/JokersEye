@@ -3,6 +3,13 @@
 // Preserve the source. Only the explicitly authorized display offsets enlarge clearance.
 const FixedFloor = (() => {
   const WIDTH = 1060, HEIGHT = 665, TILE = 10.75, MAX_ZOOM = 8;
+  // The 50px HTML seat is shrunk to the 10.75-unit square by an SVG transform, not CSS:
+  // WebKit (macOS) paints transformed/positioned HTML inside foreignObject without the viewBox zoom.
+  const SEAT = 50, SEAT_SCALE = TILE / SEAT, PINCH_IDLE = 1000;
+  const PAN_KEYS = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]};
+  // macOS: ⌘ is the usual modifier; WKWebView sends trackpad pinch as gesture events, not Ctrl+wheel.
+  const nav = globalThis.navigator;
+  const MAC = /mac/i.test(nav?.userAgentData?.platform || nav?.platform || nav?.userAgent || '');  // userAgentData says "macOS"
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let reference, pending, positions, byNumber, wallMarkup;
   let viewport = [0, 0, WIDTH, HEIGHT], selected = '';
@@ -80,14 +87,14 @@ const FixedFloor = (() => {
         <input class="floor-zoom-slider" type="range" min="100" max="800" step="10" value="${Math.round(WIDTH / viewport[2] * 100)}" aria-label="マップ拡大率">
         <button type="button" data-zoom="reset">全体表示</button>
         <button type="button" data-zoom="selected" ${selected ? '' : 'disabled'}>選択台へ</button>
-        <span class="hint">ドラッグで移動 · Ctrl＋ホイールで拡大</span>
+        <span class="hint">ドラッグ・矢印キーで移動 · ${MAC ? 'ピンチ／⌘＋ホイール' : 'Ctrl＋ホイール'}で拡大</span>
       </div>
       <svg class="physical-floor-svg" xmlns="http://www.w3.org/2000/svg" viewBox="${viewport.join(' ')}" role="group" tabindex="0" aria-label="店内マップ。全310台の物理位置と台番号は固定。${view === 'numbers' ? '台番号' : '選択期間の機種'}を表示。">
         <polygon class="floor-wall" points="${wallMarkup}"/>
         ${positions.map(tile => {
           const number = String(tile.seatNumber), seat = seats.get(number), model = seat?.model || '未掲載';
           const title = `${number}番台${view === 'machine' ? ' · ' + model : ''}${changed.has(number) && view === 'machine' ? ' · この期間の開始時に機種変更' : ''}`;
-          return `<foreignObject class="floor-tile" x="${tile.x - TILE / 2}" y="${tile.y - TILE / 2}" width="${TILE}" height="${TILE}" transform="rotate(${tile.angle} ${tile.x} ${tile.y})" data-face-id="${tile.face}" data-seat-number="${tile.seatNumber}">
+          return `<foreignObject class="floor-tile" width="${SEAT}" height="${SEAT}" transform="rotate(${tile.angle} ${tile.x} ${tile.y}) translate(${tile.x - TILE / 2} ${tile.y - TILE / 2}) scale(${SEAT_SCALE})" data-face-id="${tile.face}" data-seat-number="${tile.seatNumber}">
             <button xmlns="http://www.w3.org/1999/xhtml" type="button" class="machine-seat ${palette(model)} ${changed.has(number) ? 'seat-changed' : ''}" data-seat="${number}" title="${esc(title)}" aria-label="${esc(title)}"><span class="seat-number">${number}</span><span class="seat-model">${esc(model.replace(/^(スマスロ\s*|パチスロ\s*|Lパチスロ\s*|Lスマスロ\s*)/, ''))}</span></button>
           </foreignObject>`;
         }).join('')}
@@ -103,7 +110,7 @@ const FixedFloor = (() => {
     const svg = root.querySelector('.physical-floor-svg');
     if (!svg) return;
     const controller = new AbortController(), signal = controller.signal;
-    let drag, frame = 0, wheelMap, wheelTimer, lastZoom, paintedBox = [...viewport];
+    let drag, pinch, frame = 0, wheelMap, wheelTimer, lastZoom, paintedBox = [...viewport];
     cleanup = () => {
       controller.abort();
       if (frame) cancelAnimationFrame(frame);
@@ -172,28 +179,51 @@ const FixedFloor = (() => {
       else zoomTo(WIDTH / viewport[2] * (button.dataset.zoom === 'in' ? 1.5 : 1 / 1.5));
     }, {signal});
     slider.addEventListener('input', () => { clearWheel(); zoomTo(Number(slider.value) / 100); }, {signal});
-    svg.addEventListener('wheel', event => {
-      if (!event.ctrlKey) return;
-      event.preventDefault();
-      if (drag) return;
+    // Cursor position as a fraction of the map; the screen transform is read once per gesture.
+    const pointer = event => {
       if (!wheelMap) {
         const matrix = svg.getScreenCTM();
-        if (!matrix) return;
+        if (!matrix) return null;
         wheelMap = {inverse: matrix.inverse(), box: [...paintedBox]};
       }
       const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(wheelMap.inverse);
-      const fractionX = (point.x - wheelMap.box[0]) / wheelMap.box[2];
-      const fractionY = (point.y - wheelMap.box[1]) / wheelMap.box[3];
+      return [(point.x - wheelMap.box[0]) / wheelMap.box[2], (point.y - wheelMap.box[1]) / wheelMap.box[3]];
+    };
+    svg.addEventListener('wheel', event => {
+      if (!event.ctrlKey && !(MAC && event.metaKey)) return;
+      event.preventDefault();
+      // A pinch that never got its gestureend (focus lost mid-gesture) must not block the wheel for good.
+      if (drag || (pinch && event.timeStamp - pinch.at < PINCH_IDLE)) return;
+      const fraction = pointer(event);
+      if (!fraction) return;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1);
-      zoomTo(WIDTH / viewport[2] * Math.exp(-Math.max(-400, Math.min(400, delta)) * .0012), fractionX, fractionY);
+      zoomTo(WIDTH / viewport[2] * Math.exp(-Math.max(-400, Math.min(400, delta)) * .0012), ...fraction);
       clearTimeout(wheelTimer);
       wheelTimer = setTimeout(clearWheel, 180);
     }, {passive: false, signal});
+    // Trackpad pinch in WKWebView (macOS). event.scale is relative to the zoom at gesturestart.
+    const endPinch = () => { pinch = null; clearWheel(); };
+    globalThis.addEventListener?.('blur', endPinch, {signal});
+    svg.addEventListener('gesturestart', event => {
+      event.preventDefault();
+      if (drag) return;
+      clearWheel();
+      pinch = {zoom: WIDTH / viewport[2], at: event.timeStamp};
+    }, {signal});
+    svg.addEventListener('gesturechange', event => {
+      event.preventDefault();
+      if (!pinch || drag || !(event.scale > 0)) return;
+      pinch.at = event.timeStamp;
+      const fraction = pointer(event);
+      if (fraction) zoomTo(pinch.zoom * event.scale, ...fraction);
+    }, {signal});
+    svg.addEventListener('gestureend', event => { event.preventDefault(); endPinch(); }, {signal});
     svg.addEventListener('pointerdown', event => {
       if (drag || event.button !== 0 || event.target.closest('[data-seat]')) return;
       const matrix = svg.getScreenCTM();
       if (!matrix) return;
       event.preventDefault();
+      pinch = null;
       clearWheel();
       drag = {x: event.clientX, y: event.clientY, box: [...viewport], inverse: matrix.inverse(), pointerId: event.pointerId};
       svg.setPointerCapture(event.pointerId);
@@ -225,6 +255,13 @@ const FixedFloor = (() => {
       if (event.key === '+' || event.key === '=' || event.key === '-') {
         event.preventDefault(); zoomTo(WIDTH / viewport[2] * (event.key === '-' ? 1 / 1.5 : 1.5));
       } else if (event.key === '0') { viewport = [0, 0, WIDTH, HEIGHT]; schedule(); }
+      else if (PAN_KEYS[event.key] && viewport[2] < WIDTH - 1e-9) {
+        // Arrow keys move the zoomed map by a tenth of the view, like dragging. At 100% they scroll the page as usual.
+        event.preventDefault();
+        const [dx, dy] = PAN_KEYS[event.key];
+        viewport[0] += dx * viewport[2] / 10; viewport[1] += dy * viewport[3] / 10;
+        schedule();
+      }
     }, {signal});
     globalThis.addEventListener?.('resize', clearWheel, {signal});
     clamp();

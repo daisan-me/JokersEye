@@ -5,7 +5,14 @@ const JokersMap = (() => {
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const day = value => value ? value.split('-').map(Number).join('/') : '未確認';
   const label = period => `${day(period.validFrom)}–${day(period.validToExclusive)}`;
+  const today = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);  // Japan time, as the server
+  // A history entry can span several periods with the same model; its button opens the first of them.
+  const jumpTarget = entry => data.periods.find(period => period.id === entry.periodId);
+  const jumpTitle = entry => { const first = jumpTarget(entry); return first && label(first) !== label(entry) ? `最初の配置期間 ${label(first)} を表示します` : `配置期間 ${label(entry)} を表示します`; };
+  const jumpNote = entry => { const first = jumpTarget(entry); return first && label(first) !== label(entry) ? `<small class="jump-note">押すと最初の配置期間 ${label(first)} を表示</small>` : ''; };
   const normalize = model => (model || '').normalize('NFKC').replace(/\s+/g, '');
+  // Search only (colors keep using normalize): hiragana as katakana, so 「じゃぐらー」 finds ジャグラー.
+  const searchKey = text => normalize(text).replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).toLocaleLowerCase();
   const color = model => {
     let hash = 0;
     for (const c of normalize(model)) hash = (Math.imul(hash, 31) + c.codePointAt(0)) >>> 0;
@@ -63,7 +70,7 @@ const JokersMap = (() => {
         <label class="period-picker"><span class="sr-only">マップの期間</span><select id="map-period"><option value="" ${p ? 'hidden' : 'selected'}>期間を選択</option>${data.periods.map(v => `<option value="${esc(v.id)}" ${v.id === p?.id ? 'selected' : ''}>${label(v)}</option>`).join('')}</select><span class="picker-arrow" aria-hidden="true">▽</span></label>
         <button class="period-step" id="period-prev" ${index <= 0 ? 'disabled' : ''} aria-label="前の配置期間">‹</button>
         <button class="period-step" id="period-next" ${index < 0 || index >= data.periods.length - 1 ? 'disabled' : ''} aria-label="次の配置期間">›</button>
-        <label class="day-picker">日付から探す <input id="map-date" type="date" value="${esc(displayDate)}" aria-label="確認したい日付"></label>
+        <label class="day-picker">日付から探す <input id="map-date" type="date" value="${esc(displayDate)}" min="${esc(coverage.first || '')}" max="${today()}" aria-label="確認したい日付"></label>
       </div>
       <div class="period-tabs" role="tablist" aria-label="配置が変わった日で区切った期間">${data.periods.map(v => `<button type="button" class="period-tab ${v.id === p?.id ? 'active' : ''}" role="tab" aria-selected="${v.id === p?.id}" tabindex="${v.id === p?.id ? '0' : '-1'}" data-period="${esc(v.id)}"><span>${label(v)}</span><small>${v.boundaryStatus === 'daily-confirmed' ? `${v.changeCount} 台の配置変更` : v.boundaryStatus === 'first-observation' ? '基準配置' : '変更日未確定・初確認日'}</small></button>`).join('')}</div>
       <p class="period-caption">終了日は含みません。配置変更の前後のログと告知から期間を設定しています。期間内でも記録のない日を選ぶと、当日のマップは「未確認」に切り替わります。</p>
@@ -83,7 +90,13 @@ const JokersMap = (() => {
     root.querySelector('#map-period').addEventListener('change', e => { if (e.target.value) switchPeriod(e.target.value); });
     root.querySelector('#period-prev').addEventListener('click', () => switchPeriod(data.periods[index - 1].id));
     root.querySelector('#period-next').addEventListener('click', () => switchPeriod(data.periods[index + 1].id));
-    root.querySelector('#map-date').addEventListener('change', e => { if (e.target.value) load({date: e.target.value}).catch(showFailure); });
+    root.querySelector('#map-date').addEventListener('change', e => {
+      const value = e.target.value;
+      if (!value) return;
+      // Typed dates are not limited by min/max: dates outside the records have nothing to show.
+      if ((coverage.first && value < coverage.first) || value > today()) { showFailure(new Error(coverage.first ? `${day(coverage.first)}〜${day(today())} の日付を選んでください。` : `本日（${day(today())}）までの日付を選んでください。`)); return; }
+      load({date: value}).catch(showFailure);
+    });
     const tabs = [...root.querySelectorAll('[data-period]')];
     tabs.forEach((tab, i) => {
       tab.addEventListener('click', () => switchPeriod(tab.dataset.period));
@@ -108,7 +121,7 @@ const JokersMap = (() => {
       applyFilter();
     });
     root.querySelector('#map-changed-only').addEventListener('change', e => { changedOnly = e.target.checked; applyFilter(); });
-    root.querySelectorAll('[data-seat]').forEach(button => button.addEventListener('click', () => selectSeat(button.dataset.seat)));
+    root.querySelectorAll('[data-seat]').forEach(button => button.addEventListener('click', () => selectSeat(button.dataset.seat, true)));
     if (mapView === 'numbers') {
       root.querySelector('.period-summary .kicker').textContent = 'SEAT NUMBER MAP';
       root.querySelector('.map-view-note strong').textContent = '台番号マップ（固定配置）';
@@ -144,17 +157,18 @@ const JokersMap = (() => {
   }
 
   function applyFilter() {
-    const q = normalize(mapView === 'numbers' ? numberQuery : query).toLocaleLowerCase(), number = /^\d+$/.test(q) ? String(Number(q)) : null;
+    const q = searchKey(mapView === 'numbers' ? numberQuery : query), number = /^\d+$/.test(q) ? String(Number(q)) : null;
     const changed = new Set(data.period.changes.map(c => c.seat));
     let count = 0;
     const seats = new Map(data.seats.map(s => [s.seat, s]));
     root.querySelectorAll('.machine-seat').forEach(button => {
       const seat = seats.get(button.dataset.seat) || {seat: button.dataset.seat, model: ''};
-      const match = (!q || (number ? seat.seat === number : mapView === 'machine' && normalize(seat.model).toLocaleLowerCase().includes(q))) && (mapView === 'numbers' || !changedOnly || changed.has(seat.seat));
+      const match = (!q || (number ? seat.seat === number : mapView === 'machine' && searchKey(seat.model).includes(q))) && (mapView === 'numbers' || !changedOnly || changed.has(seat.seat));
       button.classList.toggle('dimmed', !match);
       if (match) count++;
     });
     root.querySelector('#map-filter-count').textContent = count ? `${count} 台を強調` : '該当なし';
+    root.querySelector('.physical-floor-svg')?.classList.toggle('filtering', !!q || (mapView === 'machine' && changedOnly));
   }
 
   function showFailure(error) {
@@ -177,7 +191,8 @@ const JokersMap = (() => {
     root.querySelector(`[data-map-view="${view}"]`).focus({preventScroll:true});
   }
 
-  async function selectSeat(number) {
+  // reveal: a click asks for the history; below 1450px it sits under the map, so bring it into view.
+  async function selectSeat(number, reveal = false) {
     selectedSeat = number;
     FixedFloor.select(number, root);
     root.querySelectorAll('.machine-seat').forEach(b => {
@@ -185,6 +200,10 @@ const JokersMap = (() => {
       b.setAttribute('aria-pressed', String(b.dataset.seat === number));
     });
     const target = root.querySelector('#map-seat-detail');
+    if (reveal) {
+      const box = target.getBoundingClientRect();
+      if (box.top > innerHeight - 80 || box.bottom < 0) target.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    }
     const s = data.seats.find(s => s.seat === number), current = data.period;
     if (mapView === 'numbers') {
       target.innerHTML = `<div class="kicker">SEAT NUMBER</div><h3>${esc(number)}番台</h3><p>${label(current)}</p><p class="hint">現地確認済みの固定位置です。台番号マップと機種マップで同じ位置を共有しています。</p><button type="button" class="secondary" id="view-seat-model">この台の機種・設置履歴を見る →</button>`;
@@ -197,7 +216,7 @@ const JokersMap = (() => {
       if (!histories.has(number)) histories.set(number, request('map/seat-history?seat=' + encodeURIComponent(number)).catch(error => { histories.delete(number); throw error; }));
       const result = await histories.get(number);
       if (stamp !== generation || selectedSeat !== number || !target.isConnected) return;
-      target.innerHTML = `<div class="kicker">SEAT HISTORY</div><h3>${esc(number)}番台</h3><div class="seat-current ${palette(s?.model)}"><strong>${esc(s?.model || 'この期間は未掲載')}</strong><span>${label(current)}</span></div>${s ? sourceLink(s.source, 'この期間の台番表') : ''}${s?.labelNotes?.length ? `<p class="hint">掲載名の統合を含みます：${s.labelNotes.map(n => `${esc(n.rawModel)}（${n.status === 'inferred-name-variant' ? '同定は推定' : '表記差'}）`).join('、')}</p>` : ''}<h4>この台番号の機種の変遷</h4><div class="seat-timeline">${[...result.entries].reverse().map(e => `<article class="seat-history-entry ${e.validFrom <= current.validFrom && current.validFrom < e.validToExclusive ? 'current' : ''}"><button type="button" data-jump="${esc(e.periodId)}">${label(e)}</button><strong>${esc(e.model || '未掲載')}</strong><small>${e.reportCount}日確認${e.boundaryStatus === 'after-gap' ? ' · 前にログ欠落あり' : ''}${e.gaps?.length ? ' · 期間内に未確認日あり' : ''}${e.labelNotes?.some(n => n.status === 'inferred-name-variant') ? ' · 掲載名の同定に推定あり' : ''}</small>${sourceLink(e.reportUrl, '根拠')}</article>`).join('')}</div>`;
+      target.innerHTML = `<div class="kicker">SEAT HISTORY</div><h3>${esc(number)}番台</h3><div class="seat-current ${palette(s?.model)}"><strong>${esc(s?.model || 'この期間は未掲載')}</strong><span>${label(current)}</span></div>${s ? sourceLink(s.source, 'この期間の台番表') : ''}${s?.labelNotes?.length ? `<p class="hint">掲載名の統合を含みます：${s.labelNotes.map(n => `${esc(n.rawModel)}（${n.status === 'inferred-name-variant' ? '同定は推定' : '表記差'}）`).join('、')}</p>` : ''}<h4>この台番号の機種の変遷</h4><div class="seat-timeline">${[...result.entries].reverse().map(e => `<article class="seat-history-entry ${e.validFrom <= current.validFrom && current.validFrom < e.validToExclusive ? 'current' : ''}"><button type="button" data-jump="${esc(e.periodId)}" title="${esc(jumpTitle(e))}">${label(e)}</button><strong>${esc(e.model || '未掲載')}</strong>${jumpNote(e)}<small>${e.reportCount}日確認${e.boundaryStatus === 'after-gap' ? ' · 前にログ欠落あり' : ''}${e.gaps?.length ? ' · 期間内に未確認日あり' : ''}${e.labelNotes?.some(n => n.status === 'inferred-name-variant') ? ' · 掲載名の同定に推定あり' : ''}</small>${sourceLink(e.reportUrl, '根拠')}</article>`).join('')}</div>`;
       target.querySelectorAll('[data-jump]').forEach(button => button.addEventListener('click', () => switchPeriod(button.dataset.jump)));
     } catch (error) {
       if (stamp === generation && selectedSeat === number && target.isConnected) {

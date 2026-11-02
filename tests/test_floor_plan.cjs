@@ -75,7 +75,25 @@ for(const polygon of polygons) {
   }
 }
 assert(wallClearance > .65/2, 'Account for the wall stroke thickness');
-assert(css.includes('transform:scale(.215)'));
+// WebKit (macOS) paints HTML that gets its own layer inside foreignObject without the viewBox zoom.
+// Every layer-creating declaration that reaches a seat must be neutralized for the physical map.
+const LAYER = /(?:^|;)\s*(position|opacity|transform|filter|backdrop-filter|will-change|mix-blend-mode|isolation|clip-path|mask|perspective|contain|animation|transition):\s*([^;]*)/g;
+const NEUTRAL = {position: /^static$/, opacity: /^1$/, transform: /^none$/, filter: /^none$/, 'backdrop-filter': /^none$/, 'will-change': /^auto$/,
+  'mix-blend-mode': /^normal$/, isolation: /^auto$/, 'clip-path': /^none$/, mask: /^none$/, perspective: /^none$/, contain: /^none$/,
+  animation: /^none$/, transition: /^(?!.*(transform|opacity|filter|all)).*$/};
+const cssRules = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .flatMap(([, selectors, body]) => selectors.split(',').map(selector => ({selector: selector.trim(), body})));
+const layered = rule => [...rule.body.matchAll(LAYER)].filter(([, prop, value]) => !NEUTRAL[prop].test(value.trim())).map(([, prop]) => prop);
+const styledSeat = selector => /^[^:(]*\.machine-seat(?![-\w])/.test(selector.split(/\s+/).pop());
+for (const rule of cssRules.filter(rule => styledSeat(rule.selector))) {
+  for (const prop of layered(rule)) {
+    assert(!rule.selector.startsWith('.physical-floor-svg'), `${rule.selector} { ${prop} } would detach seats from the map zoom on macOS`);
+    const override = cssRules.find(other => other.selector === `.physical-floor-svg ${rule.selector}` &&
+      [...other.body.matchAll(LAYER)].some(([, name, value]) => name === prop && NEUTRAL[prop].test(value.trim())));
+    assert(override, `${rule.selector} { ${prop} } needs a neutral .physical-floor-svg override (WebKit drops the viewBox zoom)`);
+  }
+}
+assert(css.includes('.physical-floor-svg .floor-tile:has(.machine-seat.dimmed:not(:focus-visible)){opacity:.2}'), 'Dim on the SVG foreignObject instead');
 assert(css.includes('width:6.4px;height:6.4px'));
 assert(Math.abs(6.4 * .215 / (4 * .172) - 2) < 1e-12, 'Change dot radius exactly doubles');
 assert(css.includes('outline-offset:-2px'), 'Focus and selection must not overflow enlarged squares');
@@ -131,6 +149,9 @@ class Element extends EventTarget {
   assert(context.palette('ジャグラーガールズSS').includes('juggler-model'));
   assert(context.palette('北斗の拳').includes('muted-model'));
   assert(context.palette('').includes('muted-model'));
+  // The search folds hiragana, but a model's color comes from its name as is (unchanged by the search rule).
+  const oldColor = model => { let hash = 0; for (const c of (model || '').normalize('NFKC').replace(/\s+/g, '')) hash = (Math.imul(hash, 31) + c.codePointAt(0)) >>> 0; return hash % 12; };
+  for (const model of ['スマスロ ありふれた職業で世界最強', 'まどか☆マギカ', 'ﾏｲｼﾞｬｸﾞﾗｰⅤ']) assert(context.palette(model).startsWith(`model-color-${oldColor(model)} `), model);
   let expectedGeometry;
   const physicalSnapshot = JSON.stringify(shipped);
   for (const period of history.periods) {
@@ -144,7 +165,7 @@ class Element extends EventTarget {
     if (!expectedGeometry) expectedGeometry = geometry;
     assert.equal(geometry, expectedGeometry, 'Period switch must not change tile geometry');
     for (const tile of displayTiles) {
-      assert(geometry.includes(`x="${tile.x - size/2}" y="${tile.y - size/2}" width="${size}" height="${size}" transform="rotate(${tile.angle} ${tile.x} ${tile.y})" data-face-id="${tile.face}"`));
+      assert(geometry.includes(`width="50" height="50" transform="rotate(${tile.angle} ${tile.x} ${tile.y}) translate(${tile.x - size/2} ${tile.y - size/2}) scale(${size/50})" data-face-id="${tile.face}"`));
       const seat = seats.find(seat => Number(seat.seat) === tile.seatNumber);
       const model = seat?.model || '未掲載';
       const escaped = model.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -168,6 +189,8 @@ class Element extends EventTarget {
   };
   context.plan.bind(root);
   assert.equal(svg.attributes.viewBox, '0 0 1060 665');
+  const arrowAtFull=new Event('keydown',{cancelable:true});Object.assign(arrowAtFull,{key:'ArrowDown'});svg.dispatchEvent(arrowAtFull);
+  assert(!arrowAtFull.defaultPrevented,'At 100% the arrow keys scroll the page as usual');
   assert(buttons.find(button => button.dataset.zoom === 'out').disabled);
   buttons[0].dispatchEvent(new Event('click'));
   flush();
@@ -187,6 +210,7 @@ class Element extends EventTarget {
   const paintedCount=svg.nodes.filter(node=>!node.classes.has('outside-viewport')).length;
   assert(paintedCount < 80, 'Zoomed view should paint only nearby tiles');
   const event=(type,properties)=>{const e=new Event(type,{cancelable:true});Object.assign(e,properties);return e;};
+  const WIDTH_OF=element=>Number(element.attributes.viewBox.split(' ')[2]);
   const reads=svg.matrixReads, writes=svg.writes;
   const panStart=svg.attributes.viewBox.split(' ').map(Number);
   const pointerDown=event('pointerdown',{button:0,clientX:100,clientY:100,pointerId:1});
@@ -210,6 +234,37 @@ class Element extends EventTarget {
   assert.equal(frames.size,1,'100 wheel events coalesce into one frame');
   flush();
   assert(Number(output.textContent.replace('%',''))<800);
+  const metaWheel=event('wheel',{metaKey:true,deltaY:10,clientX:300,clientY:300});
+  svg.dispatchEvent(metaWheel);
+  assert(!metaWheel.defaultPrevented,'Windows keeps Ctrl+wheel only');
+  assert(escaped.includes('Ctrl＋ホイールで拡大'));
+  const pinchFrom=WIDTH_OF(svg), gestureReads=svg.matrixReads;
+  const gestureStart=event('gesturestart',{scale:1,clientX:300,clientY:300});
+  svg.dispatchEvent(gestureStart);
+  assert(gestureStart.defaultPrevented,'Pinch must not magnify the whole page');
+  for(let i=1;i<=50;i++) svg.dispatchEvent(event('gesturechange',{scale:1-i*.01,clientX:300,clientY:300}));
+  svg.dispatchEvent(event('wheel',{ctrlKey:true,deltaY:-400,clientX:300,clientY:300}));
+  svg.dispatchEvent(event('gestureend',{scale:.5}));
+  svg.dispatchEvent(event('gesturechange',{scale:4,clientX:300,clientY:300}));
+  assert.equal(svg.matrixReads-gestureReads,1,'Pinch caches its screen transform');
+  assert.equal(frames.size,1,'Pinch events coalesce into one frame');
+  flush();
+  assert(Math.abs(1060/WIDTH_OF(svg)-1060/pinchFrom*.5)<1e-9,'Pinch scale is relative to the zoom at gesturestart; wheel and late events are ignored');
+  const panFrom=svg.attributes.viewBox.split(' ').map(Number);
+  const arrow=event('keydown',{key:'ArrowRight'});Object.defineProperty(arrow,'target',{value:svg});svg.dispatchEvent(arrow);
+  assert(arrow.defaultPrevented,'Arrow keys pan the map instead of scrolling the page');
+  flush();
+  const panTo=svg.attributes.viewBox.split(' ').map(Number);
+  assert(Math.abs(panTo[0]-panFrom[0]-panFrom[2]/10)<1e-9 && panTo[1]===panFrom[1],'ArrowRight moves the view by a tenth');
+  const stuckFrom=WIDTH_OF(svg);
+  svg.dispatchEvent(event('gesturestart',{scale:1,clientX:300,clientY:300}));
+  const stuckWheel=event('wheel',{ctrlKey:true,deltaY:-100,clientX:300,clientY:300});
+  Object.defineProperty(stuckWheel,'timeStamp',{value:stuckWheel.timeStamp+5000});
+  svg.dispatchEvent(stuckWheel);
+  flush();
+  assert(WIDTH_OF(svg)<stuckFrom,'A pinch without gestureend must not block Ctrl+wheel for good');
+  svg.dispatchEvent(event('pointerdown',{button:0,clientX:300,clientY:300,pointerId:2}));
+  svg.dispatchEvent(event('pointerup',{pointerId:2}));
   buttons[0].dispatchEvent(new Event('click'));
   assert.equal(frames.size,1);
   context.plan.bind(root);
@@ -219,5 +274,28 @@ class Element extends EventTarget {
   assert.equal(svg.attributes.viewBox, '0 0 1060 665');
   assert(svg.nodes.every(node=>!node.classes.has('outside-viewport')),'Reset restores all 310 tiles');
   assert.equal(JSON.stringify(shipped), physicalSnapshot, 'Zoom must not mutate reference');
+  const mac = vm.createContext({fetch: context.fetch, requestAnimationFrame: context.requestAnimationFrame,
+    cancelAnimationFrame: context.cancelAnimationFrame, setTimeout, clearTimeout, AbortController, DOMPoint: context.DOMPoint,
+    navigator: {platform: 'MacIntel'}});
+  vm.runInContext(floor + '\nglobalThis.plan = FixedFloor;', mac);
+  await mac.plan.load();
+  assert(mac.plan.render(fixture, 'machine', context.palette).includes('ピンチ／⌘＋ホイールで拡大'));
+  context.plan.bind({querySelector: () => null});
+  mac.plan.bind(root);
+  const commandWheel=event('wheel',{metaKey:true,deltaY:-100,clientX:300,clientY:300});
+  svg.dispatchEvent(commandWheel);
+  assert(commandWheel.defaultPrevented,'⌘+wheel zooms on macOS');
+  flush();
+  assert(WIDTH_OF(svg) < 1060);
+  const safari = vm.createContext({navigator: {platform: '', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15'}});
+  vm.runInContext(floor + '\nglobalThis.plan = FixedFloor;', safari);
+  safari.fetch = context.fetch;
+  await safari.plan.load();
+  assert(safari.plan.render(fixture, 'machine', context.palette).includes('ピンチ／⌘＋ホイールで拡大'), 'Mac is detected even when navigator.platform is empty');
+  const chromium = vm.createContext({navigator: {userAgentData: {platform: 'macOS'}, platform: 'MacIntel'}});
+  vm.runInContext(floor + '\nglobalThis.plan = FixedFloor;', chromium);
+  chromium.fetch = context.fetch;
+  await chromium.plan.load();
+  assert(chromium.plan.render(fixture, 'machine', context.palette).includes('ピンチ／⌘＋ホイールで拡大'), 'userAgentData reports lowercase "macOS"');
   console.log(`Fixed map: 310 equal 1.25x squares, 5 outward offsets, no overlaps, wall clearance ${wallClearance.toFixed(2)}; ${history.periods.length} periods, identities and source preserved. 100 pan/wheel events -> 1 frame, ${paintedCount}/310 tiles painted at 800%.`);
 })().catch(error => {console.error(error); process.exitCode = 1;});

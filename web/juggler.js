@@ -2,6 +2,8 @@
 
 (() => {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  // Official names use roman-numeral letters (マイジャグラーⅤ); NFKC shows them as in GDB and the map (マイジャグラーV).
+  const nameOf = machine => String(machine.name ?? '').normalize('NFKC');
   const probability = value => value === null || value === undefined ? '未掲載' : '1/' + Number(value).toFixed(1);
   let catalogPromise;
   let calculators;
@@ -22,7 +24,7 @@
   }
 
   function specTable(machine) {
-    return `<div class="table-scroll juggler-spec-table"><table><caption>${escape(machine.name)}の設定別スペック</caption>
+    return `<div class="table-scroll juggler-spec-table"><table><caption>${escape(nameOf(machine))}の設定別スペック</caption>
       <thead><tr><th scope="col">設定</th><th scope="col">BB確率</th><th scope="col">RB確率</th><th scope="col">合成確率</th><th scope="col">出玉率</th></tr></thead>
       <tbody>${machine.settings.map(row => `<tr><th scope="row">設定 ${row.setting}</th><td>${probability(row.bbDenominator)}</td><td class="juggler-rb">${probability(row.rbDenominator)}</td><td>${probability(row.combinedDenominator)}</td><td>${escape(row.payoutPercent)}<small>%</small></td></tr>`).join('')}</tbody></table></div>`;
   }
@@ -45,9 +47,9 @@
 
   function specsPanel(machine, data) {
     const hasBonusTable = machine.settings.every(row => row.bbDenominator !== null && row.rbDenominator !== null);
-    return `<section class="card juggler-reference-card"><div class="card-header"><div><div class="kicker">OFFICIAL / SETTING REFERENCE</div><h2>${escape(machine.name)}</h2></div><span class="tag">${machine.generation}号機</span></div>${specTable(machine)}
+    return `<section class="card juggler-reference-card"><div class="card-header"><div><div class="kicker">OFFICIAL / SETTING REFERENCE</div><h2>${escape(nameOf(machine))}</h2></div><span class="tag">${machine.generation}号機</span></div>${specTable(machine)}
       <p class="hint">メーカー公表値。出玉率は工場データから算出した予測値です。${hasBonusTable ? '' : 'この旧機種はメーカーの表にBB・RB別の確率が未掲載です。'}</p>${sources(machine)}</section>
-      <details class="card juggler-all-specs"><summary>全機種の設定別スペックを見る <span>${data.machines.length} 製品・パネル</span></summary><p class="hint">北電子の製品一覧に掲載された2007年以降のジャグラー。6号機と過去の5号機を区別しています。未掲載の数値は空欄扱いです。</p><div class="juggler-reference-grid">${data.machines.map(item => `<section><div class="card-header"><h3>${escape(item.name)}</h3><span class="tag">${item.generation}号機</span></div>${specTable(item)}${sources(item)}</section>`).join('')}</div></details>`;
+      <details class="card juggler-all-specs"><summary>全機種の設定別スペックを見る <span>${data.machines.length} 製品・パネル</span></summary><p class="hint">北電子の製品一覧に掲載された2007年以降のジャグラー。6号機と過去の5号機を区別しています。未掲載の数値は空欄扱いです。</p><div class="juggler-reference-grid">${data.machines.map(item => `<section><div class="card-header"><h3>${escape(nameOf(item))}</h3><span class="tag">${item.generation}号機</span></div>${specTable(item)}${sources(item)}</section>`).join('')}</div></details>`;
   }
 
   function grapesPanel(machine) {
@@ -73,7 +75,7 @@
   function render(root, data) {
     const machine = data.machines.find(item => item.id === selectedId) || data.machines[0];
     selectedId = machine.id;
-    root.innerHTML = `<section class="card juggler-selector"><div class="card-header"><div><div class="kicker">JUGGLER / RESEARCH WORKSPACE</div><h2>機種と理論値を選ぶ</h2></div><span class="tag">参照・入力のみ</span></div><div class="juggler-model-toolbar"><div><label class="label" for="juggler-model">ジャグラー機種</label><select id="juggler-model">${[6, 5].map(generation => `<optgroup label="${generation === 6 ? '6号機' : '過去資料・5号機'}">${data.machines.filter(item => item.generation === generation).map(item => `<option value="${escape(item.id)}" ${item.id === selectedId ? 'selected' : ''}>${escape(item.name)} · ${escape(item.introduced)}</option>`).join('')}</optgroup>`).join('')}</select></div><div class="juggler-reference-meta"><span>北電子 公式資料</span><strong>設定 1〜6</strong><small>参照日 ${escape(data.verifiedOn)} / パネル別仕様を保持</small></div></div>
+    root.innerHTML = `<section class="card juggler-selector"><div class="card-header"><div><div class="kicker">JUGGLER / RESEARCH WORKSPACE</div><h2>機種と理論値を選ぶ</h2></div><span class="tag">参照・入力のみ</span></div><div class="juggler-model-toolbar"><div><label class="label" for="juggler-model">ジャグラー機種</label><select id="juggler-model">${[6, 5].map(generation => `<optgroup label="${generation === 6 ? '6号機' : '過去資料・5号機'}">${data.machines.filter(item => item.generation === generation).map(item => `<option value="${escape(item.id)}" ${item.id === selectedId ? 'selected' : ''}>${escape(nameOf(item))} · ${escape(item.introduced)}</option>`).join('')}</optgroup>`).join('')}</select></div><div class="juggler-reference-meta"><span>北電子 公式資料</span><strong>設定 1〜6</strong><small>参照日 ${escape(data.verifiedOn)} / パネル別仕様を保持</small></div></div>
       <div class="juggler-tabs" role="tablist" aria-label="ジャグラー分析の表示">${[['specs','設定別スペック'],['grapes','ぶどう逆算機'],['settings','設定推測機']].map(([id, label]) => `<button type="button" role="tab" id="juggler-tab-${id}" data-juggler-tab="${id}" aria-selected="${id === selectedTab}" aria-controls="juggler-panel" tabindex="${id === selectedTab ? 0 : -1}">${label}</button>`).join('')}</div></section>
       <div id="juggler-panel" role="tabpanel" aria-labelledby="juggler-tab-${selectedTab}" tabindex="0">${selectedTab === 'specs' ? specsPanel(machine, data) : selectedTab === 'grapes' ? grapesPanel(machine) : settingPanel(machine)}</div>`;
     root.querySelector('#juggler-model').addEventListener('change', event => {
