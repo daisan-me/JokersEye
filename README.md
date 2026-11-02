@@ -1,4 +1,4 @@
-# Joker's eye 1.4.0
+# Joker's eye 1.4.1
 
 ゴッサムシティの観測データと店内配置を研究する、Windows / macOS 共通のローカルアプリです。
 
