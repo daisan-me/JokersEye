@@ -293,18 +293,23 @@ class VersionManager:
         raise ValueError("ダウンロード先を取得できませんでした。")
 
     def _download(self, artifact, archive):
-        location = self.download_address(artifact["id"])
+        self._progress(message="ダウンロードしています。")
+        self.download(artifact["id"], archive, lambda done, total: self._progress(done=done, total=total or artifact.get("size_in_bytes", 0)))
+
+    def download(self, artifact_id, archive, progress):
+        """Save one artifact's zip to `archive`, calling progress(done, total) as it arrives."""
+        location = self.download_address(int(artifact_id))
         with urllib.request.urlopen(urllib.request.Request(location, headers={"User-Agent": "JokersEye"}), timeout=60) as response, open(archive, "wb") as file:
-            total = int(response.headers.get("Content-Length") or artifact.get("size_in_bytes") or 0)
+            total = int(response.headers.get("Content-Length") or 0)
             done = 0
-            self._progress(total=total, message="ダウンロードしています。")
+            progress(done, total)
             while True:
                 chunk = response.read(1024 * 256)
                 if not chunk:
                     break
                 file.write(chunk)
                 done += len(chunk)
-                self._progress(done=done)
+                progress(done, total)
 
     def executable(self, ident):
         base = (self.home / ident / "app").resolve()
