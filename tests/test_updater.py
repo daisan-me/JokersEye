@@ -45,6 +45,7 @@ def wait_for(path, seconds=60):
 class FakeCollector:
     def __init__(self):
         self.active = False
+        self.maintenance = False
         self.idle_entered = False
 
     @contextmanager
@@ -107,6 +108,10 @@ class PureFunctionTests(unittest.TestCase):
         found = updater.newest_main_build(runs, artifacts, 'windows')
         self.assertEqual((found['artifactId'], found['version'], found['sha']), (11, '1.4.0', '1' * 40))
         self.assertIsNone(updater.newest_main_build(runs, artifacts, 'linux'))
+
+    def test_parse_time_compares_github_and_build_info_stamps(self):
+        self.assertEqual(updater.parse_time('2026-11-02T08:00:00Z'), updater.parse_time('2026-11-02T08:00:00+00:00'))
+        self.assertIsNone(updater.parse_time(None))
 
     def test_relaunch_arguments_drop_diagnostics(self):
         self.assertEqual(updater.relaunch_arguments(['--data', 'X', '--diagnostics', 'r.json', '--diagnostics=y', '--debug']),
@@ -241,16 +246,26 @@ class PackageUpdateTests(unittest.TestCase):
         self.assertEqual((self.parent / 'README.md').read_text(encoding='utf-8'), 'new readme')
         self.assertIsNone(self.updater.last_result())  # this process is the one being replaced
 
-    def test_refuses_a_folder_with_other_files(self):
+    def test_refuses_a_folder_with_other_files_before_backing_up_or_downloading(self):
         (self.install / 'my notes.txt').write_text('x', encoding='utf-8')
         self.updater.check()
-        self.updater.start()
+        self.updater.start(backup=True)
         status = self.finish()
         self.assertEqual(status['task']['state'], 'failed')
         self.assertIn('アプリ以外のファイル', status['task']['message'])
         self.assertFalse(self.stopped.is_set())
-        self.assertEqual(self.plans, [])
+        self.assertEqual((self.plans, self.store.backups), ([], 0))
+        self.assertFalse((self.parent / (NAME + '.update')).exists())
         self.assertTrue(self.exe.is_file())
+
+    def test_a_broken_package_leaves_no_download_behind(self):
+        with zipfile.ZipFile(self.package, 'w') as zf:
+            zf.writestr('README.md', 'no app inside')
+        self.updater.check()
+        self.updater.start()
+        status = self.finish()
+        self.assertIn('実行ファイルがありません', status['task']['message'])
+        self.assertFalse((self.parent / (NAME + '.update')).exists())
 
     def test_refuses_while_collecting_or_without_a_checked_version(self):
         with self.assertRaises(ValueError):
@@ -258,6 +273,9 @@ class PackageUpdateTests(unittest.TestCase):
         self.updater.check()
         self.store.collector.active = True
         with self.assertRaises(ValueError):
+            self.updater.start()
+        self.store.collector.active, self.store.collector.maintenance = False, True  # a delete or lock is running
+        with self.assertRaisesRegex(ValueError, '削除・ロック'):
             self.updater.start()
 
     def test_trial_windows_cannot_update(self):

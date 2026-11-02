@@ -8,7 +8,7 @@ const JokersVersions = (() => {
   const when = value => value ? new Date(value).toLocaleString('ja-JP', {dateStyle: 'medium', timeStyle: 'short'}) : '不明';
   const megabytes = bytes => (Number(bytes || 0) / 1048576).toFixed(1) + ' MB';
   let root = null, overview = null, remote = null, remoteError = '', timer = null;
-  let update = null, updateError = '', updateTimer = null;
+  let update = null, updateError = '', updateTimer = null, checking = null;
 
   function label(state) {
     const build = state.build || {}, element = document.querySelector('#build-label');
@@ -36,12 +36,21 @@ const JokersVersions = (() => {
     return '前回の更新は完了しませんでした。前の版のまま起動しています。';
   }
 
-  // Called once after the app starts: report the last update, then look for a newer build quietly.
+  // One GitHub check at a time, shared by the startup check, the バージョン page and the periodic check.
+  function requestCheck() {
+    if (!checking) checking = api('update/check').then(status => { showBadge(status); return status; }).finally(() => { checking = null; });
+    return checking;
+  }
+
+  // Called once after the app starts: report the last update, then look for a newer build quietly,
+  // again every six hours while the app stays open.
   async function startup(state) {
     if (state.trial) return;
     const status = await api('update');
     if (status.lastResult) { notice(resultText(status.lastResult)); await api('update/acknowledge', {}); }
-    if (canCheck(status)) showBadge(await api('update/check'));
+    if (!canCheck(status)) return;
+    setInterval(() => requestCheck().catch(() => {}), 6 * 3600 * 1000);
+    await requestCheck();
   }
 
   function updateCard() {
@@ -72,7 +81,7 @@ const JokersVersions = (() => {
 
   async function checkUpdate() {
     updateError = '';
-    try { update = await api('update/check'); showBadge(update); } catch (error) { updateError = error.message; }
+    try { update = await requestCheck(); } catch (error) { updateError = error.message; }
   }
 
   async function updateAct(button) {

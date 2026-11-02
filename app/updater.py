@@ -12,6 +12,7 @@ helper restarts the app through launch.py (which installs changed requirements).
 Files live in <data>/updates/: plan.json (what is being done), result.json (written by the
 helper), the helper script, and on macOS the download and the previous version.
 """
+from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
@@ -21,12 +22,16 @@ import sys
 import threading
 from datetime import datetime, timezone
 
-from versions import APP_NAME, REPO, WORKFLOW, platform_label, safe_extract
+from versions import APP_NAME, REPO, WORKFLOW, unpack_package
 
 BRANCH = "main"
 HELPER_TIMEOUT = 120  # seconds the helper waits for the app to exit
+# The helpers are PowerShell / sh, not Python (an exception to AGENTS.md): they run after the app has
+# exited, and a packaged app carries no Python interpreter that could run on its own.
 PREVIOUS_SUFFIX = ".previous"
 UPDATE_SUFFIX = ".update"
+
+BUSY = "データの取得・削除・ロックの処理中は更新できません。終わってから更新してください。"
 
 POWERSHELL_HELPER = r"""param([Parameter(Mandatory=$true)][string]$PlanPath)
 # Joker's eye update helper, written by app/updater.py. Waits for the app to exit, swaps the
@@ -103,6 +108,14 @@ def install_layout(executable, platform):
     if platform == "windows":
         return executable.parent, executable
     raise ValueError("この機能はWindowsとmacOSで使えます。")
+
+
+def parse_time(value):
+    """GitHub ('...Z') and build-info ('...+00:00') timestamps, comparable; None when missing."""
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def newest_main_build(runs, artifacts, platform):
@@ -196,9 +209,9 @@ class Updater:
                 break
         if not found:
             return {"available": False, "checkedAt": now(), "message": "mainの配布物が見つかりません（作成中か、保存期限切れです）。"}
-        built = self.versions.build.get("builtAt")
+        built, made = parse_time(self.versions.build.get("builtAt")), parse_time(found["builtAt"])
         found.update(checkedAt=now(), available=found["sha"] != self.versions.build.get("sha"),
-                     newer=found["sha"] != self.versions.build.get("sha") and (not built or found["builtAt"] > built))
+                     newer=found["sha"] != self.versions.build.get("sha") and (not built or not made or made > built))
         return found
 
     def _git(self, *args, timeout=60):
@@ -236,8 +249,8 @@ class Updater:
         mode, reason = self.mode()
         if not mode:
             raise ValueError(reason)
-        if self.store.collector.active:
-            raise ValueError("データの取得中は更新できません。取得が終わってから更新してください。")
+        if self.store.collector.active or self.store.collector.maintenance:
+            raise ValueError(BUSY)
         if not isinstance(backup, bool):
             raise ValueError("バックアップの指定が不正です。")
         with self.lock:
@@ -253,11 +266,16 @@ class Updater:
 
     def _run(self, mode, latest, backup):
         try:
-            with self.store.collector.idle():  # no data run starts while the app is being replaced
+            with ExitStack() as stack:
+                try:
+                    stack.enter_context(self.store.collector.idle())  # no data run starts while the app is being replaced
+                except ValueError:
+                    raise ValueError(BUSY) from None
+                places = self._places() if mode == "package" else None  # checked before the backup and the download
                 if backup:
                     self._set(step="backup", message="GDBのバックアップを作成しています。")
                     self.store.backup()
-                plan = self._prepare_package(latest) if mode == "package" else self._prepare_source(latest)
+                plan = self._prepare_package(latest, *places) if mode == "package" else self._prepare_source(latest)
                 self._set(step="restart", message="新しい版で起動し直します。")
                 try:
                     self._launch_helper(plan)
@@ -268,47 +286,45 @@ class Updater:
         except Exception as ex:
             self._set(state="failed", message="更新できませんでした：%s" % ex)
 
-    def _prepare_package(self, latest):
+    def _places(self):
+        """(install, work folder, previous-version path), after checking that the install can be swapped."""
         install, _ = install_layout(self.executable, self.platform)
-        if self.platform == "macos" and not os.access(install.parent, os.W_OK):
-            raise ValueError("%s に書き込めないため、アプリを入れ替えられません。" % install.parent)
-        self.home.mkdir(parents=True, exist_ok=True)
         if self.platform == "windows":
+            # The whole folder is swapped: refuse when it holds anything but this app's own files
+            # (a PyInstaller folder: the EXE, its .NET config and _internal).
+            known = {self.executable.name, self.executable.name + ".config", "_internal"}
+            if not (install / "_internal").is_dir() or any(p.name not in known for p in install.iterdir()):
+                raise ValueError("%s にアプリ以外のファイルがあるため、フォルダーを入れ替えられません。" % install)
             # Same drive as the install, so the helper can swap the folders by renaming them.
-            work = install.parent / (install.name + UPDATE_SUFFIX)
-            backup = install.parent / (install.name + PREVIOUS_SUFFIX)
-        else:
-            work = self.home / "download"
-            backup = self.home / "previous" / install.name
+            return install, install.parent / (install.name + UPDATE_SUFFIX), install.parent / (install.name + PREVIOUS_SUFFIX)
+        if not os.access(install.parent, os.W_OK):
+            raise ValueError("%s に書き込めないため、アプリを入れ替えられません。" % install.parent)
+        return install, self.home / "download", self.home / "previous" / install.name
+
+    def _prepare_package(self, latest, install, work, backup):
         shutil.rmtree(work, ignore_errors=True)
         try:
             work.mkdir(parents=True)
         except OSError as ex:
-            raise ValueError("%s に書き込めません（%s）。" % (install.parent, ex.strerror or ex)) from None
+            raise ValueError("%s に書き込めません（%s）。" % (work.parent, ex.strerror or ex)) from None
+        try:
+            return self._stage(latest, install, work, backup)
+        except Exception:
+            shutil.rmtree(work, ignore_errors=True)  # do not leave the download next to the app
+            raise
+
+    def _stage(self, latest, install, work, backup):
         archive = work / "package.zip"
         self._set(step="download", message="ダウンロードしています。")
         self.versions.download(latest["artifactId"], archive,
                                lambda done, total: self._set(done=done, total=total or latest.get("size", 0)))
         self._set(step="extract", message="展開しています。")
         unpacked = work / "package"
-        safe_extract(archive, unpacked)
+        staged = unpack_package(archive, unpacked, self.platform)
         archive.unlink()
-        if self.platform == "macos":
-            inner = unpacked / (APP_NAME + ".zip")
-            subprocess.run(["ditto", "-x", "-k", str(inner), str(unpacked)], check=True)
-            inner.unlink()
-            staged = unpacked / (APP_NAME + ".app")
-            program = staged / "Contents" / "MacOS" / APP_NAME
-        else:
-            staged = unpacked / APP_NAME
-            program = staged / (APP_NAME + ".exe")
+        program = staged / "Contents" / "MacOS" / APP_NAME if self.platform == "macos" else staged / (APP_NAME + ".exe")
         if not program.is_file():
             raise ValueError("ダウンロードした版に実行ファイルがありません。")
-        if self.platform == "windows":
-            # The whole folder is swapped: refuse when it holds anything but this app's own files.
-            known = {p.name for p in staged.iterdir()} | {self.executable.name, self.executable.name + ".config", "_internal"}
-            if not (install / "_internal").is_dir() or any(p.name not in known for p in install.iterdir()):
-                raise ValueError("%s にアプリ以外のファイルがあるため、フォルダーを入れ替えられません。" % install)
         for doc in ("README.md", "CHANGELOG.md"):  # the copies next to the app, when the package was unpacked as a whole
             if self.platform == "windows" and (install.parent / doc).is_file() and (unpacked / doc).is_file():
                 shutil.copy2(unpacked / doc, install.parent / doc)

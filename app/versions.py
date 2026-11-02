@@ -122,6 +122,19 @@ def safe_extract(archive, target):
         zf.extractall(target)
 
 
+def unpack_package(archive, target, platform):
+    """Unpack a package artifact into `target` and return the app in it: the folder with the EXE
+    (Windows) or the .app bundle (macOS, which build_package.py wraps in its own zip to keep it intact)."""
+    target = Path(target)
+    safe_extract(archive, target)
+    if platform == "macos":
+        inner = target / (APP_NAME + ".zip")
+        subprocess.run(["ditto", "-x", "-k", str(inner), str(target)], check=True)
+        inner.unlink()
+        return target / (APP_NAME + ".app")
+    return target / APP_NAME
+
+
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -260,11 +273,7 @@ class VersionManager:
                 self._download(artifact, archive)
                 self._progress(step="extract", message="展開しています。")
                 staging = Path(work) / "app"
-                safe_extract(archive, staging)
-                if self.platform == "macos":
-                    inner = staging / (APP_NAME + ".zip")
-                    subprocess.run(["ditto", "-x", "-k", str(inner), str(staging)], check=True)
-                    inner.unlink()
+                unpack_package(archive, staging, self.platform)
                 if target.exists():
                     shutil.rmtree(target / "app", ignore_errors=True)
                 target.mkdir(exist_ok=True)
