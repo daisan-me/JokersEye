@@ -122,6 +122,19 @@ def safe_extract(archive, target):
         zf.extractall(target)
 
 
+def unpack_package(archive, target, platform):
+    """Unpack a package artifact into `target` and return the app in it: the folder with the EXE
+    (Windows) or the .app bundle (macOS, which build_package.py wraps in its own zip to keep it intact)."""
+    target = Path(target)
+    safe_extract(archive, target)
+    if platform == "macos":
+        inner = target / (APP_NAME + ".zip")
+        subprocess.run(["ditto", "-x", "-k", str(inner), str(target)], check=True)
+        inner.unlink()
+        return target / (APP_NAME + ".app")
+    return target / APP_NAME
+
+
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -260,11 +273,7 @@ class VersionManager:
                 self._download(artifact, archive)
                 self._progress(step="extract", message="展開しています。")
                 staging = Path(work) / "app"
-                safe_extract(archive, staging)
-                if self.platform == "macos":
-                    inner = staging / (APP_NAME + ".zip")
-                    subprocess.run(["ditto", "-x", "-k", str(inner), str(staging)], check=True)
-                    inner.unlink()
+                unpack_package(archive, staging, self.platform)
                 if target.exists():
                     shutil.rmtree(target / "app", ignore_errors=True)
                 target.mkdir(exist_ok=True)
@@ -293,18 +302,23 @@ class VersionManager:
         raise ValueError("ダウンロード先を取得できませんでした。")
 
     def _download(self, artifact, archive):
-        location = self.download_address(artifact["id"])
+        self._progress(message="ダウンロードしています。")
+        self.download(artifact["id"], archive, lambda done, total: self._progress(done=done, total=total or artifact.get("size_in_bytes", 0)))
+
+    def download(self, artifact_id, archive, progress):
+        """Save one artifact's zip to `archive`, calling progress(done, total) as it arrives."""
+        location = self.download_address(int(artifact_id))
         with urllib.request.urlopen(urllib.request.Request(location, headers={"User-Agent": "JokersEye"}), timeout=60) as response, open(archive, "wb") as file:
-            total = int(response.headers.get("Content-Length") or artifact.get("size_in_bytes") or 0)
+            total = int(response.headers.get("Content-Length") or 0)
             done = 0
-            self._progress(total=total, message="ダウンロードしています。")
+            progress(done, total)
             while True:
                 chunk = response.read(1024 * 256)
                 if not chunk:
                     break
                 file.write(chunk)
                 done += len(chunk)
-                self._progress(done=done)
+                progress(done, total)
 
     def executable(self, ident):
         base = (self.home / ident / "app").resolve()

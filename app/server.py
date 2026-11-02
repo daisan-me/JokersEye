@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scraper import Collector, FILL_KEYS, today as source_today
 from platform_support import default_data_dir, launch_browser, show_error
 from versions import VersionManager
+from updater import Updater
 
 APP = "jokers-eye"
 # The packaged app (tools/build_package.py) carries web/ and VERSION in its bundle folder.
@@ -591,6 +592,7 @@ class Host(ThreadingHTTPServer):
         self.last_seen=time.monotonic()
         self.focus_requested=threading.Event()
         self.versions=VersionManager(store.folder,ROOT,VERSION,store.copy_into)
+        self.updater=Updater(store.folder,ROOT,self.versions,store,lambda: threading.Thread(target=self.shutdown,daemon=True).start())
 
 class Handler(BaseHTTPRequestHandler):
     QUIET_PATHS = {"/api/scrape/browser-task", "/api/scrape/browser-result", "/api/scrape/status", "/api/heartbeat"}
@@ -636,6 +638,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(self.server.versions.overview())
             if path=="/api/versions/status":
                 return self.reply(self.server.versions.status())
+            if path=="/api/update":
+                return self.reply(self.server.updater.status())
+            if path=="/api/update/check":
+                try:
+                    return self.reply(self.server.updater.check())
+                except ValueError as ex:
+                    return self.reply({"error":str(ex)},400)
             if path=="/api/versions/remote":
                 try:
                     return self.reply(self.server.versions.remote())
@@ -758,6 +767,10 @@ class Handler(BaseHTTPRequestHandler):
                 result=self.server.versions.launch(payload["id"])
             elif path=="/api/versions/remove":
                 result=self.server.versions.remove(payload["id"])
+            elif path=="/api/update/start":
+                result=self.server.updater.start(payload.get("backup",False))
+            elif path=="/api/update/acknowledge":
+                result=self.server.updater.acknowledge()
             elif path=="/api/focus":
                 self.server.focus_requested.set()
                 result={"ok":True}

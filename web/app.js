@@ -1,5 +1,5 @@
 'use strict';
-const pages={overview:['ダッシュボード','観測を積み重ねて、店の輪郭をつかむ。'],data:['データ管理','日付・台番号・機種を、出典とともに残す。'],map:['店内マップ','場所は固定。機種の配置は、日付とともに変わる。'],juggler:['ジャグラー設定推測機','機種別の理論値を参照し、ぶどう逆算と設定推測の入力を整える。'],analysis:['分析ラボ','位置と履歴を、検証できる特徴量へ。'],history:['履歴','取り込んだデータの出典と操作を振り返る。'],versions:['バージョン','ブランチごとの版を選び、本番データのコピーで試す。'],settings:['設定','このPCに、研究の環境を整える。']};
+const pages={overview:['ダッシュボード','観測を積み重ねて、店の輪郭をつかむ。'],data:['データ管理','日付・台番号・機種を、出典とともに残す。'],map:['店内マップ','場所は固定。機種の配置は、日付とともに変わる。'],juggler:['ジャグラー設定推測機','機種別の理論値を参照し、ぶどう逆算と設定推測の入力を整える。'],analysis:['分析ラボ','位置と履歴を、検証できる特徴量へ。'],history:['履歴','取り込んだデータの出典と操作を振り返る。'],versions:['バージョン','このアプリを更新し、ブランチごとの版を本番データのコピーで試す。'],settings:['設定','このPCに、研究の環境を整える。']};
 let token=sessionStorage.getItem('joker-token')||'';
 const hash=location.hash.slice(1);
 if(hash&&!pages[hash]){token=hash;sessionStorage.setItem('joker-token',token);history.replaceState(null,'',location.pathname);}
@@ -48,9 +48,10 @@ document.querySelector('#shutdown').addEventListener('click',async()=>{try{await
 // The pill says 接続が切れました while heartbeats fail and returns to normal when they succeed again.
 let connectionLost=false;
 setInterval(()=>{if(stopped)return;api('heartbeat',{}).then(()=>{if(connectionLost){connectionLost=false;document.querySelector('#connection').textContent='● ローカル接続';JokersVersions.label(state);}}).catch(()=>{connectionLost=true;document.querySelector('#connection').textContent='接続が切れました';});},20000);
-refresh().then(()=>{api('heartbeat',{}).catch(showError);navigate(page,'replace');}).catch(ex=>{document.querySelector('#connection').textContent='接続できません';notice(ex.message+' Joker’s eyeを開き直してください。');});
+refresh().then(()=>{api('heartbeat',{}).catch(showError);navigate(page,'replace');JokersVersions.startup(state).catch(()=>{});}).catch(ex=>{document.querySelector('#connection').textContent='接続できません';notice(ex.message+' Joker’s eyeを開き直してください。');});
 window.addEventListener('popstate',()=>{const h=location.hash.slice(1);navigate(pages[h]?h:'overview','none');});
 document.querySelector('#notice-close').addEventListener('click',()=>notice(''));
+document.querySelector('#update-badge').addEventListener('click',()=>navigate('versions'));
 // Deleting, locking or a finished run changes GDB: refresh the counts and 「登録した観測」 (same day when it still exists).
 document.addEventListener('jokers:data-changed',async()=>{try{await refresh();if(page==='overview')navigate('overview','none');if(page!=='data')return;const tag=document.querySelector('#observations')?.closest('.card')?.querySelector('.card-header .tag');if(tag)tag.textContent=num(state.summary.records)+' RECORDS';await loadObservations(document.querySelector('#day-select')?.value||'');}catch(ex){showError(ex);}});
 // WebKit (macOS) paints today's date in an empty date field: mark empty date/month fields so CSS can blank them.
