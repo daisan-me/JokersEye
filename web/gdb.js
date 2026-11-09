@@ -1,7 +1,7 @@
 'use strict';
 
 /* GothamDataBase (GDB): the 11-column view of the seat records stored in GothamDataBase.sqlite.
-   Viewing only; scraping runs from the 「公開データを取得する」 panel (web/scrape.js). */
+   Scraping runs from the Scraper tab (web/scrape.js). */
 (() => {
   const headers = ['日付', '曜日', '台番号', '機種', 'ジャグラーかジャグラーじゃないか', 'ゲーム数', 'BB数', 'RB数', '合成', '差枚', '出率'];
   let mounted = false;
@@ -22,7 +22,7 @@
     card.className = 'card';
     card.id = 'gdb-card';
     card.innerHTML = '<div id="gdb-app"><p>GDBを読み込み中…</p></div>';
-    observations.closest('.card')?.before(card);  // above 「登録した観測」, below the scraping panel
+    observations.closest('.card')?.before(card);  // the first sheet of the データ管理 tab, above 「登録した観測」
     return card.querySelector('#gdb-app');
   }
 
@@ -155,7 +155,7 @@
     root.querySelector('#gdb-page').textContent = `${Math.floor(offset / limit) + 1} / ${Math.max(1, Math.ceil(result.total / limit))}`;
     root.querySelector('#gdb-prev').disabled = offset === 0;
     root.querySelector('#gdb-next').disabled = offset + limit >= result.total;
-    if (!result.rows.length) { target.innerHTML = '<div class="empty"><div class="symbol">▤</div><h2>条件に一致するデータがありません</h2><p>上の「公開データを取得する」でデータを集めるか、絞り込み条件を確認してください。</p></div>'; return; }
+    if (!result.rows.length) { target.innerHTML = '<div class="empty"><div class="symbol">▤</div><h2>条件に一致するデータがありません</h2><p>「Scraper」タブでデータを集めるか、絞り込み条件を確認してください。</p></div>'; return; }
     target.innerHTML = `<div class="table-scroll gdb-table"><table><thead><tr>${headers.map(header => `<th${header === '機種' ? ' class="wrap-cell"' : header.length > 6 ? ' class="wrap-head"' : ''}>${escLocal(header)}</th>`).join('')}</tr></thead><tbody>${result.rows.map(row => `<tr>${headers.map(header => `<td${header === '機種' ? ' class="wrap-cell"' : ''}>${escLocal(cell(header, row[header]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
 

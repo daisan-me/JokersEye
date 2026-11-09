@@ -1,6 +1,7 @@
 'use strict';
-/* The one scraping panel. Results are saved in GDB (GothamDataBase.sqlite) and shown in
-   「登録した観測」 and the GDB view; both are refreshed when a run ends. */
+/* The one scraping sheet 「公開データを取得する」, in the Scraper tab. Results are saved in GDB
+   (GothamDataBase.sqlite) and shown in the データ管理 tab (「登録した観測」 and the GDB sheet). While a run
+   is going its state is polled on every tab, so those sheets lock their buttons and refresh when it ends. */
 (() => {
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const number=v=>Number(v||0).toLocaleString('ja-JP');
@@ -16,11 +17,11 @@
   // finalRun: the last finished run seen. The first poll only records it, so opening the page does not reload everything again.
   let timer=null, busy=false, finalRun;
   function mount(){
-    const content=document.querySelector('#content');
-    if(!content.querySelector('#observations')||content.querySelector('#scrape-widget'))return;
+    const host=document.querySelector('#scraper-content');
+    if(!host||host.querySelector('#scrape-widget'))return poll();  // other tabs: report the run's state once
     const panel=document.createElement('section');panel.id='scrape-widget';panel.className='card';
     panel.innerHTML=`<div class="kicker">PUBLIC DATA / NO AI TOKENS</div><h2>公開データを取得する</h2>
-      <p>取得したデータはGDB（GothamDataBase）に保存し、下の「登録した観測」で確認できます。BB・RBも取得します。公開ページを読む処理にOpenAI APIは使用しません。</p>
+      <p>取得したデータはGDB（GothamDataBase）に保存し、「データ管理」タブの「GothamDataBase」と「登録した観測」で確認できます。BB・RBも取得します。公開ページを読む処理にOpenAI APIは使用しません。</p>
       <div class="actions"><button id="scrape-today" class="primary">本日までの分を更新</button><button id="scrape-stop" class="secondary" disabled>取得を停止</button></div>
       <p class="hint">GDBに記録されている最後の日から本日（日本時間）までを取得します。記録がまだない場合は2024/03/01から取得します。</p>
       <div class="toolbar scrape-range"><label>開始日<input id="scrape-from" type="date" min="2024-03-01"></label><label>終了日<input id="scrape-to" type="date" min="2024-03-01"></label><button id="scrape-range-start" class="secondary">期間を指定して取得</button><button id="scrape-rescrape" class="secondary">再スクレイプ</button></div>
@@ -30,7 +31,7 @@
 <progress id="scrape-meter" value="0" max="1" hidden></progress><div id="scrape-summary" class="hint"></div>
       <details id="scrape-failures"><summary>欠落・未掲載・失敗（最新40日）</summary><div></div></details>
       <p class="hint">全台表で「-」と表示された値は「-」として記録します（隠されたものか、値がないものかは区別しません）。BB/RBがまだ取れていない欄は「未取得」で、0ではありません。ロックした日は取得しません。取得元に制限や確認画面が出た場合は停止します。取得用ブラウザーを閉じると停止します。</p>`;
-    content.prepend(panel);
+    host.append(panel);
     const today=new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);  // Japan time, as the server
     panel.querySelectorAll('#scrape-from,#scrape-to').forEach(input=>{input.max=today;});
     panel.querySelector('#scrape-today').addEventListener('click',()=>start('gdb/update',{}));
@@ -40,7 +41,11 @@
     panel.querySelector('#scrape-rescrape').addEventListener('click',()=>start('gdb/rescrape',range()));
     panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{reason:'button'});await poll();}catch(e){showError(e);}});
     poll();
-    if(!timer)timer=setInterval(poll,2000);
+  }
+  // Poll every 2 seconds while the Scraper tab is open or a run is going; otherwise stop.
+  function schedule(keep){
+    if(keep&&!timer)timer=setInterval(poll,2000);
+    if(!keep&&timer){clearInterval(timer);timer=null;}
   }
   // What a re-read changed (filled values, saved values that changed, BB/RB kept or read again) and locked days left alone.
   function refillRecord(status){
@@ -60,10 +65,22 @@
     }catch(e){showError(e);busy=false;await poll();}
   }
   async function poll(){
-    const panel=document.querySelector('#scrape-widget');if(!panel){clearInterval(timer);timer=null;return;}  // no polling outside the data page
-    try{
-      const status=await api('scrape/status'),running=status.active || status.state==='running';
-      busy=running;
+    const panel=document.querySelector('#scrape-widget');
+    let status;
+    try{status=await api('scrape/status');}
+    catch(e){if(panel)panel.querySelector('#scrape-progress').textContent=e.message;else schedule(false);return;}
+    const running=status.active || status.state==='running';
+    busy=running;
+    schedule(running||!!panel);
+    if(panel)show(panel,status,running);
+    if(finalRun===undefined)finalRun=running?null:status.id;  // a run going at startup still counts as new when it ends
+    else if(!running && finalRun!==status.id){
+      finalRun=status.id;
+      document.dispatchEvent(new CustomEvent('jokers:data-changed'));  // app.js refreshes the counts and 「登録した観測」, gdb.js the GDB view
+    }
+    document.dispatchEvent(new CustomEvent('jokers:scrape-state',{detail:{running}}));
+  }
+  function show(panel,status,running){
       panel.querySelectorAll('#scrape-today,#scrape-range-start,#scrape-rescrape').forEach(b=>b.disabled=running);
       panel.querySelector('#scrape-stop').disabled=!running;
       panel.querySelector('#scrape-progress').textContent=status.message||'取得待機中';
@@ -76,13 +93,6 @@
       const s=status.summary;
       panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得 ${number(s.missingBonuses)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 枚':''):''}`;
       panel.querySelector('#scrape-failures>div').innerHTML=[...status.failures.map(f=>`<p>${esc(f.day)} · ${esc(({failed:'取得失敗',partial:'全台未確認','not-published':'公開一覧に未掲載'})[f.status]||f.status)}<br>${esc(f.message)}</p>`),...(status.bonusFailures||[]).map(f=>`<p>${esc(f.day)} · BB/RB追加取得 ${esc(f.status)}（${number(f.rows)}台確認済み）<br>${esc(f.message)}</p>`)].join('')||'<p>記録なし</p>';
-      if(finalRun===undefined)finalRun=running?null:status.id;  // a run going at startup still counts as new when it ends
-      else if(!running && finalRun!==status.id){
-        finalRun=status.id;
-        document.dispatchEvent(new CustomEvent('jokers:data-changed'));  // app.js refreshes the counts and 「登録した観測」, gdb.js the GDB view
-      }
-      document.dispatchEvent(new CustomEvent('jokers:scrape-state',{detail:{running}}));
-    }catch(e){panel.querySelector('#scrape-progress').textContent=e.message;}
   }
   new MutationObserver(mount).observe(document.querySelector('#content'),{childList:true});
   mount();
