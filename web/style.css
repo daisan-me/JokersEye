@@ -46,4 +46,4 @@ nav .folder-toggle{display:flex;align-items:center;gap:9px;width:100%;background
 @media(max-height:940px){nav{gap:8px}nav .folder-toggle{padding:6px 12px}.folder-items button,nav .nav-single{padding:7px 12px}}
 @media(max-height:860px){.nav-caption{display:none}.brand{padding-bottom:24px}nav{gap:6px}nav .folder-toggle{padding:6px 12px}.folder-items{gap:2px}.folder-items button,nav .nav-single{padding:5px 12px}}
 @media(max-width:750px){.folder-items button,nav .nav-single{padding-left:4px;padding-right:4px}nav .folder-toggle{justify-content:center;padding-left:4px;padding-right:4px;border-left-width:1px;border-top:3px solid var(--folder)}.folder-toggle .folder-name,nav .folder-toggle small{display:none}.folder-items{margin-left:0;padding-left:0;border-left:0}}
-.scrape-options{align-items:flex-end}.scrape-options select{margin-left:8px}.card p.scrape-speed{margin:0 0 6px auto;font-weight:700;color:var(--green)}
+.scrape-options{align-items:flex-end;flex-wrap:wrap}.scrape-options select{margin-left:8px}.scrape-options #scrape-screen{max-width:360px}.card p.scrape-speed{margin:0 0 6px auto;font-weight:700;color:var(--green)}

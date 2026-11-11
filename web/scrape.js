@@ -47,29 +47,39 @@
   function optionsSheet(){
     const sheet=document.createElement('section');sheet.id='scrape-options';sheet.className='card';
     sheet.innerHTML=`<div class="kicker">SPEED</div><h2>取得の設定</h2>
-      <div class="toolbar scrape-options"><label>画面の数<select id="scrape-windows"></select></label><label>画面あたりの速さ<select id="scrape-rate"></select></label>
+      <div class="toolbar scrape-options"><label>画面の数<select id="scrape-windows"></select></label><label>画面あたりの速さ<select id="scrape-rate"></select></label><label>表示するモニター<select id="scrape-screen"></select></label>
       <p id="scrape-speed" class="scrape-speed" role="status">読み込み中…</p></div>
-      <p class="hint">取得用ブラウザーを、選んだ数に画面を分けて並べます（重ならない配置）。速さは1画面が1秒に読み始めるページの上限で、全体の上限は「画面あたりの速さ × 画面の数」です。実際の速さはページの表示にかかる時間で決まり、サイトの応答が遅いときは同時に読む画面を自動で減らします。</p>
+      <p class="hint">取得用ブラウザーを、選んだモニターに、選んだ数に分けて並べます（重ならない配置）。取得用ブラウザーはキーボードの操作を奪わずに開くので、動画などを見ていても邪魔をしません。サブモニターを選ぶと、メインの画面をふさぎません。速さは1画面が1秒に読み始めるページの上限で、全体の上限は「画面あたりの速さ × 画面の数」です。実際の速さはページの表示にかかる時間で決まり、サイトの応答が遅いときは同時に読む画面を自動で減らします。</p>
       <p class="hint">速くするほど公開サイトの負担が増え、アクセス制限（停止事由3）やサイトのエラー（停止事由4）、「-」が出やすくなります。少しずつ上げて、取れ方を確かめてください。取得中は変えられません。</p>`;
     sheet.querySelectorAll('select').forEach(select=>select.addEventListener('change',saveOptions));
     return sheet;
   }
+  // Monitors as the desktop app reported them; the main one is at 0,0.
+  function screenLabel(s,i){return `モニター${i+1}${s.x===0&&s.y===0?'（メイン）':''}：${s.width}×${s.height}（位置 ${s.x}, ${s.y}）`;}
+  function screenOptions(o){
+    const known=o.screens.map((s,i)=>[s.id,screenLabel(s,i)]);
+    if(o.screen&&!o.screens.some(s=>s.id===o.screen))known.push([o.screen,'選んだモニター（今は見つかりません。メインの画面に並べます）']);
+    return [['','これまでどおり（メインの画面の左上から）'],...known];
+  }
   function speedText(o){return `${o.rate} 枚/秒 × ${o.windows} 画面 = 最大 ${o.pagesPerSecond} 枚/秒（${number(o.pagesPerSecond*60)} 枚/分）`;}
   function showOptions(options,running){
     const sheet=document.querySelector('#scrape-options');if(!sheet||!options)return;
-    const windows=sheet.querySelector('#scrape-windows'),rate=sheet.querySelector('#scrape-rate');
+    const windows=sheet.querySelector('#scrape-windows'),rate=sheet.querySelector('#scrape-rate'),screen=sheet.querySelector('#scrape-screen');
     if(!windows.options.length){
       windows.innerHTML=options.windowChoices.map(n=>`<option value="${n}">${n}分割（${n}画面）</option>`).join('');
       rate.innerHTML=options.rateChoices.map(n=>`<option value="${n}">毎秒 ${n} 枚</option>`).join('');
     }
+    const choices=screenOptions(options),html=choices.map(([id,label])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('');
+    if(screen.dataset.html!==html&&document.activeElement!==screen){screen.innerHTML=html;screen.dataset.html=html;}  // monitors plugged in or out
     if(document.activeElement!==windows)windows.value=String(options.windows);
     if(document.activeElement!==rate)rate.value=String(options.rate);
-    windows.disabled=rate.disabled=running;
+    if(document.activeElement!==screen)screen.value=options.screen;
+    windows.disabled=rate.disabled=screen.disabled=running;
     sheet.querySelector('#scrape-speed').textContent=speedText(options);
   }
   async function saveOptions(){
     const sheet=document.querySelector('#scrape-options');if(!sheet)return;
-    try{showOptions(await api('scrape/options',{windows:Number(sheet.querySelector('#scrape-windows').value),rate:Number(sheet.querySelector('#scrape-rate').value)}),busy);}
+    try{showOptions(await api('scrape/options',{windows:Number(sheet.querySelector('#scrape-windows').value),rate:Number(sheet.querySelector('#scrape-rate').value),screen:sheet.querySelector('#scrape-screen').value}),busy);}
     catch(e){showError(e);await poll();}  // puts the saved choice back
   }
   // Poll every 2 seconds while the Scraper tab is open or a run is going; otherwise stop.
