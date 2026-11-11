@@ -591,6 +591,7 @@ class Host(ThreadingHTTPServer):
         self.token=secrets.token_urlsafe(32)
         self.last_seen=time.monotonic()
         self.focus_requested=threading.Event()
+        self.screens_requested=threading.Event()  # 「モニターを読み直す」: the desktop window reads the monitors again
         self.versions=VersionManager(store.folder,ROOT,VERSION,store.copy_into)
         self.updater=Updater(store.folder,ROOT,self.versions,store,lambda: threading.Thread(target=self.shutdown,daemon=True).start())
 
@@ -757,6 +758,9 @@ class Handler(BaseHTTPRequestHandler):
                 result=self.server.store.collector.set_options(payload.get("windows"),payload.get("rate"),payload.get("screen"))
             elif path=="/api/scrape/screens":
                 result=self.server.store.collector.report_screens(payload.get("screens"))
+            elif path=="/api/scrape/screens/refresh":
+                self.server.screens_requested.set()
+                result={"ok":True}
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":

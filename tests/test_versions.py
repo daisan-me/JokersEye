@@ -189,6 +189,14 @@ class ApiTests(unittest.TestCase):
         with urllib.request.urlopen(req) as response:
             return json.load(response)
 
+    def test_the_scraper_tab_asks_the_desktop_window_to_read_the_monitors_again(self):
+        self.assertFalse(self.host.screens_requested.is_set())
+        req = urllib.request.Request(self.base + '/api/scrape/screens/refresh', data=b'{}', method='POST',
+                                     headers={'X-Joker-Token': self.host.token, 'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req) as response:
+            self.assertEqual(json.load(response), {'ok': True})
+        self.assertTrue(self.host.screens_requested.is_set())
+
     def test_state_and_versions_report_what_is_running(self):
         state = self.get('/api/state')
         self.assertEqual(state['build']['version'], server.VERSION)

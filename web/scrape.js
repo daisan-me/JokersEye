@@ -47,11 +47,16 @@
   function optionsSheet(){
     const sheet=document.createElement('section');sheet.id='scrape-options';sheet.className='card';
     sheet.innerHTML=`<div class="kicker">SPEED</div><h2>取得の設定</h2>
-      <div class="toolbar scrape-options"><label>画面の数<select id="scrape-windows"></select></label><label>画面あたりの速さ<select id="scrape-rate"></select></label><label>表示するモニター<select id="scrape-screen"></select></label>
+      <div class="toolbar scrape-options"><label>画面の数<select id="scrape-windows"></select></label><label>画面あたりの速さ<select id="scrape-rate"></select></label><label>表示するモニター<select id="scrape-screen"></select></label><button id="scrape-screens-reload" class="secondary" type="button">モニターを読み直す</button>
       <p id="scrape-speed" class="scrape-speed" role="status">読み込み中…</p></div>
-      <p class="hint">取得用ブラウザーを、選んだモニターに、選んだ数に分けて並べます（重ならない配置）。取得用ブラウザーはキーボードの操作を奪わずに開くので、動画などを見ていても邪魔をしません。サブモニターを選ぶと、メインの画面をふさぎません。速さは1画面が1秒に読み始めるページの上限で、全体の上限は「画面あたりの速さ × 画面の数」です。実際の速さはページの表示にかかる時間で決まり、サイトの応答が遅いときは同時に読む画面を自動で減らします。</p>
+      <p class="hint">取得用ブラウザーを、選んだモニターに、選んだ数に分けて並べます（重ならない配置）。取得用ブラウザーはキーボードの操作を奪わずに開くので、動画などを見ていても邪魔をしません。サブモニターを選ぶと、メインの画面をふさぎません。モニターの一覧はアプリの起動時に読みます。あとからつないだ・外したときは「モニターを読み直す」を押してください。速さは1画面が1秒に読み始めるページの上限で、全体の上限は「画面あたりの速さ × 画面の数」です。実際の速さはページの表示にかかる時間で決まり、サイトの応答が遅いときは同時に読む画面を自動で減らします。</p>
       <p class="hint">速くするほど公開サイトの負担が増え、アクセス制限（停止事由3）やサイトのエラー（停止事由4）、「-」が出やすくなります。少しずつ上げて、取れ方を確かめてください。取得中は変えられません。</p>`;
     sheet.querySelectorAll('select').forEach(select=>select.addEventListener('change',saveOptions));
+    sheet.querySelector('#scrape-screens-reload').addEventListener('click',async event=>{
+      const button=event.currentTarget;button.disabled=true;
+      try{await api('scrape/screens/refresh',{});await new Promise(done=>setTimeout(done,800));await poll();notice('モニターの一覧を読み直しました。');}
+      catch(e){showError(e);}finally{button.disabled=false;}
+    });
     return sheet;
   }
   // Monitors as the desktop app reported them; the main one is at 0,0.

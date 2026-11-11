@@ -80,6 +80,14 @@ def screen_list(webview):
         return []
 
 
+def refresh_screens(webview, collector):
+    """Read the monitors once and give them to the Scraper tab: at startup and when its button asks."""
+    try:
+        collector.report_screens(screen_list(webview))
+    except ValueError as ex:
+        logging.info("Monitors not reported: %s", ex)
+
+
 def screen_area(screens, chosen):
     """The chosen monitor ('x,y,width,height') and the area to tile on it; (None, SOURCE_AREA) when it is
     '' (as before) or no longer connected."""
@@ -582,17 +590,13 @@ def main(argv=None):
         threading.Thread(target=source.run, daemon=True).start()
         if args.diagnostics:
             threading.Thread(target=run_diagnostics, args=(window, client, args.diagnostics), daemon=True).start()
-        beat, screens_seen, screens = 0.0, 0.0, None
+        refresh_screens(webview, store.collector)  # once; again only when 「モニターを読み直す」 is pressed
+        beat = 0.0
         while not closing.is_set() and serving.is_alive():
             now = time.monotonic()
-            if now - screens_seen >= 30:  # monitors plugged in or out show up in the Scraper tab
-                screens_seen, found = now, screen_list(webview)
-                if found != screens:
-                    try:
-                        client.request("scrape/screens", {"screens": found})
-                        screens = found
-                    except (OSError, ValueError):
-                        pass
+            if host.screens_requested.is_set():
+                host.screens_requested.clear()
+                refresh_screens(webview, store.collector)
             if now - beat >= 20:
                 beat = now
                 try:

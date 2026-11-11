@@ -160,6 +160,19 @@ class SourceBrowserWindowTests(unittest.TestCase):
         self.assertIs(mac['screen'], side)  # macOS: positions relative to the chosen monitor
         self.assertEqual((mac['x'], mac['y'], mac['focus']), (x - 1920, y + 200, False))
 
+    def test_monitors_are_read_only_when_asked(self):
+        class Collector:
+            reported = []
+            def report_screens(self, screens):
+                self.reported.append(screens)
+        class Screen:
+            x, y, width, height = 0, 0, 1920, 1080
+        collector = Collector()
+        desktop.refresh_screens(type('W', (), {'screens': [Screen()]}), collector)
+        self.assertEqual(collector.reported, [[{'x': 0, 'y': 0, 'width': 1920, 'height': 1080}]])
+        source = (Path(desktop.__file__)).read_text(encoding='utf-8')
+        self.assertNotIn('screens_seen', source)  # no periodic check of the monitors
+
     def test_webviews_load_pages_as_an_ordinary_visitor(self):
         # Blocking third-party hosts made the site blank negative 差枚/出率 (2026-10-07): not done any more.
         self.assertFalse(hasattr(desktop, 'limit_webview_hosts'))
