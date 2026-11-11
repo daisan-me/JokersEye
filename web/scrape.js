@@ -19,6 +19,7 @@
   function mount(){
     const host=document.querySelector('#scraper-content');
     if(!host||host.querySelector('#scrape-widget'))return poll();  // other tabs: report the run's state once
+    host.append(optionsSheet());
     const panel=document.createElement('section');panel.id='scrape-widget';panel.className='card';
     panel.innerHTML=`<div class="kicker">PUBLIC DATA / NO AI TOKENS</div><h2>公開データを取得する</h2>
       <p>取得したデータはGDB（GothamDataBase）に保存し、「データ管理」タブの「GothamDataBase」と「登録した観測」で確認できます。BB・RBも取得します。公開ページを読む処理にOpenAI APIは使用しません。</p>
@@ -41,6 +42,35 @@
     panel.querySelector('#scrape-rescrape').addEventListener('click',()=>start('gdb/rescrape',range()));
     panel.querySelector('#scrape-stop').addEventListener('click',async()=>{try{await api('scrape/stop',{reason:'button'});await poll();}catch(e){showError(e);}});
     poll();
+  }
+  // 「取得の設定」 sheet: how many source-browser windows read pages and how fast each may go.
+  function optionsSheet(){
+    const sheet=document.createElement('section');sheet.id='scrape-options';sheet.className='card';
+    sheet.innerHTML=`<div class="kicker">SPEED</div><h2>取得の設定</h2>
+      <div class="toolbar scrape-options"><label>画面の数<select id="scrape-windows"></select></label><label>画面あたりの速さ<select id="scrape-rate"></select></label>
+      <p id="scrape-speed" class="scrape-speed" role="status">読み込み中…</p></div>
+      <p class="hint">取得用ブラウザーを、選んだ数に画面を分けて並べます（重ならない配置）。速さは1画面が1秒に読み始めるページの上限で、全体の上限は「画面あたりの速さ × 画面の数」です。実際の速さはページの表示にかかる時間で決まり、サイトの応答が遅いときは同時に読む画面を自動で減らします。</p>
+      <p class="hint">速くするほど公開サイトの負担が増え、アクセス制限（停止事由3）やサイトのエラー（停止事由4）、「-」が出やすくなります。少しずつ上げて、取れ方を確かめてください。取得中は変えられません。</p>`;
+    sheet.querySelectorAll('select').forEach(select=>select.addEventListener('change',saveOptions));
+    return sheet;
+  }
+  function speedText(o){return `${o.rate} 枚/秒 × ${o.windows} 画面 = 最大 ${o.pagesPerSecond} 枚/秒（${number(o.pagesPerSecond*60)} 枚/分）`;}
+  function showOptions(options,running){
+    const sheet=document.querySelector('#scrape-options');if(!sheet||!options)return;
+    const windows=sheet.querySelector('#scrape-windows'),rate=sheet.querySelector('#scrape-rate');
+    if(!windows.options.length){
+      windows.innerHTML=options.windowChoices.map(n=>`<option value="${n}">${n}分割（${n}画面）</option>`).join('');
+      rate.innerHTML=options.rateChoices.map(n=>`<option value="${n}">毎秒 ${n} 枚</option>`).join('');
+    }
+    if(document.activeElement!==windows)windows.value=String(options.windows);
+    if(document.activeElement!==rate)rate.value=String(options.rate);
+    windows.disabled=rate.disabled=running;
+    sheet.querySelector('#scrape-speed').textContent=speedText(options);
+  }
+  async function saveOptions(){
+    const sheet=document.querySelector('#scrape-options');if(!sheet)return;
+    try{showOptions(await api('scrape/options',{windows:Number(sheet.querySelector('#scrape-windows').value),rate:Number(sheet.querySelector('#scrape-rate').value)}),busy);}
+    catch(e){showError(e);await poll();}  // puts the saved choice back
   }
   // Poll every 2 seconds while the Scraper tab is open or a run is going; otherwise stop.
   function schedule(keep){
@@ -73,6 +103,7 @@
     busy=running;
     schedule(running||!!panel);
     if(panel)show(panel,status,running);
+    showOptions(status.options,running);
     if(finalRun===undefined)finalRun=running?null:status.id;  // a run going at startup still counts as new when it ends
     else if(!running && finalRun!==status.id){
       finalRun=status.id;
@@ -91,7 +122,7 @@
       reason.innerHTML=reason.hidden?'':`<span class="stop-code">${esc(status.stopCode??'?')}</span><div><strong>停止事由 ${esc(status.stopCode??'?')}：${esc(status.stopReason)}</strong><small>${esc(status.message||'')}</small></div>`;
       const meter=panel.querySelector('#scrape-meter');meter.hidden=!running;meter.max=Math.max(1,status.total||1);meter.value=status.completed||0;
       const s=status.summary;
-      panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得 ${number(s.missingBonuses)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 枚':''):''}`;
+      panel.querySelector('#scrape-summary').textContent=`GDB ${number(s.records)} 行 / ${number(s.days)} 日 · 最終データ ${s.last||'なし'} · BB/RB未取得 ${number(s.missingBonuses)} 行${running?' · 進捗 '+number(status.completed)+' / '+number(status.total)+' 日'+(status.bonusTotal?' · BB/RB '+number(status.bonusRows)+' / '+number(status.bonusTotal)+' 台':'')+(status.parallel?' · 同時 '+status.parallel+' 画面':'')+' · 直近1分 '+number(status.pagesLastMinute)+' 枚':''}`;
       panel.querySelector('#scrape-failures>div').innerHTML=[...status.failures.map(f=>`<p>${esc(f.day)} · ${esc(({failed:'取得失敗',partial:'全台未確認','not-published':'公開一覧に未掲載'})[f.status]||f.status)}<br>${esc(f.message)}</p>`),...(status.bonusFailures||[]).map(f=>`<p>${esc(f.day)} · BB/RB追加取得 ${esc(f.status)}（${number(f.rows)}台確認済み）<br>${esc(f.message)}</p>`)].join('')||'<p>記録なし</p>';
   }
   new MutationObserver(mount).observe(document.querySelector('#content'),{childList:true});
