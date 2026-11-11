@@ -78,6 +78,23 @@ def reproduce_without_config():
             print("再現せず：別の理由で起動を確認できなかった。")
 
 
+def check_monitors(path):
+    """The monitors read on the GUI thread, and a source window opened on the first one as the Scraper tab
+    would: in its tile (within 2 px), at its size, and without taking the keyboard."""
+    if not path.exists():
+        raise SystemExit("モニターと取得用ブラウザーの確認結果がありません。")
+    report = json.loads(path.read_text(encoding="utf-8"))
+    print("monitors:", report)
+    if report.get("error") or not report.get("monitors"):
+        raise SystemExit("モニターを読めませんでした: %r" % report)
+    window = report.get("window") or {}
+    expected, actual = window.get("expected"), window.get("actual")
+    if not expected or not actual or any(a is None or abs(a - e) > 2 for a, e in zip(actual, expected)):
+        raise SystemExit("取得用ブラウザーが選んだモニターの位置・大きさに開きませんでした: %r" % window)
+    if window.get("focused"):
+        raise SystemExit("取得用ブラウザーがフォーカスを取りました: %r" % window)
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to a code page without「●」etc.
     parser = argparse.ArgumentParser()
@@ -99,6 +116,7 @@ def main():
             raise SystemExit("ローカルサービスに接続できていません: %r" % page["connection"])
         if not (floor.get("physical") or floor.get("seats")):
             raise SystemExit("店内マップが表示されていません: %r" % floor)
+        check_monitors(Path(str(map_report)[:-len(".map.json")] + ".monitors.json"))
     print("OK")
 
 

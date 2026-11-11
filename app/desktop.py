@@ -639,8 +639,55 @@ def bring_existing_to_front(folder):
             time.sleep(0.1)
 
 
-def run_diagnostics(window, client, path):
-    """Same checks as the old `--diagnostics` mode (page/connection text, map grid)."""
+def window_has_focus(native):
+    """Whether a pywebview window's native window has the keyboard: the key window (macOS, asked on the
+    GUI thread) or the foreground window (Windows)."""
+    try:
+        if sys.platform == "darwin":
+            return bool(call_on_gui_thread(lambda: native.isKeyWindow()))
+        if sys.platform.startswith("win"):
+            import ctypes
+            return ctypes.windll.user32.GetForegroundWindow() == native.Handle.ToInt32()
+    except Exception:
+        pass
+    return None
+
+
+def check_monitors(webview, client, source):
+    """--diagnostics: read the monitors on the GUI thread, then open a source window as the Scraper tab
+    would on the first one (4 windows, the 2nd tile): where it went, its size, and whether it took the keyboard."""
+    report = {"monitors": [], "window": None}
+    try:
+        items = source.monitors.refresh(webview)
+    except Exception as ex:
+        report["error"] = "%s: %s" % (type(ex).__name__, ex)
+        return report
+    report["monitors"] = [{"id": m["id"], "fits": m["fits"], "insets": list(m["insets"]), "unit": m["unit"]} for m in items]
+    if not items:
+        return report
+    monitor = items[0]
+    probe = SourceWindow(webview, client, source.windows[0].folder, index=1, monitors=source.monitors)
+    probe.count, probe.screen = 4, monitor["id"]
+    try:
+        probe.ensure_window()
+        probe.loaded.wait(15)
+        time.sleep(1.0)
+        x, y, width, height = tile(1, 4, monitor_area(monitor))
+        if sys.platform == "darwin":  # pywebview reports positions on macOS from the monitor's top-left
+            x, y = x - monitor["x"], y - monitor["y"]
+        report["window"] = {"expected": [x, y, width, height],
+                            "actual": [probe.window.x, probe.window.y, probe.window.width, probe.window.height],
+                            "focused": window_has_focus(probe.window.native)}
+    except Exception as ex:
+        report["error"] = "%s: %s" % (type(ex).__name__, ex)
+    finally:
+        probe.close_window()
+    return report
+
+
+def run_diagnostics(window, client, path, source=None, webview=None):
+    """Same checks as the old `--diagnostics` mode (page/connection text, map grid), and the monitors
+    and a source window's place and focus (written before the map result, which ends the check)."""
     # Wait for the first /api/state round trip instead of a fixed delay (slow CI machines).
     for _ in range(40):
         time.sleep(0.5)
@@ -651,6 +698,8 @@ def run_diagnostics(window, client, path):
     run_script(window, "document.querySelector('[data-page=map]').click()")
     time.sleep(1.5)
     result = run_script(window, "JSON.stringify({grid:!!document.querySelector('.machine-seat-grid'),seats:document.querySelectorAll('.machine-seat').length,physical:!!document.querySelector('.physical-floor-svg')})")
+    if source is not None:
+        Path(str(path) + ".monitors.json").write_text(json.dumps(check_monitors(webview, client, source)), encoding="utf-8")
     Path(str(path) + ".map.json").write_text(result, encoding="utf-8")
     client.request("shutdown", {})
 
@@ -705,7 +754,7 @@ def main(argv=None):
         apply_windows_icon(icon_ico)
         threading.Thread(target=source.run, daemon=True).start()
         if args.diagnostics:
-            threading.Thread(target=run_diagnostics, args=(window, client, args.diagnostics), daemon=True).start()
+            threading.Thread(target=run_diagnostics, args=(window, client, args.diagnostics, source, webview), daemon=True).start()
         refresh_screens(source.monitors, webview, store.collector)  # once; again only when 「モニターを読み直す」 is pressed
         beat = 0.0
         while not closing.is_set() and serving.is_alive():
