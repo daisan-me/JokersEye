@@ -200,11 +200,44 @@ class SourceBrowserWindowTests(unittest.TestCase):
                 return window
         source = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir(), index=11, monitors=monitors)
         source.count, source.screen = 12, '-800,0,800,600'
-        source.ensure_window()  # does not fit (the monitor changed since it was read): the main screen as before
+        with mock.patch.object(desktop.sys, 'platform', 'linux'):
+            source.ensure_window()  # does not fit (the monitor changed since it was read): the main screen as before
         self.assertEqual((created[0]['x'], created[0]['y'], created[0]['width']), desktop.tile(11, 12)[:3])
         for count in (3, 4, 6, 12):
             for index in range(count):
                 self.assertGreaterEqual(desktop.tile(index, count)[2:], desktop.MIN_TILE)
+
+    def test_windows_gives_the_keyboard_back_when_a_source_window_takes_it(self):
+        class Event(list):  # pywebview's events take handlers with +=
+            def __iadd__(self, handler):
+                self.append(handler)
+                return self
+        class Events:
+            def __init__(self):
+                self.shown, self.loaded, self.closing = Event(), Event(), Event()
+        created = []
+        class FakeWebview:
+            def create_window(self, title, **options):
+                window = FakeWindow()
+                window.events = Events()
+                window.native = SimpleNamespace(Handle=SimpleNamespace(ToInt32=lambda: 99))
+                created.append(window)
+                return window
+        source = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir())
+        with mock.patch.object(desktop.sys, 'platform', 'win32'), mock.patch.object(desktop, 'foreground_window', return_value=7):
+            source.ensure_window()
+        self.assertEqual(len(created[0].events.shown), 1)  # runs when pywebview has shown (and activated) it
+        calls = []
+        user32 = SimpleNamespace(IsWindow=lambda hwnd: True, GetForegroundWindow=lambda: 99,
+                                 SetForegroundWindow=lambda hwnd: calls.append(hwnd))
+        self.assertTrue(desktop.give_back_focus(7, created[0], user32))
+        self.assertEqual(calls, [7])  # the video (or the app) the user had gets the keyboard back
+        user32.GetForegroundWindow = lambda: 5  # the user already moved on: left alone
+        self.assertFalse(desktop.give_back_focus(7, created[0], user32))
+        with mock.patch.object(desktop.sys, 'platform', 'darwin'):
+            mac = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir())
+            mac.ensure_window()
+        self.assertEqual(created[1].events.shown, [])  # macOS does not activate it
 
     def test_mac_reads_the_monitors_on_the_gui_thread(self):
         ran_on = []
@@ -248,6 +281,9 @@ class SourceBrowserWindowTests(unittest.TestCase):
         client = FakeClient({'active': True, 'windows': 4, 'rate': 1, 'screen': ''})
         source = desktop.SourceWindow(FakeWebview(), client, tempfile.gettempdir(), index=1,
                                       monitors=monitors_of(Screen(0, 0, 1920, 1080), Screen(1920, 0, 2560, 1440)))
+        platform = mock.patch.object(desktop.sys, 'platform', 'linux')  # whole-desktop positions, as on Windows
+        platform.start()
+        self.addCleanup(platform.stop)
         source.poll()
         source.ensure_window()  # 4 windows on the main screen
         first = source.window
@@ -275,6 +311,9 @@ class SourceBrowserWindowTests(unittest.TestCase):
                 self.reported.append(screens)
         webview = SimpleNamespace(screens=[Screen(0, 0, 1920, 1080)])
         collector, monitors = Collector(), desktop.Monitors()
+        platform = mock.patch.object(desktop.sys, 'platform', 'linux')  # no AppKit: the room-below default
+        platform.start()
+        self.addCleanup(platform.stop)
         desktop.refresh_screens(monitors, webview, collector)
         self.assertEqual(collector.reported, [[{'x': 0, 'y': 0, 'width': 1920, 'height': 1080, 'fits': [3, 4, 6, 12]}]])
         host = SimpleNamespace(screens_requested=threading.Event())

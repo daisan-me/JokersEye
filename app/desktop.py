@@ -98,6 +98,31 @@ def call_on_gui_thread(function, timeout=5.0, platform=None):
     return box["value"]
 
 
+def foreground_window():
+    """Windows: the window that has the keyboard now (0 when none or elsewhere)."""
+    try:
+        import ctypes
+        return ctypes.windll.user32.GetForegroundWindow()
+    except Exception:
+        return 0
+
+
+def give_back_focus(previous, window, user32=None):
+    """Windows: pywebview's Show() activates a new window even with focus=False (WS_EX_NOACTIVATE only stops
+    clicks from activating it). Hand the keyboard straight back to the window the user had, if the source
+    window took it."""
+    try:
+        if user32 is None:
+            import ctypes
+            user32 = ctypes.windll.user32
+        if previous and user32.IsWindow(previous) and user32.GetForegroundWindow() == window.native.Handle.ToInt32():
+            user32.SetForegroundWindow(previous)
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def system_scale():
     """Windows: the system DPI scale. pywebview makes the process system-DPI aware, so WinForms reports
     monitors in those pixels while pywebview multiplies window positions and sizes by it."""
@@ -348,8 +373,12 @@ class SourceWindow:
             options = {"width": width, "height": height, "x": x, "y": y, "focus": False}
             if monitor is not None and sys.platform == "darwin":  # macOS places a window relative to its monitor
                 options.update(screen=monitor["screen"], x=x - monitor["x"], y=y - monitor["y"])
+            previous = foreground_window() if sys.platform.startswith("win") else 0
             self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, self.count),
                                                      html="<!doctype html><title></title>", **options)
+            if previous:  # Windows: give the keyboard back once the window is up
+                created = self.window
+                created.events.shown += lambda: give_back_focus(previous, created)
             self.layout, self.hidden = (self.count, self.screen), False
             self.window.events.loaded += lambda: self.loaded.set()
             self.window.events.closing += self.on_closing
