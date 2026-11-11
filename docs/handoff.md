@@ -1,5 +1,14 @@
 # 引き継ぎメモ
 
+## Macでの確認と、Windowsのフォーカスの修正（2026-11-11、ブランチ `claude/zealous-archimedes-bwzf6i`）
+
+- ユーザー指示：今回の更新がMacでも問題なく動くか確かめ、問題があれば直す。
+- 起動テスト（`--diagnostics`、`tools/smoke_test_package.py`、GitHub Actions の `package`）に、`check_monitors()` を加えた：GUIスレッドでモニターを読み、最初のモニターに4画面の2枚目として取得用ブラウザーを開き、位置・大きさ（2px以内）、フォーカスを取っていないこと（macOSは `isKeyWindow`、Windowsは `GetForegroundWindow`）、最小化してもページのタイマーが動くこと（`runs_while_hidden`）を確かめる。
+- macOS（GitHub Actions の macos-latest）の結果：モニター `0,0,1024,768`、作業領域の差（上31＝メニューバー・下60＝Dock）を `visibleFrame` から読めた。取得用ブラウザーは期待どおり (514, 41, 499×326)、フォーカスを取らず、最小化してもページは動いた。Macの処理は直すところなし。
+- Windows（windows-latest）の結果：位置・大きさは期待どおり (514, 10, 499×347)、最小化してもページは動いたが、取得用ブラウザーがフォーカスを取っていた。pywebview 6.2.1 の WinForms は、`focus=False` でも `WS_EX_NOACTIVATE`（クリックで前に出ないだけ）を付けるだけで、窓を出す `Show()` は窓を前に出す（`hidden=True` でも一度 `Show()` する）。修正：窓を作る前に前面の窓（`GetForegroundWindow`）を覚え、pywebview の `shown` イベントで、取得用ブラウザーが前面になっていれば覚えた窓へ `SetForegroundWindow` で戻す（`give_back_focus`）。
+- テスト：Windowsの座標の渡し方（画面全体の座標）を前提にしたテストが、macOS上では相対座標になって失敗していた。前提のOSを `sys.platform` で明示した。手元で `sys.platform` を darwin・win32 にして `test_platform` を流し、どちらも通ることを確かめた。
+- CI：`ubuntu-latest` が Ubuntu 26.04 になり、`.python-version` の Python 3.12.10 が入れられずテストが失敗していた。`test.yml` を `ubuntu-24.04` に固定した。
+
 ## コードレビュー（xhigh）の指摘9件の修正（2026-11-11、ブランチ `claude/zealous-archimedes-bwzf6i`）
 
 1. macOSでモニター一覧（AppKitの `NSScreen`）を作業スレッドから読んでいた → `desktop.Monitors` が読み取り結果を持ち、読むのは `call_on_gui_thread()`（macOSは `PyObjCTools.AppHelper.callAfter` でGUIスレッドへ渡して待つ。Windowsはその場で）だけ。取得用ブラウザーの窓は `Monitors.find()` で前回の読み取りを見るだけで、`webview.screens` を読まない。
