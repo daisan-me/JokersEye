@@ -653,11 +653,13 @@ class Handler(BaseHTTPRequestHandler):
             if path=="/api/scrape/status":
                 return self.reply(self.server.store.collector.status())
             if path=="/api/scrape/browser-task":
+                query=parse_qs(urlsplit(self.path).query)
                 try:
-                    wait=float(parse_qs(urlsplit(self.path).query).get("wait",["0"])[0])
+                    wait=float(query.get("wait",["0"])[0])
                 except ValueError:
                     wait=0.0
-                return self.reply(self.server.store.collector.browser_task(wait))
+                window=query.get("window",[""])[0]
+                return self.reply(self.server.store.collector.browser_task(wait,int(window) if window.isdigit() else None))
             if path=="/api/gdb/status":
                 try:
                     return self.reply(self.server.store.gdb_status())
@@ -751,6 +753,8 @@ class Handler(BaseHTTPRequestHandler):
                         result=self.server.store.gdb_unlock_rows()
                     else:
                         result=self.server.store.gdb_lock(payload.get("start"),payload.get("end"),path=="/api/gdb/lock")
+            elif path=="/api/scrape/options":
+                result=self.server.store.collector.set_options(payload.get("windows"),payload.get("rate"))
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":

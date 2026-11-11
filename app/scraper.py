@@ -18,11 +18,14 @@ import uuid
 from urllib.parse import quote, urljoin, urlsplit, parse_qs, unquote
 
 START = '2023-04-27'
-# User decision (2026-10-07): up to 240 public pages a minute, read by 12 source-browser
-# windows that each start at most one page every 1.5 seconds (the desktop enforces the
-# per-window cycle; the collector enforces the overall rate).
-BROWSER_WINDOWS = 12
-PAGES_PER_MINUTE = 240
+# User decision (2026-11-11, replacing the fixed 240 pages a minute of 2026-10-07): the Scraper tab
+# chooses how many source-browser windows read pages (tiled 3, 4, 6 or 12 to a screen) and how many
+# pages each may start a second (1-5). The overall rate is their product: the desktop keeps each
+# window's pace, the collector the overall one.
+WINDOW_CHOICES = (3, 4, 6, 12)
+RATE_CHOICES = (1, 2, 3, 4, 5)
+DEFAULT_WINDOWS, DEFAULT_RATE = 4, 1  # 4 pages a second: the earlier overall cap of 240 a minute
+BROWSER_WINDOWS = max(WINDOW_CHOICES)
 # A page handed to a window but not answered within this time is handed out again (the window
 # may never have received it). A late answer from the first window is ignored.
 PAGE_LEASE = 20.0
@@ -31,7 +34,7 @@ RESTRICTED = '公開サイトが取得を制限しました'
 # under load). Stop everything, as for a restriction, instead of waiting and retrying.
 SITE_TROUBLE = '公開サイトが混雑または障害中です'
 # How many pages may be read at once adapts to the site (user decision, 2026-10-07): start low,
-# add a window after a round of quick answers, halve on a slow one. PAGES_PER_MINUTE still caps it.
+# add a window after a round of quick answers, halve on a slow one, never above the chosen windows.
 START_PARALLEL, MIN_PARALLEL = 3, 2
 QUICK_SERVER_MS, SLOW_SERVER_MS = 800, 2000
 
@@ -290,7 +293,9 @@ class Collector:
         self.store=store; self.lock=threading.Lock(); self.cancelled=threading.Event()
         # Page requests waiting for a source-browser window, and those being read now.
         self.ready=threading.Condition(self.lock); self.queue=deque(); self.tasks={}; self.next_dispatch=0.0
-        self.parallel=START_PARALLEL; self.quick_streak=0  # pages read at once, adapted to the site's answers
+        self.windows,self.rate=self.options()  # chosen in the Scraper tab; fixed while a run goes
+        self.parallel=min(START_PARALLEL,self.windows); self.quick_streak=0  # pages read at once, adapted to the site's answers
+        self.answered=deque()  # when pages were answered, for the pages read in the last minute
         self.halted=None  # set to the restriction message when the source site restricts access
         self.active=False; self.progress={'state':'idle'};self.page_expectations={}
         self.seed=json.loads(Path(index_path).read_text(encoding='utf-8'))['reports'] if Path(index_path).exists() else []
@@ -317,6 +322,32 @@ class Collector:
                 refill=json.loads(previous['refill_summary']) if previous['refill_summary'] else None,lockedDays=previous['locked_days'],mode=previous['mode'] or 'fetch')
         self.cancelled_by=None; self.run_started=None
         self.maintenance=False  # deleting or locking GDB days: no run may start meanwhile
+
+    def options(self):
+        """The source-browser windows and pages a second per window chosen in the Scraper tab."""
+        try:
+            with self.store.connect() as db:
+                saved=dict(db.execute("SELECT key,value FROM settings WHERE key IN ('scrape_windows','scrape_rate')").fetchall())
+        except sqlite3.Error:
+            saved={}
+        windows,rate=saved.get('scrape_windows',''),saved.get('scrape_rate','')
+        windows=int(windows) if windows.isdigit() and int(windows) in WINDOW_CHOICES else DEFAULT_WINDOWS
+        rate=int(rate) if rate.isdigit() and int(rate) in RATE_CHOICES else DEFAULT_RATE
+        return windows,rate
+
+    def set_options(self,windows,rate):
+        if type(windows) is not int or windows not in WINDOW_CHOICES:raise ValueError('画面の数は3・4・6・12から選んでください。')
+        if type(rate) is not int or rate not in RATE_CHOICES:raise ValueError('画面あたりの速さは毎秒1〜5枚から選んでください。')
+        with self.lock:
+            if self.active or self.maintenance:raise ValueError('取得中や削除・ロックの処理中は、取得の設定を変えられません。')
+            with self.store.connect() as db:
+                db.executemany('INSERT OR REPLACE INTO settings VALUES(?,?)',[('scrape_windows',str(windows)),('scrape_rate',str(rate))])
+            self.windows,self.rate=windows,rate
+        return self.options_status()
+
+    def options_status(self):
+        return {'windows':self.windows,'rate':self.rate,'pagesPerSecond':self.windows*self.rate,
+                'windowChoices':list(WINDOW_CHOICES),'rateChoices':list(RATE_CHOICES)}
 
     def fetch(self,url):
         # Detail pages are retried by collect_bonuses through the actual report
@@ -355,13 +386,18 @@ class Collector:
             raise RuntimeError(message)
         return result['html']
 
-    def browser_task(self,wait=0.0):
-        """Hand the next page to a source-browser window, at most PAGES_PER_MINUTE overall.
-        Waits up to `wait` seconds for one. `active` lets the desktop close its windows once the run has ended."""
+    def browser_task(self,wait=0.0,window=None):
+        """Hand the next page to a source-browser window, at most windows x rate pages a second overall.
+        Waits up to `wait` seconds for one. `window` (0-based) beyond the chosen number of windows gets none.
+        `active` lets the desktop close its windows once the run has ended; a page comes with the run's
+        windows and rate, which place the window on the screen and set its pace."""
         deadline=time.monotonic()+max(0.0,min(float(wait),5.0))
         with self.ready:
             while True:
                 now_=time.monotonic()
+                if window is not None and window>=self.windows:  # a window this run does not use
+                    if now_>=deadline:return {'active':self.active}
+                    self.ready.wait(deadline-now_);continue
                 for task in self.tasks.values():
                     if task.get('claimed') and now_-task['claimed']>PAGE_LEASE and task['id'] not in self.queue:
                         task['claimed']=None; self.queue.appendleft(task['id'])
@@ -369,8 +405,8 @@ class Collector:
                 if self.queue and now_>=self.next_dispatch and reading<self.parallel:
                     task=self.tasks[self.queue.popleft()]
                     task['claimed']=now_
-                    self.next_dispatch=max(now_,self.next_dispatch)+60.0/PAGES_PER_MINUTE
-                    return dict({k:v for k,v in task.items() if k not in ('done','answer','claimed')},active=self.active)
+                    self.next_dispatch=max(now_,self.next_dispatch)+1.0/(self.windows*self.rate)
+                    return dict({k:v for k,v in task.items() if k not in ('done','answer','claimed')},active=self.active,windows=self.windows,rate=self.rate)
                 if now_>=deadline: return {'active':self.active}
                 self.ready.wait(max(0.01,min(deadline,self.next_dispatch if self.queue else deadline)-now_))
 
@@ -381,6 +417,7 @@ class Collector:
             html=payload.get('html','')
             if not isinstance(html,str) or len(html)>8*1024*1024: raise ValueError('ページが大きすぎます。')
             task['answer']={'html':html,'error':str(payload.get('error',''))}; task['done'].set()
+            self.answered.append(time.monotonic())
             self.adapt(payload.get('serverWait'))
             self.ready.notify_all()
         return {'ok':True}
@@ -389,16 +426,18 @@ class Collector:
         """Fewer windows when the site answers slowly, one more after a round of quick answers."""
         if not isinstance(server_wait,(int,float)) or server_wait<0:return
         if server_wait>SLOW_SERVER_MS:
-            self.parallel=max(MIN_PARALLEL,self.parallel//2); self.quick_streak=0
+            self.parallel=max(min(MIN_PARALLEL,self.windows),self.parallel//2); self.quick_streak=0
         elif server_wait<QUICK_SERVER_MS:
             self.quick_streak+=1
             if self.quick_streak>=self.parallel:
-                self.parallel=min(BROWSER_WINDOWS,self.parallel+1); self.quick_streak=0
+                self.parallel=min(self.windows,self.parallel+1); self.quick_streak=0
         self.progress['parallel']=self.parallel
 
     def status(self):
         with self.lock:
-            result=dict(self.progress,active=self.active,runFailures=list(self.progress.get('failures',[])))
+            while self.answered and time.monotonic()-self.answered[0]>60:self.answered.popleft()
+            result=dict(self.progress,active=self.active,runFailures=list(self.progress.get('failures',[])),
+                        options=self.options_status(),pagesLastMinute=len(self.answered))
             if self.active and self.run_started is not None:  # live: time so far, per day, and what is left
                 elapsed=time.monotonic()-self.run_started; done=self.progress.get('completed',0); total=self.progress.get('total',0)
                 result.update(elapsedSeconds=round(elapsed,1),daysDone=done,secondsPerDay=round(elapsed/done,1) if done else None,
@@ -426,7 +465,7 @@ class Collector:
         with self.lock:
             if self.active: return dict(self.progress)
             if self.maintenance:raise ValueError('データの削除・ロックの処理中です。終わってから取得してください。')
-            self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=START_PARALLEL; self.quick_streak=0
+            self.active=True; self.cancelled.clear(); self.halted=None; self.parallel=min(START_PARALLEL,self.windows); self.quick_streak=0
             self.cancelled_by=None; self.run_started=time.monotonic()
             self.progress={'state':'running','id':uuid.uuid4().hex,'end':end,'message':'公開一覧を照合しています。','added':0,'completed':0,'total':0,'onlyDates':len(only_dates) if only_dates is not None else None,'failures':[],
                            'mode':'rescrape' if fill_dashes else 'fetch'}
@@ -721,13 +760,13 @@ class Collector:
                             with saving:failures.append(model+' '+row['seat']+': '+str(ex))
             covered=sum(complete(r) for r in rows)
             with self.lock:self.progress.update(currentDay=day,message=day+' のBB/RBを取得: '+model,bonusRows=covered,bonusTotal=len(rows))
-        # Large/Juggler groups first, read by up to BROWSER_WINDOWS windows at once. Transient
+        # Large/Juggler groups first, read by up to the chosen number of windows at once. Transient
         # misses are deferred, then revisited after the public report before individual-seat fallback.
         for attempt in range(2):
             todo=[m for m in sorted(pending,key=lambda m:(not ('ジャグラー' in m),-len(groups[m]),m)) if not all(complete(r) for r in groups[m])]
             if not todo:break
             if attempt:self.fetch(url)
-            with ThreadPoolExecutor(max_workers=BROWSER_WINDOWS) as pool:
+            with ThreadPoolExecutor(max_workers=self.windows) as pool:
                 futures=[pool.submit(model_job,model,attempt) for model in todo]
                 errors=[]
                 for future in futures:

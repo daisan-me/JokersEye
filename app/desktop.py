@@ -36,11 +36,14 @@ LOCALIZATION = {
 APP_ID = "JokersEye.Desktop"
 SOURCE_TITLE = "Joker's eye · 公開データ取得ブラウザー"
 SOURCE_HOST = "min-repo.com"
-# User decision (2026-10-07): at most 240 pages a minute (the collector caps the overall rate),
-# read by 12 windows that each start at most one page every 1.5 seconds.
-SOURCE_WINDOWS = 12
-SOURCE_COLUMNS = 4
-PAGE_CYCLE = 1.5
+# The Scraper tab chooses how many windows read pages (3, 4, 6 or 12) and how many pages each may
+# start a second (1-5); the collector sends both with every page (user decision, 2026-11-11).
+SOURCE_WINDOWS = 12  # the most windows that can be chosen
+# The windows split the area that the earlier fixed 4 x 3 tiles covered, so that none hides another
+# (a fully covered page may be throttled): columns x rows for each choice, inside x, y, width, height.
+SOURCE_GRIDS = {3: (3, 1), 4: (2, 2), 6: (3, 2), 12: (4, 3)}
+SOURCE_AREA = (10, 10, 1895, 1040)
+SOURCE_GAP = 5
 # Every run_js of every window goes through pywebview's one UI thread, so a window asks its page
 # rarely: once a second while loading, then right after the page reports it has loaded.
 LOADING_CHECK = 1.0
@@ -65,6 +68,16 @@ PROBE_JS = ("(()=>{%s\nconst n=performance.getEntriesByType('navigation')[0];"
             "timing:n?[n.requestStart,n.responseStart,n.responseEnd,n.domInteractive].map(Math.round):null});})()")
 FOLLOW_JS = ("(()=>{if(location.protocol!=='https:')return false;const target=new URL(%s,location.href).href;const link=Array.from(document.querySelectorAll('a[href]'))"
              ".find(a=>a.href===target&&!a.target);if(!link)return false;link.click();return true;})()")
+
+
+def tile(index, count):
+    """Where source window `index` of `count` goes: x, y, width, height."""
+    columns, rows = SOURCE_GRIDS.get(count, SOURCE_GRIDS[SOURCE_WINDOWS])
+    left, top, width, height = SOURCE_AREA
+    cell_width = (width - (columns - 1) * SOURCE_GAP) // columns
+    cell_height = (height - (rows - 1) * SOURCE_GAP) // rows
+    column, row = index % columns, index // columns
+    return left + column * (cell_width + SOURCE_GAP), top + row * (cell_height + SOURCE_GAP), cell_width, cell_height
 
 
 def truthy(value):
@@ -171,6 +184,7 @@ class SourceWindow:
         self.last_task = None
         self.last_timing = None  # navigation timing of the last page read (for the slow-page log)
         self.stop_event = stop_event or threading.Event()
+        self.count, self.cycle = 4, 1.0  # this run's windows and seconds per page, from the collector's pages
 
     def log(self, message):
         try:
@@ -181,11 +195,9 @@ class SourceWindow:
 
     def ensure_window(self):
         if self.window is None:
-            # Tile the windows 4 x 3 so that none hides another (a fully covered page may be throttled).
-            column, row = self.index % SOURCE_COLUMNS, self.index // SOURCE_COLUMNS
-            self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, SOURCE_WINDOWS),
-                                                     html="<!doctype html><title></title>", width=470, height=340,
-                                                     x=10 + column * 475, y=10 + row * 350)
+            x, y, width, height = tile(self.index, self.count)
+            self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, self.count),
+                                                     html="<!doctype html><title></title>", width=width, height=height, x=x, y=y)
             self.window.events.loaded += lambda: self.loaded.set()
             self.window.events.closing += self.on_closing
         else:
@@ -246,15 +258,15 @@ class SourceWindow:
                 started = None
             if started is None:
                 self.stop_event.wait(0.2)
-            else:  # at most one page every PAGE_CYCLE seconds per window
-                self.stop_event.wait(max(0.0, started + PAGE_CYCLE - time.monotonic()))
+            else:  # at most one page every `cycle` seconds per window (1 / the chosen pages a second)
+                self.stop_event.wait(max(0.0, started + self.cycle - time.monotonic()))
 
     def poll(self):
         """Read one page if the collector has one. Returns when that page was started, or None."""
         try:
             # The collector holds this request up to a second; allow far longer than that, since a
             # task the collector handed out but this window never received is lost until re-sent.
-            task = self.client.request("scrape/browser-task?wait=1", timeout=10)
+            task = self.client.request("scrape/browser-task?wait=1&window=%d" % self.index, timeout=10)
         except (OSError, ValueError) as ex:
             self.log("task-request " + type(ex).__name__)
             return None
@@ -263,6 +275,10 @@ class SourceWindow:
             self.close_window()
         if "id" not in task or task["id"] == self.last_task:
             return None
+        if task.get("windows") in SOURCE_GRIDS:
+            self.count = task["windows"]
+        if isinstance(task.get("rate"), int) and 1 <= task["rate"] <= 5:
+            self.cycle = 1.0 / task["rate"]
         task_id, error = task["id"], None
         self.last_task, self.last_timing = task_id, None
         started = time.monotonic()
@@ -280,7 +296,7 @@ class SourceWindow:
         except (OSError, ValueError):
             pass
         elapsed = time.monotonic() - started
-        if error is None and elapsed > PAGE_CYCLE:
+        if error is None and elapsed > max(1.5, self.cycle):
             timing = self.last_timing or [0, 0, 0, 0]  # requestStart, responseStart, responseEnd, domInteractive (ms)
             self.log("slow-page %.1fs server-wait %dms html %dms parse %dms %s" % (
                 elapsed, timing[1] - timing[0], timing[2] - timing[1], timing[3] - timing[2], task.get("url", "")))

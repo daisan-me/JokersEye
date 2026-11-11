@@ -109,21 +109,24 @@ class SourceBrowserWindowTests(unittest.TestCase):
         source = desktop.SourceBrowser(None, FakeClient({}), tempfile.gettempdir())
         self.assertEqual([window.index for window in source.windows], list(range(12)))
         self.assertTrue(all(window.stop_event is source.stop_event for window in source.windows))
-        self.assertEqual((desktop.SOURCE_WINDOWS, desktop.PAGE_CYCLE), (12, 1.5))  # the collector caps the total at 240 a minute
-        created = []
-        class FakeWebview:
-            def create_window(self, title, **options):
-                created.append((title, options['x'], options['y']))
-                window = FakeWindow()
-                window.events = mock.MagicMock()
-                return window
-        for window in source.windows:
-            window.webview = FakeWebview()
-            window.ensure_window()
-        self.assertEqual(len({(x, y) for _, x, y in created}), 12)
-        self.assertEqual(created[11][0], desktop.SOURCE_TITLE + ' 12/12')
-        self.assertLessEqual(max(x for _, x, _ in created) + 470, 1920)  # fits a full-HD screen
-        self.assertLessEqual(max(y for _, _, y in created) + 340, 1080)
+        for count in (3, 4, 6, 12):  # the choices of the Scraper tab
+            created = []
+            class FakeWebview:
+                def create_window(self, title, **options):
+                    created.append((title, options['x'], options['y'], options['width'], options['height']))
+                    window = FakeWindow()
+                    window.events = mock.MagicMock()
+                    return window
+            for window in source.windows[:count]:
+                window.window, window.count, window.webview = None, count, FakeWebview()
+                window.ensure_window()
+            self.assertEqual(created[-1][0], desktop.SOURCE_TITLE + ' %d/%d' % (count, count))
+            for i, (_, x, y, w, h) in enumerate(created):  # none hides another, all on a full-HD screen
+                self.assertTrue(x >= 0 and y >= 0 and x + w <= 1920 and y + h <= 1080, (count, created[i]))
+                self.assertTrue(w >= 300 and h >= 300, (count, w, h))
+                for (_, x2, y2, w2, h2) in created[i + 1:]:
+                    self.assertTrue(x + w <= x2 or x2 + w2 <= x or y + h <= y2 or y2 + h2 <= y, (count, x, y, x2, y2))
+        self.assertEqual(desktop.tile(11, 12)[2:], (470, 343))  # 12 windows: the earlier 4 x 3 tiles
 
     def test_webviews_load_pages_as_an_ordinary_visitor(self):
         # Blocking third-party hosts made the site blank negative 差枚/出率 (2026-10-07): not done any more.
@@ -146,6 +149,7 @@ class SourceBrowserWindowTests(unittest.TestCase):
 
     def test_a_window_starts_at_most_one_page_every_cycle(self):
         source = self.browser({}, FakeWindow())
+        source.cycle = 0.5  # 2 pages a second
         starts = []
         def poll():
             starts.append(time.monotonic())
@@ -155,7 +159,17 @@ class SourceBrowserWindowTests(unittest.TestCase):
         source.poll = poll
         source.run()
         self.assertEqual(len(starts), 3)
-        self.assertGreaterEqual(starts[2] - starts[0], 2 * desktop.PAGE_CYCLE - 0.05)
+        self.assertGreaterEqual(starts[2] - starts[0], 2 * source.cycle - 0.05)
+
+    def test_a_page_sets_the_windows_pace_and_place_and_asks_with_its_number(self):
+        window = FakeWindow()
+        source = desktop.SourceWindow(None, FakeClient({'id': 'x', 'url': 'https://min-repo.com/1/', 'active': True, 'windows': 6, 'rate': 4}),
+                                      tempfile.gettempdir(), index=2)
+        source.window = window
+        source.fetch = lambda task: '<html></html>'
+        source.poll()
+        self.assertEqual((source.count, source.cycle), (6, 0.25))
+        self.assertEqual(source.client.requests[0], 'scrape/browser-task?wait=1&window=2')
 
     def test_current_url_prefers_the_encoded_location(self):
         source = self.browser({}, FakeWindow('https://min-repo.com/1/?kishu=L%E6%9D%B1'))

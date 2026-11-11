@@ -47,16 +47,17 @@ class ScraperTests(unittest.TestCase):
         collector.active=True
         self.assertEqual(collector.browser_task(),{'active':True})
         collector.active=False
-    def test_pages_go_to_several_windows_at_most_240_a_minute(self):
+    def test_pages_go_to_several_windows_at_most_windows_times_rate_a_second(self):
         collector=self.store.collector
-        self.assertEqual(scraper.PAGES_PER_MINUTE,240)
+        self.assertEqual((collector.windows,collector.rate),(4,1))  # default: 4 a second, the earlier 240 a minute
         first,first_result=self.fetch_in_background('https://min-repo.com/1/')
         second,second_result=self.fetch_in_background('https://min-repo.com/2/')
         one=collector.browser_task(wait=1)
         started=time.monotonic()
         self.assertEqual(collector.browser_task(),{'active':False})  # the next page waits for its slot
         two=collector.browser_task(wait=1)
-        self.assertGreaterEqual(time.monotonic()-started,60/240-0.05)
+        self.assertGreaterEqual(time.monotonic()-started,1/4-0.05)
+        self.assertEqual((one['windows'],one['rate']),(4,1))  # the desktop places and paces its windows by these
         self.assertEqual({one['url'],two['url']},{'https://min-repo.com/1/','https://min-repo.com/2/'})
         self.assertNotIn('done',one)
         collector.browser_result({'id':two['id'],'html':'page '+two['url']})  # answers may come back in any order
@@ -64,6 +65,27 @@ class ScraperTests(unittest.TestCase):
         first.join(5);second.join(5)
         self.assertEqual((first_result['html'],second_result['html']),('page https://min-repo.com/1/','page https://min-repo.com/2/'))
         with self.assertRaises(ValueError):collector.browser_result({'id':one['id'],'html':'late'})
+    def test_the_scraper_tab_chooses_windows_and_pages_a_second(self):
+        collector=self.store.collector
+        for windows,rate in ((5,1),(4,0),(4,6),('4',1),(True,1),(4,1.5)):
+            with self.assertRaises(ValueError):collector.set_options(windows,rate)
+        options=collector.set_options(6,5)
+        self.assertEqual((options['windows'],options['rate'],options['pagesPerSecond']),(6,5,30))
+        self.assertEqual(server.Store(self.tmp.name).collector.options(),(6,5))  # kept in GDB's settings
+        self.assertEqual(collector.status()['options']['pagesPerSecond'],30)
+        threads=[self.fetch_in_background('https://min-repo.com/%d/'%n) for n in range(3)]
+        self.assertEqual(collector.browser_task(wait=0.3,window=6),{'active':False})  # the 7th window is not used
+        started=time.monotonic()
+        given=[collector.browser_task(wait=1,window=n) for n in range(3)]
+        self.assertTrue(all('id' in task for task in given))
+        self.assertLess(time.monotonic()-started,0.5)  # 1/30 s apart, not 1/4
+        for task in given:collector.browser_result({'id':task['id'],'html':'x'})
+        for thread,_ in threads:thread.join(5)
+        self.assertEqual(collector.status()['pagesLastMinute'],3)
+        collector.active=True
+        with self.assertRaises(ValueError):collector.set_options(3,1)  # not while a run goes
+        collector.active=False
+        self.assertEqual(collector.set_options(3,1)['pagesPerSecond'],3)
     def test_a_page_no_window_answered_is_handed_out_again(self):
         collector=self.store.collector
         thread,result=self.fetch_in_background('https://min-repo.com/1/')
