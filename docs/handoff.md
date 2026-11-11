@@ -1,5 +1,18 @@
 # 引き継ぎメモ
 
+## コードレビュー（xhigh）の指摘9件の修正（2026-11-11、ブランチ `claude/zealous-archimedes-bwzf6i`）
+
+1. macOSでモニター一覧（AppKitの `NSScreen`）を作業スレッドから読んでいた → `desktop.Monitors` が読み取り結果を持ち、読むのは `call_on_gui_thread()`（macOSは `PyObjCTools.AppHelper.callAfter` でGUIスレッドへ渡して待つ。Windowsはその場で）だけ。取得用ブラウザーの窓は `Monitors.find()` で前回の読み取りを見るだけで、`webview.screens` を読まない。
+2. 取得中や毎回のタブ切り替えで、どのタブでも重い `Collector.status()`（GDB全体の集計）を読んでいた → `GET /api/scrape/state`（`Collector.run_state()`：active・state・id だけ、GDBを読まない）を追加。Scraperタブ以外はこれだけを確かめる。
+3. 「取得の設定」で、一覧が読み込まれる前や古い一覧のまま画面の数・速さを変えると、保存したモニターが「なし」で上書きされることがあった → モニターは「表示するモニター」を変えたときだけ送り（送らなければサーバーは保存済みの値を使う）、選択肢が読み込まれる前は何も保存しない。
+4. モニターに並べるとき、タスクバー・メニューバー・Dockを考えず上10px・下60pxで固定していた → 作業領域を使う（Windowsは pywebview の `Screen.frame`＝WinFormsの `WorkingArea`、macOSは `NSScreen.visibleFrame`）。読めないときだけ下60pxを空ける（`work_insets`・`monitor_area`）。
+5. 「モニターを読み直す」が、誰も読んでいなくても0.8秒後に成功と出していた → `POST /api/scrape/screens/refresh` はデスクトップの窓が読み終わる（`Collector.screens_read` が増える）まで最大5秒（`SCREENS_WAIT`）待ち、答えがなければ合図を取り消して「読み直せませんでした」を返す。成功時は台数を出す。
+6. 小さいモニターでは1画面がpywebviewの最小の窓（200×100、`MIN_TILE`）より小さくなり、OSに広げられて重なっていた → デスクトップがモニターごとに並べられる画面の数（`fits`）を計算して知らせ、サーバーは並べられない数を「このモニターには12画面を並べられません（3・4・6画面まで）」で断る。一覧にも「6画面まで」と出す。読み取りのあとで作業領域が変わって並べられないときは、メインの画面に以前どおり並べてログに残す。
+7. 直近1分のページ数の記録（`answered`）が、状態を読まないと増え続けた → ページが返るたびに60秒より古いものを捨てる（`recent_pages`）。
+8. Windowsで、モニターの座標をそのまま渡していた → pywebviewはプロセスをシステムDPI対応にし（`SetProcessDPIAware`）、WinFormsのモニター座標はその画素で返る一方、窓の位置と大きさには `GetDpiForWindow/96` を掛ける。表示倍率が100%でなければ、倍率が同じモニターどうしでもずれていた。システムの倍率（`GetDpiForSystem`、古いWindowsは `GetDeviceCaps(LOGPIXELSX)`）で割ってpywebviewの単位にそろえる（`system_scale`・`monitor_area`）。倍率が混在するときは、システムDPI対応のプロセスでは同じ単位に仮想化されるので、同じ割り算で合う見込み。実機では未確認。
+9. デスクトップの読み直しの処理にテストがなかった → 処理を `serve_monitor_requests()`・`refresh_screens()` に分け、合図がないときは読まない・あるときだけ読んで合図を消す・読めないときは知らせない、起動時の1回とメインの処理での呼び出しをテストする。
+- 確認：Python・JSのテスト通過。ヘッドレスChromiumで、モニターごとの「6画面まで」の表示、並べられない数を断る、画面の数だけ変えたときにモニターを送らない、デスクトップの窓がないときに「読み直せませんでした」と出る（5秒）、ほかのタブでは `scrape/state` だけを読む、を確認。Windows・Macの実機（作業領域・DPI・GUIスレッドでの読み取り）は未確認。
+
 ## 取得用ブラウザーがフォーカスを奪わない・モニター指定（2026-11-11、ブランチ `claude/zealous-archimedes-bwzf6i`）
 
 - ユーザー指示：フォーカスを奪わない設定と、サブモニター指定を実装する（前の回で文章で検討した2案）。
