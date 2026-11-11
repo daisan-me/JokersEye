@@ -653,6 +653,29 @@ def window_has_focus(native):
     return None
 
 
+def runs_while_hidden(window, timeout=10.0):
+    """--diagnostics: whether a minimized source window's page still runs its scripts (a timer fires),
+    as it must while the user's own windows cover the source windows."""
+    result = {}
+
+    def check():
+        try:
+            run_script(window, "window.__jokerTick=0;setTimeout(function(){window.__jokerTick=1},50);0")
+            time.sleep(1.5)
+            result["tick"] = run_script(window, "window.__jokerTick")
+        except Exception as ex:
+            result["error"] = "%s: %s" % (type(ex).__name__, ex)
+    try:
+        window.minimize()
+        time.sleep(2.0)
+    except Exception as ex:
+        return {"runs": None, "error": "minimize %s: %s" % (type(ex).__name__, ex)}
+    worker = threading.Thread(target=check, daemon=True)
+    worker.start()
+    worker.join(timeout)  # a suspended page never answers
+    return {"runs": truthy(result.get("tick")), **({"error": result["error"]} if "error" in result else {})}
+
+
 def check_monitors(webview, client, source):
     """--diagnostics: read the monitors on the GUI thread, then open a source window as the Scraper tab
     would on the first one (4 windows, the 2nd tile): where it went, its size, and whether it took the keyboard."""
@@ -678,6 +701,7 @@ def check_monitors(webview, client, source):
         report["window"] = {"expected": [x, y, width, height],
                             "actual": [probe.window.x, probe.window.y, probe.window.width, probe.window.height],
                             "focused": window_has_focus(probe.window.native)}
+        report["hidden"] = runs_while_hidden(probe.window)
     except Exception as ex:
         report["error"] = "%s: %s" % (type(ex).__name__, ex)
     finally:

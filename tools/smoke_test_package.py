@@ -93,6 +93,8 @@ def check_monitors(path):
         raise SystemExit("取得用ブラウザーが選んだモニターの位置・大きさに開きませんでした: %r" % window)
     if window.get("focused"):
         raise SystemExit("取得用ブラウザーがフォーカスを取りました: %r" % window)
+    if not (report.get("hidden") or {}).get("runs"):
+        raise SystemExit("隠れた取得用ブラウザーでページの処理が止まりました: %r" % report.get("hidden"))
 
 
 def main():
