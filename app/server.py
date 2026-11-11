@@ -754,7 +754,9 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         result=self.server.store.gdb_lock(payload.get("start"),payload.get("end"),path=="/api/gdb/lock")
             elif path=="/api/scrape/options":
-                result=self.server.store.collector.set_options(payload.get("windows"),payload.get("rate"))
+                result=self.server.store.collector.set_options(payload.get("windows"),payload.get("rate"),payload.get("screen"))
+            elif path=="/api/scrape/screens":
+                result=self.server.store.collector.report_screens(payload.get("screens"))
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":

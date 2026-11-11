@@ -44,6 +44,8 @@ SOURCE_WINDOWS = 12  # the most windows that can be chosen
 SOURCE_GRIDS = {3: (3, 1), 4: (2, 2), 6: (3, 2), 12: (4, 3)}
 SOURCE_AREA = (10, 10, 1895, 1040)
 SOURCE_GAP = 5
+# On a chosen monitor the windows fill it, leaving room for the taskbar / Dock at the bottom.
+SCREEN_MARGIN, SCREEN_BOTTOM = 10, 60
 # Every run_js of every window goes through pywebview's one UI thread, so a window asks its page
 # rarely: once a second while loading, then right after the page reports it has loaded.
 LOADING_CHECK = 1.0
@@ -70,10 +72,28 @@ FOLLOW_JS = ("(()=>{if(location.protocol!=='https:')return false;const target=ne
              ".find(a=>a.href===target&&!a.target);if(!link)return false;link.click();return true;})()")
 
 
-def tile(index, count):
-    """Where source window `index` of `count` goes: x, y, width, height."""
+def screen_list(webview):
+    """The monitors pywebview sees, for the Scraper tab: x, y, width, height (its own coordinates)."""
+    try:
+        return [{"x": int(s.x), "y": int(s.y), "width": int(s.width), "height": int(s.height)} for s in webview.screens]
+    except Exception:
+        return []
+
+
+def screen_area(screens, chosen):
+    """The chosen monitor ('x,y,width,height') and the area to tile on it; (None, SOURCE_AREA) when it is
+    '' (as before) or no longer connected."""
+    for screen in screens or []:
+        if chosen and "%d,%d,%d,%d" % (screen.x, screen.y, screen.width, screen.height) == chosen:
+            return screen, (screen.x + SCREEN_MARGIN, screen.y + SCREEN_MARGIN,
+                            screen.width - 2 * SCREEN_MARGIN, screen.height - SCREEN_MARGIN - SCREEN_BOTTOM)
+    return None, SOURCE_AREA
+
+
+def tile(index, count, area=SOURCE_AREA):
+    """Where source window `index` of `count` goes in `area`: x, y, width, height."""
     columns, rows = SOURCE_GRIDS.get(count, SOURCE_GRIDS[SOURCE_WINDOWS])
-    left, top, width, height = SOURCE_AREA
+    left, top, width, height = area
     cell_width = (width - (columns - 1) * SOURCE_GAP) // columns
     cell_height = (height - (rows - 1) * SOURCE_GAP) // rows
     column, row = index % columns, index // columns
@@ -185,6 +205,7 @@ class SourceWindow:
         self.last_timing = None  # navigation timing of the last page read (for the slow-page log)
         self.stop_event = stop_event or threading.Event()
         self.count, self.cycle = 4, 1.0  # this run's windows and seconds per page, from the collector's pages
+        self.screen = ""  # this run's monitor ('x,y,width,height'; '' = the main one, as before)
 
     def log(self, message):
         try:
@@ -195,9 +216,21 @@ class SourceWindow:
 
     def ensure_window(self):
         if self.window is None:
-            x, y, width, height = tile(self.index, self.count)
+            screen = None
+            if self.screen:
+                try:
+                    screen, area = screen_area(self.webview.screens, self.screen)
+                except Exception:
+                    screen, area = None, SOURCE_AREA
+            else:
+                area = SOURCE_AREA
+            x, y, width, height = tile(self.index, self.count, area)
+            # focus=False: the windows open without taking the keyboard from what the user is doing (a video etc.).
+            options = {"width": width, "height": height, "x": x, "y": y, "focus": False}
+            if screen is not None and sys.platform == "darwin":  # macOS places a window relative to its monitor
+                options.update(screen=screen, x=x - screen.x, y=y - screen.y)
             self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, self.count),
-                                                     html="<!doctype html><title></title>", width=width, height=height, x=x, y=y)
+                                                     html="<!doctype html><title></title>", **options)
             self.window.events.loaded += lambda: self.loaded.set()
             self.window.events.closing += self.on_closing
         else:
@@ -279,6 +312,8 @@ class SourceWindow:
             self.count = task["windows"]
         if isinstance(task.get("rate"), int) and 1 <= task["rate"] <= 5:
             self.cycle = 1.0 / task["rate"]
+        if isinstance(task.get("screen"), str):
+            self.screen = task["screen"]
         task_id, error = task["id"], None
         self.last_task, self.last_timing = task_id, None
         started = time.monotonic()
@@ -547,9 +582,17 @@ def main(argv=None):
         threading.Thread(target=source.run, daemon=True).start()
         if args.diagnostics:
             threading.Thread(target=run_diagnostics, args=(window, client, args.diagnostics), daemon=True).start()
-        beat = 0.0
+        beat, screens_seen, screens = 0.0, 0.0, None
         while not closing.is_set() and serving.is_alive():
             now = time.monotonic()
+            if now - screens_seen >= 30:  # monitors plugged in or out show up in the Scraper tab
+                screens_seen, found = now, screen_list(webview)
+                if found != screens:
+                    try:
+                        client.request("scrape/screens", {"screens": found})
+                        screens = found
+                    except (OSError, ValueError):
+                        pass
             if now - beat >= 20:
                 beat = now
                 try:

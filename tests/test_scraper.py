@@ -86,6 +86,22 @@ class ScraperTests(unittest.TestCase):
         with self.assertRaises(ValueError):collector.set_options(3,1)  # not while a run goes
         collector.active=False
         self.assertEqual(collector.set_options(3,1)['pagesPerSecond'],3)
+    def test_the_windows_can_go_on_a_chosen_monitor(self):
+        collector=self.store.collector
+        for bad in ('x',[{'x':0}],[{'x':0,'y':0,'width':0,'height':1}],[{'x':'0','y':0,'width':10,'height':10}],[{'x':0,'y':0,'width':10,'height':10}]*17):
+            with self.assertRaises(ValueError):collector.report_screens(bad)
+        collector.report_screens([{'x':0,'y':0,'width':1920,'height':1080},{'x':-1280,'y':0,'width':1280,'height':1024}])
+        self.assertEqual([s['id'] for s in collector.status()['options']['screens']],['0,0,1920,1080','-1280,0,1280,1024'])
+        with self.assertRaises(ValueError):collector.set_options(4,1,'9,9,9,9')  # not one of the monitors
+        self.assertEqual(collector.set_options(4,1,'-1280,0,1280,1024')['screen'],'-1280,0,1280,1024')
+        self.assertEqual(server.Store(self.tmp.name).collector.screen,'-1280,0,1280,1024')  # kept in GDB's settings
+        thread,result=self.fetch_in_background('https://min-repo.com/1/')
+        task=collector.browser_task(wait=1)
+        self.assertEqual(task['screen'],'-1280,0,1280,1024')  # the desktop places the windows there
+        collector.browser_result({'id':task['id'],'html':'x'});thread.join(5)
+        collector.report_screens([{'x':0,'y':0,'width':1920,'height':1080}])  # unplugged: the other choices still change
+        self.assertEqual(collector.set_options(6,1)['screen'],'-1280,0,1280,1024')
+        self.assertEqual(collector.set_options(6,1,'')['screen'],'')  # back to the main screen as before
     def test_a_page_no_window_answered_is_handed_out_again(self):
         collector=self.store.collector
         thread,result=self.fetch_in_background('https://min-repo.com/1/')

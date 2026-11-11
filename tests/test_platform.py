@@ -128,6 +128,38 @@ class SourceBrowserWindowTests(unittest.TestCase):
                     self.assertTrue(x + w <= x2 or x2 + w2 <= x or y + h <= y2 or y2 + h2 <= y, (count, x, y, x2, y2))
         self.assertEqual(desktop.tile(11, 12)[2:], (470, 343))  # 12 windows: the earlier 4 x 3 tiles
 
+    def test_windows_open_without_focus_on_the_chosen_monitor(self):
+        class Screen:
+            def __init__(self, x, y, width, height):
+                self.x, self.y, self.width, self.height = x, y, width, height
+        main, side = Screen(0, 0, 1920, 1080), Screen(1920, -200, 2560, 1440)
+        self.assertEqual(desktop.screen_list(type('W', (), {'screens': [main, side]})),
+                         [{'x': 0, 'y': 0, 'width': 1920, 'height': 1080}, {'x': 1920, 'y': -200, 'width': 2560, 'height': 1440}])
+        self.assertEqual(desktop.screen_area([main, side], '1920,-200,2560,1440'), (side, (1930, -190, 2540, 1370)))
+        self.assertEqual(desktop.screen_area([main], '1920,-200,2560,1440'), (None, desktop.SOURCE_AREA))  # unplugged: as before
+        self.assertEqual(desktop.screen_area([main, side], ''), (None, desktop.SOURCE_AREA))
+        created = []
+        class FakeWebview:
+            screens = [main, side]
+            def create_window(self, title, **options):
+                created.append(options)
+                window = FakeWindow()
+                window.events = mock.MagicMock()
+                return window
+        for platform in ('win32', 'darwin'):
+            source = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir(), index=5)
+            source.count, source.screen = 6, '1920,-200,2560,1440'
+            with mock.patch.object(desktop.sys, 'platform', platform):
+                source.ensure_window()
+        windows, mac = created
+        self.assertFalse(windows['focus'])  # never takes the keyboard from what the user is doing
+        self.assertNotIn('screen', windows)  # Windows: positions on the whole desktop
+        x, y, width, height = desktop.tile(5, 6, (1930, -190, 2540, 1370))
+        self.assertEqual((windows['x'], windows['y'], windows['width'], windows['height']), (x, y, width, height))
+        self.assertTrue(1920 <= x and x + width <= 1920 + 2560 and -200 <= y and y + height <= -200 + 1440)
+        self.assertIs(mac['screen'], side)  # macOS: positions relative to the chosen monitor
+        self.assertEqual((mac['x'], mac['y'], mac['focus']), (x - 1920, y + 200, False))
+
     def test_webviews_load_pages_as_an_ordinary_visitor(self):
         # Blocking third-party hosts made the site blank negative 差枚/出率 (2026-10-07): not done any more.
         self.assertFalse(hasattr(desktop, 'limit_webview_hosts'))

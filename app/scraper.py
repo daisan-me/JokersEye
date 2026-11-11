@@ -25,6 +25,7 @@ START = '2023-04-27'
 WINDOW_CHOICES = (3, 4, 6, 12)
 RATE_CHOICES = (1, 2, 3, 4, 5)
 DEFAULT_WINDOWS, DEFAULT_RATE = 4, 1  # 4 pages a second: the earlier overall cap of 240 a minute
+SCREEN_ID = r'-?\d+,-?\d+,\d+,\d+'  # a monitor chosen for the windows: 'x,y,width,height'
 BROWSER_WINDOWS = max(WINDOW_CHOICES)
 # A page handed to a window but not answered within this time is handed out again (the window
 # may never have received it). A late answer from the first window is ignored.
@@ -294,6 +295,8 @@ class Collector:
         # Page requests waiting for a source-browser window, and those being read now.
         self.ready=threading.Condition(self.lock); self.queue=deque(); self.tasks={}; self.next_dispatch=0.0
         self.windows,self.rate=self.options()  # chosen in the Scraper tab; fixed while a run goes
+        self.screen=self.screen_option()  # the monitor the windows go on ('' = as before, on the main one)
+        self.screens=[]  # the monitors the desktop app reported
         self.parallel=min(START_PARALLEL,self.windows); self.quick_streak=0  # pages read at once, adapted to the site's answers
         self.answered=deque()  # when pages were answered, for the pages read in the last minute
         self.halted=None  # set to the restriction message when the source site restricts access
@@ -335,18 +338,42 @@ class Collector:
         rate=int(rate) if rate.isdigit() and int(rate) in RATE_CHOICES else DEFAULT_RATE
         return windows,rate
 
-    def set_options(self,windows,rate):
+    def screen_option(self):
+        """The chosen monitor as 'x,y,width,height' (as the desktop reported it), or '' for the main one as before."""
+        try:
+            with self.store.connect() as db:
+                row=db.execute("SELECT value FROM settings WHERE key='scrape_screen'").fetchone()
+        except sqlite3.Error:
+            row=None
+        return row[0] if row and re.fullmatch(SCREEN_ID,row[0]) else ''
+
+    def report_screens(self,screens):
+        """The desktop app's monitors (pywebview's coordinates), so the Scraper tab can offer them."""
+        if not isinstance(screens,list) or len(screens)>16:raise ValueError('モニターの一覧が不正です。')
+        found=[]
+        for screen in screens:
+            values=[screen.get(k) if isinstance(screen,dict) else None for k in ('x','y','width','height')]
+            if not all(type(v) is int and abs(v)<100000 for v in values) or values[2]<=0 or values[3]<=0:
+                raise ValueError('モニターの一覧が不正です。')
+            found.append({'id':'%d,%d,%d,%d'%tuple(values),'x':values[0],'y':values[1],'width':values[2],'height':values[3]})
+        with self.lock:self.screens=found
+        return {'ok':True,'screens':len(found)}
+
+    def set_options(self,windows,rate,screen=None):
         if type(windows) is not int or windows not in WINDOW_CHOICES:raise ValueError('画面の数は3・4・6・12から選んでください。')
         if type(rate) is not int or rate not in RATE_CHOICES:raise ValueError('画面あたりの速さは毎秒1〜5枚から選んでください。')
         with self.lock:
+            if screen is None:screen=self.screen
+            if not isinstance(screen,str) or screen and screen!=self.screen and screen not in {s['id'] for s in self.screens}:
+                raise ValueError('選んだモニターが見つかりません。モニターの一覧を確かめてください。')
             if self.active or self.maintenance:raise ValueError('取得中や削除・ロックの処理中は、取得の設定を変えられません。')
             with self.store.connect() as db:
-                db.executemany('INSERT OR REPLACE INTO settings VALUES(?,?)',[('scrape_windows',str(windows)),('scrape_rate',str(rate))])
-            self.windows,self.rate=windows,rate
+                db.executemany('INSERT OR REPLACE INTO settings VALUES(?,?)',[('scrape_windows',str(windows)),('scrape_rate',str(rate)),('scrape_screen',screen)])
+            self.windows,self.rate,self.screen=windows,rate,screen
         return self.options_status()
 
     def options_status(self):
-        return {'windows':self.windows,'rate':self.rate,'pagesPerSecond':self.windows*self.rate,
+        return {'windows':self.windows,'rate':self.rate,'pagesPerSecond':self.windows*self.rate,'screen':self.screen,'screens':list(self.screens),
                 'windowChoices':list(WINDOW_CHOICES),'rateChoices':list(RATE_CHOICES)}
 
     def fetch(self,url):
@@ -390,7 +417,7 @@ class Collector:
         """Hand the next page to a source-browser window, at most windows x rate pages a second overall.
         Waits up to `wait` seconds for one. `window` (0-based) beyond the chosen number of windows gets none.
         `active` lets the desktop close its windows once the run has ended; a page comes with the run's
-        windows and rate, which place the window on the screen and set its pace."""
+        windows, rate and monitor, which place the window and set its pace."""
         deadline=time.monotonic()+max(0.0,min(float(wait),5.0))
         with self.ready:
             while True:
@@ -406,7 +433,7 @@ class Collector:
                     task=self.tasks[self.queue.popleft()]
                     task['claimed']=now_
                     self.next_dispatch=max(now_,self.next_dispatch)+1.0/(self.windows*self.rate)
-                    return dict({k:v for k,v in task.items() if k not in ('done','answer','claimed')},active=self.active,windows=self.windows,rate=self.rate)
+                    return dict({k:v for k,v in task.items() if k not in ('done','answer','claimed')},active=self.active,windows=self.windows,rate=self.rate,screen=self.screen)
                 if now_>=deadline: return {'active':self.active}
                 self.ready.wait(max(0.01,min(deadline,self.next_dispatch if self.queue else deadline)-now_))
 
