@@ -102,6 +102,28 @@ class ScraperTests(unittest.TestCase):
         collector.report_screens([{'x':0,'y':0,'width':1920,'height':1080}])  # unplugged: the other choices still change
         self.assertEqual(collector.set_options(6,1)['screen'],'-1280,0,1280,1024')
         self.assertEqual(collector.set_options(6,1,'')['screen'],'')  # back to the main screen as before
+    def test_a_monitor_offers_only_the_windows_that_fit_on_it(self):
+        collector=self.store.collector
+        with self.assertRaises(ValueError):collector.report_screens([{'x':0,'y':0,'width':800,'height':600,'fits':[5]}])
+        collector.report_screens([{'x':-800,'y':0,'width':800,'height':600,'fits':[3,4,6]}])
+        self.assertEqual(collector.status()['options']['screens'][0]['fits'],[3,4,6])
+        with self.assertRaisesRegex(ValueError,'12画面を並べられません（3・4・6画面まで）'):collector.set_options(12,1,'-800,0,800,600')
+        collector.set_options(6,1,'-800,0,800,600')
+        with self.assertRaises(ValueError):collector.set_options(12,1)  # the saved monitor is checked too
+    def test_the_desktop_answers_a_monitor_reading_and_the_other_tabs_read_a_light_state(self):
+        collector=self.store.collector
+        reading=collector.screens_read
+        self.assertFalse(collector.wait_for_screens(reading,0.05))  # no desktop window answered
+        threading.Timer(0.05,lambda:collector.report_screens([{'x':0,'y':0,'width':1920,'height':1080}])).start()
+        self.assertTrue(collector.wait_for_screens(reading,5))
+        self.assertEqual(collector.run_state(),{'active':False,'state':collector.progress.get('state'),'id':collector.progress.get('id')})
+    def test_pages_of_the_last_minute_are_kept_small_while_pages_come_in(self):
+        collector=self.store.collector
+        collector.answered.extend([time.monotonic()-120]*1000)  # pages of a long run, never shown
+        thread,_=self.fetch_in_background('https://min-repo.com/1/')
+        task=collector.browser_task(wait=1)
+        collector.browser_result({'id':task['id'],'html':'x'});thread.join(5)
+        self.assertEqual(len(collector.answered),1)  # dropped as the next page came in, without a status read
     def test_a_page_no_window_answered_is_handed_out_again(self):
         collector=self.store.collector
         thread,result=self.fetch_in_background('https://min-repo.com/1/')

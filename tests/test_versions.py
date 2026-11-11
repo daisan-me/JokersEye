@@ -9,6 +9,7 @@ import tempfile
 import time
 import unittest
 from unittest import mock
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -189,13 +190,29 @@ class ApiTests(unittest.TestCase):
         with urllib.request.urlopen(req) as response:
             return json.load(response)
 
-    def test_the_scraper_tab_asks_the_desktop_window_to_read_the_monitors_again(self):
-        self.assertFalse(self.host.screens_requested.is_set())
-        req = urllib.request.Request(self.base + '/api/scrape/screens/refresh', data=b'{}', method='POST',
+    def post(self, path, payload=None):
+        req = urllib.request.Request(self.base + path, data=json.dumps(payload or {}).encode(), method='POST',
                                      headers={'X-Joker-Token': self.host.token, 'Content-Type': 'application/json'})
         with urllib.request.urlopen(req) as response:
-            self.assertEqual(json.load(response), {'ok': True})
-        self.assertTrue(self.host.screens_requested.is_set())
+            return json.load(response)
+
+    def test_the_scraper_tab_asks_the_desktop_window_to_read_the_monitors_again(self):
+        import threading
+        collector = self.host.store.collector
+        def desktop_window():  # what the desktop loop does when asked
+            if self.host.screens_requested.wait(5):
+                self.host.screens_requested.clear()
+                collector.report_screens([{'x': 0, 'y': 0, 'width': 1920, 'height': 1080, 'fits': [3, 4, 6, 12]}])
+        window = threading.Thread(target=desktop_window)
+        window.start()
+        self.assertEqual(self.post('/api/scrape/screens/refresh'), {'ok': True, 'screens': 1})  # after its answer
+        window.join(5)
+        with mock.patch.object(server, 'SCREENS_WAIT', 0.2):  # no desktop window (e.g. server only): says so
+            with self.assertRaises(urllib.error.HTTPError) as ex:
+                self.post('/api/scrape/screens/refresh')
+            self.assertEqual(ex.exception.code, 400)
+        self.assertFalse(self.host.screens_requested.is_set())  # the request is not left behind
+        self.assertEqual(set(self.get('/api/scrape/state')), {'active', 'state', 'id'})  # the light state of the other tabs
 
     def test_state_and_versions_report_what_is_running(self):
         state = self.get('/api/state')

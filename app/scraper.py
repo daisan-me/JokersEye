@@ -297,6 +297,7 @@ class Collector:
         self.windows,self.rate=self.options()  # chosen in the Scraper tab; fixed while a run goes
         self.screen=self.screen_option()  # the monitor the windows go on ('' = as before, on the main one)
         self.screens=[]  # the monitors the desktop app reported
+        self.screens_read=0; self.screens_changed=threading.Condition(self.lock)  # counts the desktop's readings
         self.parallel=min(START_PARALLEL,self.windows); self.quick_streak=0  # pages read at once, adapted to the site's answers
         self.answered=deque()  # when pages were answered, for the pages read in the last minute
         self.halted=None  # set to the restriction message when the source site restricts access
@@ -348,16 +349,26 @@ class Collector:
         return row[0] if row and re.fullmatch(SCREEN_ID,row[0]) else ''
 
     def report_screens(self,screens):
-        """The desktop app's monitors (pywebview's coordinates), so the Scraper tab can offer them."""
+        """The desktop app's monitors (pywebview's coordinates) and how many windows fit on each (`fits`),
+        so the Scraper tab can offer them."""
         if not isinstance(screens,list) or len(screens)>16:raise ValueError('モニターの一覧が不正です。')
         found=[]
         for screen in screens:
             values=[screen.get(k) if isinstance(screen,dict) else None for k in ('x','y','width','height')]
             if not all(type(v) is int and abs(v)<100000 for v in values) or values[2]<=0 or values[3]<=0:
                 raise ValueError('モニターの一覧が不正です。')
-            found.append({'id':'%d,%d,%d,%d'%tuple(values),'x':values[0],'y':values[1],'width':values[2],'height':values[3]})
-        with self.lock:self.screens=found
+            fits=screen.get('fits',list(WINDOW_CHOICES))
+            if not isinstance(fits,list) or not all(type(n) is int and n in WINDOW_CHOICES for n in fits):
+                raise ValueError('モニターの一覧が不正です。')
+            found.append({'id':'%d,%d,%d,%d'%tuple(values),'x':values[0],'y':values[1],'width':values[2],'height':values[3],'fits':sorted(set(fits))})
+        with self.lock:
+            self.screens=found; self.screens_read+=1; self.screens_changed.notify_all()
         return {'ok':True,'screens':len(found)}
+
+    def wait_for_screens(self,after,timeout):
+        """Whether the desktop read the monitors again (reading number > `after`) within `timeout` seconds."""
+        with self.screens_changed:
+            return self.screens_changed.wait_for(lambda:self.screens_read>after,timeout)
 
     def set_options(self,windows,rate,screen=None):
         if type(windows) is not int or windows not in WINDOW_CHOICES:raise ValueError('画面の数は3・4・6・12から選んでください。')
@@ -366,6 +377,10 @@ class Collector:
             if screen is None:screen=self.screen
             if not isinstance(screen,str) or screen and screen!=self.screen and screen not in {s['id'] for s in self.screens}:
                 raise ValueError('選んだモニターが見つかりません。モニターの一覧を確かめてください。')
+            monitor=next((s for s in self.screens if screen and s['id']==screen),None)
+            if monitor and windows not in monitor['fits']:  # tiles would be smaller than a window can be
+                raise ValueError('このモニターには%d画面を並べられません（%s画面まで）。画面の数を減らすか、別のモニターを選んでください。'
+                                 %(windows,'・'.join(map(str,monitor['fits'])) or '0'))
             if self.active or self.maintenance:raise ValueError('取得中や削除・ロックの処理中は、取得の設定を変えられません。')
             with self.store.connect() as db:
                 db.executemany('INSERT OR REPLACE INTO settings VALUES(?,?)',[('scrape_windows',str(windows)),('scrape_rate',str(rate)),('scrape_screen',screen)])
@@ -446,7 +461,7 @@ class Collector:
             html=payload.get('html','')
             if not isinstance(html,str) or len(html)>8*1024*1024: raise ValueError('ページが大きすぎます。')
             task['answer']={'html':html,'error':str(payload.get('error',''))}; task['done'].set()
-            self.answered.append(time.monotonic())
+            self.answered.append(time.monotonic()); self.recent_pages()
             self.adapt(payload.get('serverWait'))
             self.ready.notify_all()
         return {'ok':True}
@@ -462,11 +477,21 @@ class Collector:
                 self.parallel=min(self.windows,self.parallel+1); self.quick_streak=0
         self.progress['parallel']=self.parallel
 
+    def recent_pages(self):
+        """Pages answered in the last minute (older times are dropped as pages come in, so the record stays small)."""
+        cutoff=time.monotonic()-60
+        while self.answered and self.answered[0]<cutoff:self.answered.popleft()
+        return len(self.answered)
+
+    def run_state(self):
+        """Whether a run is going, without reading GDB: what the other tabs poll during a run."""
+        with self.lock:
+            return {'active':self.active,'state':self.progress.get('state'),'id':self.progress.get('id')}
+
     def status(self):
         with self.lock:
-            while self.answered and time.monotonic()-self.answered[0]>60:self.answered.popleft()
             result=dict(self.progress,active=self.active,runFailures=list(self.progress.get('failures',[])),
-                        options=self.options_status(),pagesLastMinute=len(self.answered))
+                        options=self.options_status(),pagesLastMinute=self.recent_pages())
             if self.active and self.run_started is not None:  # live: time so far, per day, and what is left
                 elapsed=time.monotonic()-self.run_started; done=self.progress.get('completed',0); total=self.progress.get('total',0)
                 result.update(elapsedSeconds=round(elapsed,1),daysDone=done,secondsPerDay=round(elapsed/done,1) if done else None,

@@ -44,8 +44,11 @@ SOURCE_WINDOWS = 12  # the most windows that can be chosen
 SOURCE_GRIDS = {3: (3, 1), 4: (2, 2), 6: (3, 2), 12: (4, 3)}
 SOURCE_AREA = (10, 10, 1895, 1040)
 SOURCE_GAP = 5
-# On a chosen monitor the windows fill it, leaving room for the taskbar / Dock at the bottom.
+# On a chosen monitor the windows fill its work area (without the taskbar, menu bar or Dock) less a margin.
+# When the work area cannot be read, room is left at the bottom for the taskbar / Dock.
 SCREEN_MARGIN, SCREEN_BOTTOM = 10, 60
+# pywebview's smallest window (its default min_size): smaller tiles would be enlarged and overlap.
+MIN_TILE = (200, 100)
 # Every run_js of every window goes through pywebview's one UI thread, so a window asks its page
 # rarely: once a second while loading, then right after the page reports it has loaded.
 LOADING_CHECK = 1.0
@@ -72,30 +75,133 @@ FOLLOW_JS = ("(()=>{if(location.protocol!=='https:')return false;const target=ne
              ".find(a=>a.href===target&&!a.target);if(!link)return false;link.click();return true;})()")
 
 
-def screen_list(webview):
-    """The monitors pywebview sees, for the Scraper tab: x, y, width, height (its own coordinates)."""
+def call_on_gui_thread(function, timeout=5.0, platform=None):
+    """Run `function` on the GUI thread on macOS (AppKit, and so pywebview's screen list, is main-thread
+    only); elsewhere call it here (WinForms' Screen.AllScreens may be read from any thread)."""
+    if (platform or sys.platform) != "darwin" or threading.current_thread() is threading.main_thread():
+        return function()
+    from PyObjCTools import AppHelper
+    box, done = {}, threading.Event()
+
+    def run():
+        try:
+            box["value"] = function()
+        except Exception as ex:
+            box["error"] = ex
+        finally:
+            done.set()
+    AppHelper.callAfter(run)
+    if not done.wait(timeout):
+        raise TimeoutError("GUIのスレッドからモニターを読めませんでした。")
+    if "error" in box:
+        raise box["error"]
+    return box["value"]
+
+
+def system_scale():
+    """Windows: the system DPI scale. pywebview makes the process system-DPI aware, so WinForms reports
+    monitors in those pixels while pywebview multiplies window positions and sizes by it."""
     try:
-        return [{"x": int(s.x), "y": int(s.y), "width": int(s.width), "height": int(s.height)} for s in webview.screens]
+        import ctypes
+        try:
+            return ctypes.windll.user32.GetDpiForSystem() / 96.0 or 1.0
+        except AttributeError:  # before Windows 10 1607
+            hdc = ctypes.windll.user32.GetDC(0)
+            try:
+                return ctypes.windll.gdi32.GetDeviceCaps(hdc, 88) / 96.0 or 1.0  # LOGPIXELSX
+            finally:
+                ctypes.windll.user32.ReleaseDC(0, hdc)
     except Exception:
-        return []
+        return 1.0
 
 
-def refresh_screens(webview, collector):
-    """Read the monitors once and give them to the Scraper tab: at startup and when its button asks."""
+def work_insets(screen, visible, platform):
+    """How far the work area (without taskbar, menu bar and Dock) is in from each edge: left, top, right, bottom."""
     try:
-        collector.report_screens(screen_list(webview))
-    except ValueError as ex:
-        logging.info("Monitors not reported: %s", ex)
+        if platform == "darwin":  # Cocoa: y grows upwards; visibleFrame leaves out the menu bar and Dock
+            frame = screen.frame
+            insets = (visible.origin.x - frame.origin.x,
+                      frame.origin.y + frame.size.height - visible.origin.y - visible.size.height,
+                      frame.origin.x + frame.size.width - visible.origin.x - visible.size.width,
+                      visible.origin.y - frame.origin.y)
+        else:  # Windows: pywebview keeps WinForms' WorkingArea as the screen's frame
+            work = screen.frame
+            insets = (work.X - screen.x, work.Y - screen.y, screen.x + screen.width - work.X - work.Width,
+                      screen.y + screen.height - work.Y - work.Height)
+        return tuple(max(0, int(value)) for value in insets)
+    except Exception:
+        return None
 
 
-def screen_area(screens, chosen):
-    """The chosen monitor ('x,y,width,height') and the area to tile on it; (None, SOURCE_AREA) when it is
-    '' (as before) or no longer connected."""
-    for screen in screens or []:
-        if chosen and "%d,%d,%d,%d" % (screen.x, screen.y, screen.width, screen.height) == chosen:
-            return screen, (screen.x + SCREEN_MARGIN, screen.y + SCREEN_MARGIN,
-                            screen.width - 2 * SCREEN_MARGIN, screen.height - SCREEN_MARGIN - SCREEN_BOTTOM)
-    return None, SOURCE_AREA
+def monitor_area(monitor):
+    """The area to tile on a monitor, in pywebview's coordinates: x, y, width, height."""
+    unit = monitor["unit"]
+    left, top, right, bottom = monitor["insets"]
+    return (int((monitor["x"] + left) / unit) + SCREEN_MARGIN, int((monitor["y"] + top) / unit) + SCREEN_MARGIN,
+            int((monitor["width"] - left - right) / unit) - 2 * SCREEN_MARGIN,
+            int((monitor["height"] - top - bottom) / unit) - 2 * SCREEN_MARGIN)
+
+
+def tile_fits(area, count):
+    """Whether `count` windows fit in `area` without being smaller than pywebview's smallest window."""
+    columns, rows = SOURCE_GRIDS.get(count, SOURCE_GRIDS[SOURCE_WINDOWS])
+    return ((area[2] - (columns - 1) * SOURCE_GAP) // columns >= MIN_TILE[0]
+            and (area[3] - (rows - 1) * SOURCE_GAP) // rows >= MIN_TILE[1])
+
+
+def read_monitors(webview, platform=None):
+    """The monitors with their work areas and how many windows fit on each. Runs on the GUI thread."""
+    platform = platform or sys.platform
+    screens = list(webview.screens)
+    unit = system_scale() if platform.startswith("win") else 1.0
+    visible = []
+    if platform == "darwin":
+        import AppKit
+        visible = [s.visibleFrame() for s in AppKit.NSScreen.screens()]
+    monitors = []
+    for index, screen in enumerate(screens):
+        insets = work_insets(screen, visible[index] if index < len(visible) else None, platform)
+        monitor = {"x": int(screen.x), "y": int(screen.y), "width": int(screen.width), "height": int(screen.height),
+                   "insets": insets or (0, 0, 0, int(SCREEN_BOTTOM * unit)), "unit": unit, "screen": screen}
+        monitor["id"] = "%d,%d,%d,%d" % (monitor["x"], monitor["y"], monitor["width"], monitor["height"])
+        monitor["fits"] = [count for count in sorted(SOURCE_GRIDS) if tile_fits(monitor_area(monitor), count)]
+        monitors.append(monitor)
+    return monitors
+
+
+class Monitors:
+    """The monitors as last read: at startup and when the Scraper tab's 「モニターを読み直す」 asks (never
+    polled, user decision 2026-11-11). Source windows only look at this reading, never at AppKit."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.items = []
+
+    def refresh(self, webview):
+        items = call_on_gui_thread(lambda: read_monitors(webview))
+        with self.lock:
+            self.items = items
+        return items
+
+    def find(self, chosen):
+        with self.lock:
+            return next((monitor for monitor in self.items if monitor["id"] == chosen), None)
+
+
+def refresh_screens(monitors, webview, collector):
+    """Read the monitors again and give them to the Scraper tab (with how many windows fit on each)."""
+    try:
+        items = monitors.refresh(webview)
+        collector.report_screens([{k: monitor[k] for k in ("x", "y", "width", "height", "fits")} for monitor in items])
+    except Exception as ex:  # the request from the Scraper tab then says that nothing was read
+        logging.info("Monitors not read: %s: %s", type(ex).__name__, ex)
+
+
+def serve_monitor_requests(host, monitors, webview, collector):
+    """The desktop loop's part of 「モニターを読み直す」: read only when the Scraper tab asked."""
+    if host.screens_requested.is_set():
+        host.screens_requested.clear()
+        refresh_screens(monitors, webview, collector)
 
 
 def tile(index, count, area=SOURCE_AREA):
@@ -204,8 +310,9 @@ class SourceWindow:
     """
     LOG_LOCK = threading.Lock()
 
-    def __init__(self, webview, client, folder, index=0, stop_event=None):
+    def __init__(self, webview, client, folder, index=0, stop_event=None, monitors=None):
         self.webview, self.client, self.folder, self.index = webview, client, Path(folder), index
+        self.monitors = monitors or Monitors()  # the monitors as last read on the GUI thread
         self.window = None
         self.loaded = threading.Event()
         self.disposed = False
@@ -231,19 +338,16 @@ class SourceWindow:
         if self.window is not None and self.hidden:
             self.close_window()
         if self.window is None:
-            screen = None
-            if self.screen:
-                try:
-                    screen, area = screen_area(self.webview.screens, self.screen)
-                except Exception:
-                    screen, area = None, SOURCE_AREA
-            else:
-                area = SOURCE_AREA
+            monitor = self.monitors.find(self.screen) if self.screen else None
+            area = monitor_area(monitor) if monitor else SOURCE_AREA
+            if monitor and not tile_fits(area, self.count):  # e.g. the monitor's work area changed since it was read
+                self.log("monitor-too-small %s %d windows: main screen instead" % (self.screen, self.count))
+                monitor, area = None, SOURCE_AREA
             x, y, width, height = tile(self.index, self.count, area)
             # focus=False: the windows open without taking the keyboard from what the user is doing (a video etc.).
             options = {"width": width, "height": height, "x": x, "y": y, "focus": False}
-            if screen is not None and sys.platform == "darwin":  # macOS places a window relative to its monitor
-                options.update(screen=screen, x=x - screen.x, y=y - screen.y)
+            if monitor is not None and sys.platform == "darwin":  # macOS places a window relative to its monitor
+                options.update(screen=monitor["screen"], x=x - monitor["x"], y=y - monitor["y"])
             self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, self.count),
                                                      html="<!doctype html><title></title>", **options)
             self.layout, self.hidden = (self.count, self.screen), False
@@ -421,9 +525,10 @@ class SourceWindow:
 class SourceBrowser:
     """SOURCE_WINDOWS source windows reading the collector's pages side by side."""
 
-    def __init__(self, webview, client, folder, count=SOURCE_WINDOWS):
+    def __init__(self, webview, client, folder, count=SOURCE_WINDOWS, monitors=None):
         self.stop_event = threading.Event()
-        self.windows = [SourceWindow(webview, client, folder, index, self.stop_event) for index in range(count)]
+        self.monitors = monitors or Monitors()
+        self.windows = [SourceWindow(webview, client, folder, index, self.stop_event, self.monitors) for index in range(count)]
 
     def run(self):
         threads = [threading.Thread(target=window.run, daemon=True) for window in self.windows]
@@ -601,13 +706,11 @@ def main(argv=None):
         threading.Thread(target=source.run, daemon=True).start()
         if args.diagnostics:
             threading.Thread(target=run_diagnostics, args=(window, client, args.diagnostics), daemon=True).start()
-        refresh_screens(webview, store.collector)  # once; again only when 「モニターを読み直す」 is pressed
+        refresh_screens(source.monitors, webview, store.collector)  # once; again only when 「モニターを読み直す」 is pressed
         beat = 0.0
         while not closing.is_set() and serving.is_alive():
             now = time.monotonic()
-            if host.screens_requested.is_set():
-                host.screens_requested.clear()
-                refresh_screens(webview, store.collector)
+            serve_monitor_requests(host, source.monitors, webview, store.collector)
             if now - beat >= 20:
                 beat = now
                 try:

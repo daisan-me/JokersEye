@@ -1,8 +1,10 @@
 import importlib.util
 import io
 import json
+from types import SimpleNamespace
 from pathlib import Path
 import sys
+import threading
 import tempfile
 import time
 import unittest
@@ -73,6 +75,18 @@ class SourceBrowserRuleTests(unittest.TestCase):
             self.assertFalse(desktop.truthy(value))
 
 
+class Screen:
+    """pywebview's Screen: x, y, width, height and the platform's frame."""
+    def __init__(self, x, y, width, height, frame=None):
+        self.x, self.y, self.width, self.height, self.frame = x, y, width, height, frame
+
+
+def monitors_of(*screens):
+    monitors = desktop.Monitors()
+    monitors.items = desktop.read_monitors(SimpleNamespace(screens=list(screens)), 'linux')  # default room below
+    return monitors
+
+
 class FakeWindow:
     def __init__(self, href=None):
         self.href, self.destroyed, self.hidden = href, 0, 0
@@ -129,36 +143,79 @@ class SourceBrowserWindowTests(unittest.TestCase):
         self.assertEqual(desktop.tile(11, 12)[2:], (470, 343))  # 12 windows: the earlier 4 x 3 tiles
 
     def test_windows_open_without_focus_on_the_chosen_monitor(self):
-        class Screen:
-            def __init__(self, x, y, width, height):
-                self.x, self.y, self.width, self.height = x, y, width, height
         main, side = Screen(0, 0, 1920, 1080), Screen(1920, -200, 2560, 1440)
-        self.assertEqual(desktop.screen_list(type('W', (), {'screens': [main, side]})),
-                         [{'x': 0, 'y': 0, 'width': 1920, 'height': 1080}, {'x': 1920, 'y': -200, 'width': 2560, 'height': 1440}])
-        self.assertEqual(desktop.screen_area([main, side], '1920,-200,2560,1440'), (side, (1930, -190, 2540, 1370)))
-        self.assertEqual(desktop.screen_area([main], '1920,-200,2560,1440'), (None, desktop.SOURCE_AREA))  # unplugged: as before
-        self.assertEqual(desktop.screen_area([main, side], ''), (None, desktop.SOURCE_AREA))
+        monitors = monitors_of(main, side)
+        self.assertEqual([m['id'] for m in monitors.items], ['0,0,1920,1080', '1920,-200,2560,1440'])
+        self.assertEqual(desktop.monitor_area(monitors.find('1920,-200,2560,1440')), (1930, -190, 2540, 1360))
+        self.assertIsNone(monitors.find('9,9,9,9'))
         created = []
         class FakeWebview:
-            screens = [main, side]
+            @property
+            def screens(self):  # windows must not read the monitors themselves (AppKit is main-thread only)
+                raise AssertionError('read the monitors on a worker thread')
             def create_window(self, title, **options):
                 created.append(options)
                 window = FakeWindow()
                 window.events = mock.MagicMock()
                 return window
         for platform in ('win32', 'darwin'):
-            source = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir(), index=5)
+            source = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir(), index=5, monitors=monitors)
             source.count, source.screen = 6, '1920,-200,2560,1440'
             with mock.patch.object(desktop.sys, 'platform', platform):
                 source.ensure_window()
         windows, mac = created
         self.assertFalse(windows['focus'])  # never takes the keyboard from what the user is doing
         self.assertNotIn('screen', windows)  # Windows: positions on the whole desktop
-        x, y, width, height = desktop.tile(5, 6, (1930, -190, 2540, 1370))
+        x, y, width, height = desktop.tile(5, 6, (1930, -190, 2540, 1360))
         self.assertEqual((windows['x'], windows['y'], windows['width'], windows['height']), (x, y, width, height))
         self.assertTrue(1920 <= x and x + width <= 1920 + 2560 and -200 <= y and y + height <= -200 + 1440)
         self.assertIs(mac['screen'], side)  # macOS: positions relative to the chosen monitor
         self.assertEqual((mac['x'], mac['y'], mac['focus']), (x - 1920, y + 200, False))
+
+    def test_monitors_use_their_work_area_and_windows_pixels(self):
+        # Windows: WinForms reports the system-DPI-aware pixels and the WorkingArea without the taskbar;
+        # pywebview multiplies window positions by the system scale, so the area is divided by it.
+        side = Screen(2880, 0, 2560, 1440, frame=SimpleNamespace(X=2880, Y=0, Width=2560, Height=1392))
+        with mock.patch.object(desktop, 'system_scale', return_value=1.5):
+            monitor = desktop.read_monitors(SimpleNamespace(screens=[side]), 'win32')[0]
+        self.assertEqual((monitor['insets'], monitor['unit']), ((0, 0, 0, 48), 1.5))
+        self.assertEqual(desktop.monitor_area(monitor), (1930, 10, 1686, 908))
+        # macOS: the menu bar (37) and the Dock (70) are outside visibleFrame (Cocoa's y grows upwards).
+        rect = lambda x, y, w, h: SimpleNamespace(origin=SimpleNamespace(x=x, y=y), size=SimpleNamespace(width=w, height=h))
+        mac = Screen(0, 0, 1512, 982, frame=rect(0, 0, 1512, 982))
+        self.assertEqual(desktop.work_insets(mac, rect(0, 70, 1512, 875), 'darwin'), (0, 37, 0, 70))
+        self.assertIsNone(desktop.work_insets(Screen(0, 0, 10, 10), None, 'win32'))  # unreadable: the default room below
+
+    def test_tiles_are_never_smaller_than_a_window(self):
+        small = Screen(-800, 0, 800, 600)
+        monitors = monitors_of(Screen(0, 0, 1920, 1080), small)
+        self.assertEqual(monitors.find('-800,0,800,600')['fits'], [3, 4, 6])  # 12 tiles would be 191 px wide
+        self.assertEqual(monitors.find('0,0,1920,1080')['fits'], [3, 4, 6, 12])
+        created = []
+        class FakeWebview:
+            def create_window(self, title, **options):
+                created.append(options)
+                window = FakeWindow()
+                window.events = mock.MagicMock()
+                return window
+        source = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir(), index=11, monitors=monitors)
+        source.count, source.screen = 12, '-800,0,800,600'
+        source.ensure_window()  # does not fit (the monitor changed since it was read): the main screen as before
+        self.assertEqual((created[0]['x'], created[0]['y'], created[0]['width']), desktop.tile(11, 12)[:3])
+        for count in (3, 4, 6, 12):
+            for index in range(count):
+                self.assertGreaterEqual(desktop.tile(index, count)[2:], desktop.MIN_TILE)
+
+    def test_mac_reads_the_monitors_on_the_gui_thread(self):
+        ran_on = []
+        helper = SimpleNamespace(callAfter=lambda function: threading.Thread(target=function, name='gui').start())
+        with mock.patch.dict(sys.modules, {'PyObjCTools': SimpleNamespace(AppHelper=helper), 'PyObjCTools.AppHelper': helper}):
+            worker = threading.Thread(target=lambda: ran_on.append(desktop.call_on_gui_thread(
+                lambda: threading.current_thread().name, platform='darwin')))
+            worker.start(); worker.join(5)
+        self.assertEqual(ran_on, ['gui'])  # handed to the GUI thread, not run on the worker
+        self.assertEqual(desktop.call_on_gui_thread(lambda: threading.current_thread().name, platform='win32'),
+                         threading.current_thread().name)  # Windows: read where it is asked
 
     def test_an_open_window_is_never_shown_again_so_it_never_takes_focus(self):
         created = []
@@ -182,17 +239,15 @@ class SourceBrowserWindowTests(unittest.TestCase):
 
     def test_a_window_placed_for_other_settings_is_opened_again(self):
         created = []
-        class Screen:
-            x, y, width, height = 1920, 0, 2560, 1440
         class FakeWebview:
-            screens = [Screen()]
             def create_window(self, title, **options):
                 window = FakeWindow()
                 window.events = mock.MagicMock()
                 created.append((title, options))
                 return window
         client = FakeClient({'active': True, 'windows': 4, 'rate': 1, 'screen': ''})
-        source = desktop.SourceWindow(FakeWebview(), client, tempfile.gettempdir(), index=1)
+        source = desktop.SourceWindow(FakeWebview(), client, tempfile.gettempdir(), index=1,
+                                      monitors=monitors_of(Screen(0, 0, 1920, 1080), Screen(1920, 0, 2560, 1440)))
         source.poll()
         source.ensure_window()  # 4 windows on the main screen
         first = source.window
@@ -206,7 +261,7 @@ class SourceBrowserWindowTests(unittest.TestCase):
         self.assertEqual(first.destroyed, 1)
         source.ensure_window()
         self.assertEqual(created[-1][0], desktop.SOURCE_TITLE + ' 2/6')
-        self.assertEqual((created[-1][1]['x'], created[-1][1]['y']), desktop.tile(1, 6, (1930, 10, 2540, 1370))[:2])
+        self.assertEqual((created[-1][1]['x'], created[-1][1]['y']), desktop.tile(1, 6, (1930, 10, 2540, 1360))[:2])
         client.task = {'active': True, 'unused': True, 'windows': 3, 'rate': 2, 'screen': ''}
         source.index = 4  # a window the next run does not use is closed
         source.poll()
@@ -214,16 +269,26 @@ class SourceBrowserWindowTests(unittest.TestCase):
 
     def test_monitors_are_read_only_when_asked(self):
         class Collector:
-            reported = []
+            def __init__(self):
+                self.reported = []
             def report_screens(self, screens):
                 self.reported.append(screens)
-        class Screen:
-            x, y, width, height = 0, 0, 1920, 1080
-        collector = Collector()
-        desktop.refresh_screens(type('W', (), {'screens': [Screen()]}), collector)
-        self.assertEqual(collector.reported, [[{'x': 0, 'y': 0, 'width': 1920, 'height': 1080}]])
-        source = (Path(desktop.__file__)).read_text(encoding='utf-8')
+        webview = SimpleNamespace(screens=[Screen(0, 0, 1920, 1080)])
+        collector, monitors = Collector(), desktop.Monitors()
+        desktop.refresh_screens(monitors, webview, collector)
+        self.assertEqual(collector.reported, [[{'x': 0, 'y': 0, 'width': 1920, 'height': 1080, 'fits': [3, 4, 6, 12]}]])
+        host = SimpleNamespace(screens_requested=threading.Event())
+        desktop.serve_monitor_requests(host, monitors, webview, collector)  # nobody asked: not read
+        self.assertEqual(len(collector.reported), 1)
+        host.screens_requested.set()  # 「モニターを読み直す」
+        desktop.serve_monitor_requests(host, monitors, webview, collector)
+        self.assertEqual((len(collector.reported), host.screens_requested.is_set()), (2, False))
+        desktop.refresh_screens(monitors, SimpleNamespace(), collector)  # unreadable: nothing reported (the tab says so)
+        self.assertEqual(len(collector.reported), 2)
+        source = Path(desktop.__file__).read_text(encoding='utf-8')
         self.assertNotIn('screens_seen', source)  # no periodic check of the monitors
+        self.assertIn('serve_monitor_requests(host, source.monitors, webview, store.collector)', source)  # in the desktop loop
+        self.assertIn('refresh_screens(source.monitors, webview, store.collector)  # once', source)  # and at startup
 
     def test_webviews_load_pages_as_an_ordinary_visitor(self):
         # Blocking third-party hosts made the site blank negative 差枚/出率 (2026-10-07): not done any more.

@@ -54,13 +54,14 @@
     sheet.querySelectorAll('select').forEach(select=>select.addEventListener('change',saveOptions));
     sheet.querySelector('#scrape-screens-reload').addEventListener('click',async event=>{
       const button=event.currentTarget;button.disabled=true;
-      try{await api('scrape/screens/refresh',{});await new Promise(done=>setTimeout(done,800));await poll();notice('モニターの一覧を読み直しました。');}
+      // The server waits for the desktop window's reading, so this reports what actually happened.
+      try{const result=await api('scrape/screens/refresh',{});await poll();notice(`モニターの一覧を読み直しました（${result.screens}台）。`);}
       catch(e){showError(e);}finally{button.disabled=false;}
     });
     return sheet;
   }
   // Monitors as the desktop app reported them; the main one is at 0,0.
-  function screenLabel(s,i){return `モニター${i+1}${s.x===0&&s.y===0?'（メイン）':''}：${s.width}×${s.height}（位置 ${s.x}, ${s.y}）`;}
+  function screenLabel(s,i){const most=Math.max(0,...(s.fits||[]));return `モニター${i+1}${s.x===0&&s.y===0?'（メイン）':''}：${s.width}×${s.height}（位置 ${s.x}, ${s.y}）${most<12?`・${most?most+'画面まで':'並べられません'}`:''}`;}
   function screenOptions(o){
     const known=o.screens.map((s,i)=>[s.id,screenLabel(s,i)]);
     if(o.screen&&!o.screens.some(s=>s.id===o.screen))known.push([o.screen,'選んだモニター（今は見つかりません。メインの画面に並べます）']);
@@ -82,9 +83,15 @@
     windows.disabled=rate.disabled=screen.disabled=running;
     sheet.querySelector('#scrape-speed').textContent=speedText(options);
   }
-  async function saveOptions(){
+  // The monitor is sent only when it was the one changed: a list not loaded yet (or kept while it had the
+  // focus) must not overwrite the saved monitor. The server keeps it when `screen` is left out.
+  async function saveOptions(event){
     const sheet=document.querySelector('#scrape-options');if(!sheet)return;
-    try{showOptions(await api('scrape/options',{windows:Number(sheet.querySelector('#scrape-windows').value),rate:Number(sheet.querySelector('#scrape-rate').value),screen:sheet.querySelector('#scrape-screen').value}),busy);}
+    const windows=sheet.querySelector('#scrape-windows'),rate=sheet.querySelector('#scrape-rate'),screen=sheet.querySelector('#scrape-screen');
+    if(!windows.options.length||!rate.options.length)return;  // nothing loaded yet: nothing to save
+    const payload={windows:Number(windows.value),rate:Number(rate.value)};
+    if(event&&event.target===screen&&screen.dataset.html)payload.screen=screen.value;
+    try{showOptions(await api('scrape/options',payload),busy);}
     catch(e){showError(e);await poll();}  // puts the saved choice back
   }
   // Poll every 2 seconds while the Scraper tab is open or a run is going; otherwise stop.
@@ -111,8 +118,8 @@
   }
   async function poll(){
     const panel=document.querySelector('#scrape-widget');
-    let status;
-    try{status=await api('scrape/status');}
+    let status;  // the Scraper tab reads the full status; the other tabs only whether a run is going (no GDB read)
+    try{status=await api(panel?'scrape/status':'scrape/state');}
     catch(e){if(panel)panel.querySelector('#scrape-progress').textContent=e.message;else schedule(false);return;}
     const running=status.active || status.state==='running';
     busy=running;

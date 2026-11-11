@@ -27,6 +27,7 @@ from versions import VersionManager
 from updater import Updater
 
 APP = "jokers-eye"
+SCREENS_WAIT = 5.0  # seconds 「モニターを読み直す」 waits for the desktop window
 # The packaged app (tools/build_package.py) carries web/ and VERSION in its bundle folder.
 ROOT = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
@@ -596,7 +597,7 @@ class Host(ThreadingHTTPServer):
         self.updater=Updater(store.folder,ROOT,self.versions,store,lambda: threading.Thread(target=self.shutdown,daemon=True).start())
 
 class Handler(BaseHTTPRequestHandler):
-    QUIET_PATHS = {"/api/scrape/browser-task", "/api/scrape/browser-result", "/api/scrape/status", "/api/heartbeat"}
+    QUIET_PATHS = {"/api/scrape/browser-task", "/api/scrape/browser-result", "/api/scrape/status", "/api/scrape/state", "/api/heartbeat"}
 
     def log_message(self, fmt, *args):
         # The six source-browser windows poll many times a second; record only other requests.
@@ -653,6 +654,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply({"error":str(ex)},400)
             if path=="/api/scrape/status":
                 return self.reply(self.server.store.collector.status())
+            if path=="/api/scrape/state":  # light: the other tabs during a run
+                return self.reply(self.server.store.collector.run_state())
             if path=="/api/scrape/browser-task":
                 query=parse_qs(urlsplit(self.path).query)
                 try:
@@ -759,8 +762,14 @@ class Handler(BaseHTTPRequestHandler):
             elif path=="/api/scrape/screens":
                 result=self.server.store.collector.report_screens(payload.get("screens"))
             elif path=="/api/scrape/screens/refresh":
+                # Ask the desktop window to read the monitors and wait for its answer, so the tab can say what happened.
+                collector=self.server.store.collector
+                reading=collector.screens_read
                 self.server.screens_requested.set()
-                result={"ok":True}
+                if not collector.wait_for_screens(reading,SCREENS_WAIT):
+                    self.server.screens_requested.clear()
+                    raise ValueError("モニターを読み直せませんでした。Joker’s eyeのデスクトップのウィンドウで開いているか確かめてください。")
+                result={"ok":True,"screens":len(collector.screens)}
             elif path=="/api/scrape/stop":
                 result=self.server.store.collector.stop(payload.get("reason","button"))
             elif path=="/api/scrape/browser-result":
