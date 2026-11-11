@@ -4,7 +4,7 @@
 
 - ユーザー指示：フォーカスを奪わない設定と、サブモニター指定を実装する（前の回で文章で検討した2案）。
 - pywebview 6.2.1 で確認したこと：`create_window(focus=False)` は、Windowsでは `WS_EX_NOACTIVATE`（表示しても前面のアプリから入力を取らない。タスクバーにボタンが出ないことがある）、macOSでは `canBecomeKeyWindow` を偽にする（アプリを前に出さない）。`webview.screens` は各モニターの x・y・幅・高さ（pywebviewの座標。WindowsはDPIを考えた論理ピクセルとされる）。ウィンドウの x・y は、Windowsでは画面全体の座標、macOSでは `screen` に渡したモニターからの相対座標。
-- `desktop.py`：取得用ブラウザーを `focus=False` で作る。`screen_list()` で見えるモニターを集め、メインの窓の裏の処理（`background`）が起動直後と30秒ごとに、変わっていれば `POST /api/scrape/screens` で知らせる。`screen_area()` は選んだモニター（'x,y,幅,高さ'）を探し、そのモニターから左右上10px・下60px（タスクバー・Dock）を除いた範囲に `tile()` で並べる。見つからなければ以前の範囲（SOURCE_AREA）。macOSでは `screen` と相対座標を渡す。ページに付いた `screen` で決まる。
+- `desktop.py`：取得用ブラウザーを `focus=False` で作る。`screen_list()` で見えるモニターを集め、メインの窓の裏の処理（`background`）が起動直後に1回 `refresh_screens()` で `Collector.report_screens()` に渡す。そのあとは「モニターを読み直す」ボタン（`POST /api/scrape/screens/refresh` → `Host.screens_requested`）が押されたときだけ読み直す（ユーザー指示：30秒ごとの確認は重くなる懸念があるので手動に。`background` はもともと0.25秒ごとに `focus_requested` を見ているので、同じところで合図を見るだけ）。`screen_area()` は選んだモニター（'x,y,幅,高さ'）を探し、そのモニターから左右上10px・下60px（タスクバー・Dock）を除いた範囲に `tile()` で並べる。見つからなければ以前の範囲（SOURCE_AREA）。macOSでは `screen` と相対座標を渡す。ページに付いた `screen` で決まる。
 - `scraper.py`：`report_screens()`（最大16、整数の x・y・正の幅・高さ）、`screen_option()`（GDBの `settings` の `scrape_screen`）、`set_options(windows, rate, screen)`（つながっているモニターか、''（以前どおり）か、保存済みの値だけ）。`options_status()` に `screen`・`screens`。ページに `screen`。
 - 画面：「取得の設定」シートに「表示するモニター」（これまでどおり／モニターn（メイン）：幅×高さ（位置 x, y）／外れているときは「今は見つかりません」）。取得中は選べない。
 - 未確認：WindowsとMacの実機。とくに、Windowsで表示倍率が違うモニターをまたぐときの位置、`WS_EX_NOACTIVATE` の窓が同じモニターの動画の上に重なるか（入力は取らないが、前面に表示される可能性はある。サブモニターを選べば避けられる）。前に閉じられて隠れた取得画面を `show()` で出し直すときはフォーカスを取るが、閉じると取得が止まるため通常は通らない。
