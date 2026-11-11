@@ -74,7 +74,7 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(server.Store(self.tmp.name).collector.options(),(6,5))  # kept in GDB's settings
         self.assertEqual(collector.status()['options']['pagesPerSecond'],30)
         threads=[self.fetch_in_background('https://min-repo.com/%d/'%n) for n in range(3)]
-        self.assertEqual(collector.browser_task(wait=0.3,window=6),{'active':False})  # the 7th window is not used
+        self.assertEqual(collector.browser_task(wait=0.3,window=6),{'active':False,'unused':True,'windows':6,'rate':5,'screen':''})  # the 7th window is not used
         started=time.monotonic()
         given=[collector.browser_task(wait=1,window=n) for n in range(3)]
         self.assertTrue(all('id' in task for task in given))

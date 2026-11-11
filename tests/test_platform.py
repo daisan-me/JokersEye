@@ -102,7 +102,7 @@ class FakeClient:
 class SourceBrowserWindowTests(unittest.TestCase):
     def browser(self, task, window):
         source = desktop.SourceWindow(None, FakeClient(task), tempfile.gettempdir())
-        source.window = window
+        source.window, source.layout = window, (source.count, source.screen)  # as ensure_window() placed it
         return source
 
     def test_twelve_windows_share_one_stop_switch_and_tile_the_screen(self):
@@ -159,6 +159,58 @@ class SourceBrowserWindowTests(unittest.TestCase):
         self.assertTrue(1920 <= x and x + width <= 1920 + 2560 and -200 <= y and y + height <= -200 + 1440)
         self.assertIs(mac['screen'], side)  # macOS: positions relative to the chosen monitor
         self.assertEqual((mac['x'], mac['y'], mac['focus']), (x - 1920, y + 200, False))
+
+    def test_an_open_window_is_never_shown_again_so_it_never_takes_focus(self):
+        created = []
+        class FakeWebview:
+            def create_window(self, title, **options):
+                window = FakeWindow()
+                window.shown = 0
+                window.show = lambda: setattr(window, 'shown', window.shown + 1)
+                window.events = mock.MagicMock()
+                created.append((window, options))
+                return window
+        source = desktop.SourceWindow(FakeWebview(), FakeClient({}), tempfile.gettempdir())
+        for _ in range(3):  # one call per page read
+            source.ensure_window()
+        self.assertEqual(len(created), 1)
+        self.assertEqual(created[0][0].shown, 0)  # pywebview's show() activates the window
+        self.assertFalse(source.on_closing())  # the user closes it during a run: hidden, the run stops
+        source.ensure_window()  # made again without focus, not shown
+        self.assertEqual((len(created), created[0][0].destroyed, created[0][0].shown), (2, 1, 0))
+        self.assertFalse(created[1][1]['focus'])
+
+    def test_a_window_placed_for_other_settings_is_opened_again(self):
+        created = []
+        class Screen:
+            x, y, width, height = 1920, 0, 2560, 1440
+        class FakeWebview:
+            screens = [Screen()]
+            def create_window(self, title, **options):
+                window = FakeWindow()
+                window.events = mock.MagicMock()
+                created.append((title, options))
+                return window
+        client = FakeClient({'active': True, 'windows': 4, 'rate': 1, 'screen': ''})
+        source = desktop.SourceWindow(FakeWebview(), client, tempfile.gettempdir(), index=1)
+        source.poll()
+        source.ensure_window()  # 4 windows on the main screen
+        first = source.window
+        client.task = {'active': True, 'windows': 4, 'rate': 2, 'screen': ''}  # only the speed changed: kept
+        source.poll()
+        self.assertIs(source.window, first)
+        # Stopped, changed to 6 windows on another monitor and started again before this window closed.
+        client.task = {'active': True, 'windows': 6, 'rate': 2, 'screen': '1920,0,2560,1440'}
+        source.poll()
+        self.assertIsNone(source.window)
+        self.assertEqual(first.destroyed, 1)
+        source.ensure_window()
+        self.assertEqual(created[-1][0], desktop.SOURCE_TITLE + ' 2/6')
+        self.assertEqual((created[-1][1]['x'], created[-1][1]['y']), desktop.tile(1, 6, (1930, 10, 2540, 1370))[:2])
+        client.task = {'active': True, 'unused': True, 'windows': 3, 'rate': 2, 'screen': ''}
+        source.index = 4  # a window the next run does not use is closed
+        source.poll()
+        self.assertIsNone(source.window)
 
     def test_monitors_are_read_only_when_asked(self):
         class Collector:

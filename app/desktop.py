@@ -214,6 +214,8 @@ class SourceWindow:
         self.stop_event = stop_event or threading.Event()
         self.count, self.cycle = 4, 1.0  # this run's windows and seconds per page, from the collector's pages
         self.screen = ""  # this run's monitor ('x,y,width,height'; '' = the main one, as before)
+        self.layout = None  # (count, screen) the open window was placed for
+        self.hidden = False  # the user closed the window during a run: it was hidden, not destroyed
 
     def log(self, message):
         try:
@@ -223,6 +225,11 @@ class SourceWindow:
             pass
 
     def ensure_window(self):
+        # Never show() an open window: pywebview's show() activates it (Activate() on Windows,
+        # activateIgnoringOtherApps on macOS) and would take the keyboard from the user on every page.
+        # A hidden window (closed by the user) is made again instead, without focus.
+        if self.window is not None and self.hidden:
+            self.close_window()
         if self.window is None:
             screen = None
             if self.screen:
@@ -239,15 +246,15 @@ class SourceWindow:
                 options.update(screen=screen, x=x - screen.x, y=y - screen.y)
             self.window = self.webview.create_window("%s %d/%d" % (SOURCE_TITLE, self.index + 1, self.count),
                                                      html="<!doctype html><title></title>", **options)
+            self.layout, self.hidden = (self.count, self.screen), False
             self.window.events.loaded += lambda: self.loaded.set()
             self.window.events.closing += self.on_closing
-        else:
-            self.window.show()
 
     def on_closing(self):
         if self.disposed or self.window is None:  # app exit, or close_window() after the run ended
             return True
         self.window.hide()
+        self.hidden = True
         try:
             self.client.request("scrape/stop", {"reason": "window"})
         except (OSError, ValueError):
@@ -311,17 +318,21 @@ class SourceWindow:
         except (OSError, ValueError) as ex:
             self.log("task-request " + type(ex).__name__)
             return None
-        # The collector reports `active` until the run (including the CSV sync) ends.
-        if task.get("active") is False and self.window is not None:
-            self.close_window()
-        if "id" not in task or task["id"] == self.last_task:
-            return None
+        # Every answer carries the run's windows, rate and monitor (the 「取得の設定」 sheet).
         if task.get("windows") in SOURCE_GRIDS:
             self.count = task["windows"]
         if isinstance(task.get("rate"), int) and 1 <= task["rate"] <= 5:
             self.cycle = 1.0 / task["rate"]
         if isinstance(task.get("screen"), str):
             self.screen = task["screen"]
+        # Close the window when the run (including the CSV sync) has ended, when this run does not use it,
+        # or when it was placed for other settings (stopped, changed and started again before it closed):
+        # the next page then opens it again in its new place.
+        if self.window is not None and (task.get("active") is False or task.get("unused")
+                                        or self.layout != (self.count, self.screen)):
+            self.close_window()
+        if "id" not in task or task["id"] == self.last_task:
+            return None
         task_id, error = task["id"], None
         self.last_task, self.last_timing = task_id, None
         started = time.monotonic()

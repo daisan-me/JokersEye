@@ -416,14 +416,16 @@ class Collector:
     def browser_task(self,wait=0.0,window=None):
         """Hand the next page to a source-browser window, at most windows x rate pages a second overall.
         Waits up to `wait` seconds for one. `window` (0-based) beyond the chosen number of windows gets none.
-        `active` lets the desktop close its windows once the run has ended; a page comes with the run's
-        windows, rate and monitor, which place the window and set its pace."""
+        `active` lets the desktop close its windows once the run has ended. An answer to a numbered window
+        carries the run's windows, rate and monitor, which place the window and set its pace (a window
+        placed for other settings is opened again), and `unused` for a window this run does not use."""
         deadline=time.monotonic()+max(0.0,min(float(wait),5.0))
         with self.ready:
             while True:
                 now_=time.monotonic()
+                layout={} if window is None else {'windows':self.windows,'rate':self.rate,'screen':self.screen}
                 if window is not None and window>=self.windows:  # a window this run does not use
-                    if now_>=deadline:return {'active':self.active}
+                    if now_>=deadline:return dict(layout,active=self.active,unused=True)
                     self.ready.wait(deadline-now_);continue
                 for task in self.tasks.values():
                     if task.get('claimed') and now_-task['claimed']>PAGE_LEASE and task['id'] not in self.queue:
@@ -434,7 +436,7 @@ class Collector:
                     task['claimed']=now_
                     self.next_dispatch=max(now_,self.next_dispatch)+1.0/(self.windows*self.rate)
                     return dict({k:v for k,v in task.items() if k not in ('done','answer','claimed')},active=self.active,windows=self.windows,rate=self.rate,screen=self.screen)
-                if now_>=deadline: return {'active':self.active}
+                if now_>=deadline: return dict(layout,active=self.active)
                 self.ready.wait(max(0.01,min(deadline,self.next_dispatch if self.queue else deadline)-now_))
 
     def browser_result(self,payload):
